@@ -1,6 +1,9 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
+const passport = require('passport');
+require('./config/passportConfig');
+
 
 // Load environment variables
 dotenv.config();
@@ -12,6 +15,9 @@ const app = express();
 
 // Middleware for parsing JSON
 app.use(express.json());
+
+// Initialize Passport
+app.use(passport.initialize());
 
 // Import routes
 const authRoutes = require('./routes/authRoutes'); // Authentication routes
