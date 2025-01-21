@@ -1,6 +1,7 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const passport= require('passport')
+const protect = require('../middleware/authMiddleware');
 const User = require('../models/User');
 const dotenv = require('dotenv');
 require('../config/passportConfig');
@@ -59,6 +60,25 @@ router.post('/login', async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+
+// A protected route
+router.get('/profile', protect, async (req, res) => {
+  try{
+    // Access the user's ID from the req.user object
+    const user = await User.findById(req.user);
+    if(!user) {
+      return res.status(404).json({message: "User not found"});
+    }
+
+    res.status(200).json({ user});
+  } catch (error) {
+    res.status(500).json({message: 'Server error'})
+  }
+});
+
+
+
+
 
 // Google Login
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
