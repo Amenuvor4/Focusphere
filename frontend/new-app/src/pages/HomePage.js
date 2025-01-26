@@ -14,7 +14,7 @@ const HomePage = () => {
             <header className="header">
                {/*Logo Section */}
                 <div className="logo-section">
-                <img src="/logo.png" alt="Auranuvor Logo" className="logo" />
+                <img src="/images/logo192.png" alt="Auranuvor Logo" className="logo" />
                 <h1 className="site-name">Auranuvor</h1>
                 </div>
 
