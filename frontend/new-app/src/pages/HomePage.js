@@ -7,14 +7,38 @@ import '../styles/HomePage.css';
 -Pricing:
 -intergration
 -DashBoard
--Community
 -Sign/Up or Login */
 const HomePage = () => {
     return (
-        
-        <head>
-            <meta charSet='UTF-8'></meta>
-        </head>
+        <div className="homepage">
+            <header className="header">
+               {/*Logo Section */}
+                <div className="logo-section">
+                <img src="/logo.png" alt="Auranuvor Logo" className="logo" />
+                <h1 className="site-name">Auranuvor</h1>
+                </div>
+
+
+                {/* Navigation Tabs */}
+                <nav className="nav-tabs">
+                    <a href="#home" className="nav-link">Home</a>
+                    <a href="#features" className="nav-link">Features</a>
+                    <a href="#pricing" className="nav-link">Pricing</a>
+                    <a href="#integration" className="nav-link">Integration</a>
+                    <a href="#dashboard" className="nav-link">Dashboard</a>
+                </nav>
+
+                {/* Login and Sign-Up Buttons */}
+                <div className="auth-buttons">
+                    <button className="login-button">
+                        Login
+                    </button>
+                    <button className="SignUp-button">
+                    Sign Up
+                    </button>
+                </div>
+            </header>
+        </div>
       );
 };
 
