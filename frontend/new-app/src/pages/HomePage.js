@@ -33,11 +33,20 @@ const HomePage = () => {
                     <button className="login-button">
                         Login
                     </button>
-                    <button className="SignUp-button">
+                    <button className="signup-button">
                     Sign Up
                     </button>
                 </div>
             </header>
+
+            <div className="Page">
+                <section className="Opener">
+                    <h2 className="Welcome">Welcome to Auranuvor</h2>
+                    <p className="welcome-paragraph">Increase your Aura and become more productive</p>
+
+
+                </section>
+            </div>
         </div>
       );
 };

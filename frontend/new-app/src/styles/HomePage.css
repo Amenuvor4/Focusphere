@@ -1,6 +1,12 @@
 /* General Styling for HomePage */
 .homepage {
-    font-family: 'Arial', sans-serif;
+    background: linear-gradient(to bottom, #ffff, #003366); /* Dark blue to slightly lighter blue */
+  background-attachment: fixed; /* Ensures the background stays fixed while scrolling */
+  background-size: cover; /* Make sure the background covers the whole screen */
+  height: 100vh; /* Make sure it covers the full viewport height */
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   }
   
   /* Header Section */
@@ -10,7 +16,7 @@
     align-items: center;
     padding: 16px 24px;
     background-color: #f8f9fa;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    
   }
   
   /* Logo Section */
