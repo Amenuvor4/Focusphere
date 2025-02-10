@@ -43,7 +43,10 @@ const HomePage = () => {
                 <section className="Opener">
                     <h2 className="Welcome">Welcome to Auranuvor</h2>
                     <p className="welcome-paragraph">Increase your Aura and become more productive</p>
-
+                </section>
+                <section className="chrome">
+                    <h2 className="Track">Use AI to help</h2>
+                    <p className="AI-Usage">AI can help track your progress and suggest improvemtns by analizing your data</p>
 
                 </section>
             </div>
