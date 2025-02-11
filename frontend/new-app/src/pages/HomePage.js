@@ -35,27 +35,30 @@ const HomePage = () => {
 
             <div className='EyeCandy'>
                 <section className="Opener">
-                    <img src={Team} alt='Team png' className='Team-logo' />
-                    <h2 className="Welcome">Prioritize smarter, achieve faster.</h2>
-                    <p className="welcome-paragraph">Welcome to Auranuvor – your AI-powered task prioritization tool. Block distractions, track usage, and visualize productivity with interactive graphs. Auranuvor uses machine learning to prioritize tasks based on your behavior and deadlines, syncing seamlessly across devices. Focus on what matters most with Auranuvor – smart prioritization made simple.</p>
-                    <button className="cta-button">Get Started</button>
+                <div className='Texts'>
+                        <h2 >Prioritize smarter, achieve faster.</h2>
+                        <p >Welcome to Auranuvor – your AI-powered task prioritization tool. Block distractions, track usage, and visualize productivity with interactive graphs. Auranuvor uses machine learning to prioritize tasks based on your behavior and deadlines, syncing seamlessly across devices. Focus on what matters most with Auranuvor – smart prioritization made simple.</p>
+                        <button className="cta-button">Get Started</button>
+                </div>
+                    <img src={Team} alt='Team png'  />
+                    
                 </section>
 
                 {/* Features Section */}
                 <section className="AI-highlight">
-                    <div className="feature AI">
-                        <img src={AI} alt="AI png" className="AI-logo" />
+                    <div className="Texts">
                         <h3>Stay focused and locked-IN</h3>
                         <p>Auranuvor uses machine learning to analyze behavior & deadlines.</p>
                     </div>
+                    <img src={AI} alt="AI png" className="AI-logo" />
                 </section>
 
                 <section className='calender-highlight'>
-                    <div className="feature Focus-mode">
-                        <img src={Calender} alt="Calender Logo" className="Calender-logo" />
+                    <div className="Texts">
                         <h3>Plan more effectively</h3>
                         <p>Auranuvor allows you to plan your tasks more efficiently and reminds you when deadlines approach.</p>
                     </div>
+                    <img src={Calender} alt="Calender Logo" className="Calender-logo" />
                 </section>
 
                 {/* Chrome Extension */}

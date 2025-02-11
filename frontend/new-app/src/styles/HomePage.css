@@ -83,15 +83,37 @@
   background-color: #0056b3;
 }
 
-/* Hero Section */
-.Opener {
-  background-color: #007bff;
-  color: white;
-  text-align: center;
-  padding: 50px 20px;
+section {
+  height: 90vh;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center center;
+    position: relative;
+    display: flex;
+    align-items: flex-end;
 }
 
-.cta-button {
+
+/* Hero Section */
+.Opener {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #007bff;
+  color: white;
+  padding: 80px 20px;
+}
+
+ .Opener img{
+  position: relative;
+  display: flex;
+  filter: brightness(0) invert(1); /* Makes the image white */
+  justify-content: right;
+}
+
+
+
+.Opener button {
   background-color: white;
   color: #007bff;
   padding: 10px 20px;
@@ -101,39 +123,62 @@
   transition: transform 0.3s;
 }
 
-.cta-button:hover {
+.Opener button:hover {
   transform: scale(1.1);
 }
 
 /* Alternating Sections */
-.AI-highlight {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(to right, #007bff 50%, white 50%);
-  color: white;
-  text-align: center;
-  padding: 50px 20px;
-}
-
-.AI-highlight .feature {
-  width: 50%;
-  text-align: center;
-}
-
+.AI-highlight,
 .calender-highlight {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(to right, white 50%, #007bff 50%);
-  color: #007bff;
-  text-align: center;
   padding: 50px 20px;
 }
 
-.calender-highlight .feature {
+.AI-highlight {
+  background: linear-gradient(to right, #007bff 50%, white 50%);
+  color: white;
+}
+
+.AI-highlight img {
+  position: relative;
+  display: flex;
+  filter: brightness(0) saturate(100%) invert(28%) sepia(98%) saturate(2100%) hue-rotate(197deg) brightness(102%) contrast(102%);/* Adjust the hue-rotate for different shades of blue */
+  justify-content: right;
+  width: 400px;  /* Adjust this value to make the image smaller */
+}
+
+.calender-highlight {
+  background: linear-gradient(to right, white 50%, #007bff 50%);
+  color: #007bff;
+}
+
+.AI-highlight .Texts,
+.calender-highlight .Texts {
   width: 50%;
   text-align: center;
+}
+
+.AI-highlight .text,
+.calender-highlight .text {
+  text-align: left;
+  padding: 20px;
+}
+
+.AI-highlight img,
+.calender-highlight img {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.calender-highlight img {
+  max-width: 100%;
+  height: auto;
+  filter: brightness(0) invert(1); /* Makes images white */
+  justify-content: right;
+  width: 300px;
 }
 
 /* Chrome Section */
@@ -164,4 +209,3 @@ footer {
   text-align: center;
   padding: 20px;
 }
-  
