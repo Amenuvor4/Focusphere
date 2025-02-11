@@ -1,95 +1,167 @@
 /* General Styling for HomePage */
 .homepage {
-    background: linear-gradient(to bottom, #ffff, #003366); /* Dark blue to slightly lighter blue */
-  background-attachment: fixed; /* Ensures the background stays fixed while scrolling */
-  background-size: cover; /* Make sure the background covers the whole screen */
-  height: 100vh; /* Make sure it covers the full viewport height */
-  overflow: hidden;
   display: flex;
   flex-direction: column;
-  }
-  
-  /* Header Section */
-  .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 24px;
-    background-color: #f8f9fa;
-    
-  }
-  
-  /* Logo Section */
-  .logo-section {
-    display: flex;
-    align-items: center;
-  }
-  
-  .logo {
-    height: 40px;
-    width: 40px;
-    margin-right: 8px;
-  }
-  
-  .site-name {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: #333;
-  }
-  
-  /* Navigation Tabs */
-  .nav-tabs {
-    display: flex;
-    gap: 16px;
-  }
-  
-  .nav-link {
-    font-size: 1rem;
-    color: #555;
-    text-decoration: none;
-    transition: color 0.3s;
-  }
-  
-  .nav-link:hover {
-    color: #007bff;
-  }
-  
-  /* Authentication Buttons */
-  .auth-buttons {
-    display: flex;
-    gap: 12px;
-  }
-  
-  .login-button,
-  .signup-button {
-    padding: 8px 16px;
-    font-size: 1rem;
-    border-radius: 4px;
-    border: 1px solid #007bff;
-    transition: background-color 0.3s, color 0.3s;
-  }
-  
-  .login-button {
-    background-color: transparent;
-    color: #007bff;
-  }
-  
-  .login-button:hover {
-    background-color: #007bff;
-    color: #fff;
-  }
-  
-  .signup-button {
-    background-color: #007bff;
-    color: #fff;
-  }
-  
-  .signup-button:hover {
-    background-color: #0056b3;
-  }
+  background-color: #fff;
+  color: #333;
+  font-family: Arial, sans-serif;
+}
 
+/* Header Section */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background-color: #f8f9fa;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+}
 
+.logo-section {
+  display: flex;
+  align-items: center;
+}
 
+.logo {
+  height: 40px;
+  width: 40px;
+  margin-right: 8px;
+}
 
-  
+.site-name {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #333;
+}
+
+.nav-tabs {
+  display: flex;
+  gap: 16px;
+}
+
+.nav-link {
+  font-size: 1rem;
+  color: #555;
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+.nav-link:hover {
+  color: #007bff;
+}
+
+.auth-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.login-button,
+.signup-button {
+  padding: 8px 16px;
+  font-size: 1rem;
+  border-radius: 4px;
+  border: 1px solid #007bff;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.login-button {
+  background-color: transparent;
+  color: #007bff;
+}
+
+.login-button:hover {
+  background-color: #007bff;
+  color: #fff;
+}
+
+.signup-button {
+  background-color: #007bff;
+  color: #fff;
+}
+
+.signup-button:hover {
+  background-color: #0056b3;
+}
+
+/* Hero Section */
+.Opener {
+  background-color: #007bff;
+  color: white;
+  text-align: center;
+  padding: 50px 20px;
+}
+
+.cta-button {
+  background-color: white;
+  color: #007bff;
+  padding: 10px 20px;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: transform 0.3s;
+}
+
+.cta-button:hover {
+  transform: scale(1.1);
+}
+
+/* Alternating Sections */
+.AI-highlight {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(to right, #007bff 50%, white 50%);
+  color: white;
+  text-align: center;
+  padding: 50px 20px;
+}
+
+.AI-highlight .feature {
+  width: 50%;
+  text-align: center;
+}
+
+.calender-highlight {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(to right, white 50%, #007bff 50%);
+  color: #007bff;
+  text-align: center;
+  padding: 50px 20px;
+}
+
+.calender-highlight .feature {
+  width: 50%;
+  text-align: center;
+}
+
+/* Chrome Section */
+.chrome {
+  background-color: white;
+  text-align: center;
+  padding: 50px 20px;
+}
+
+.chrome button {
+  background-color: #007bff;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: transform 0.3s;
+}
+
+.chrome button:hover {
+  transform: scale(1.1);
+}
+
+/* Footer */
+footer {
+  background-color: #007bff;
+  color: white;
+  text-align: center;
+  padding: 20px;
+}
   

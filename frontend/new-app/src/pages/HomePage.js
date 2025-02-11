@@ -3,6 +3,8 @@ import '../styles/HomePage.css';
 import logo from "../images/logo.png";
 import AI from "../images/AI.png";
 import Calender from "../images/calender.png"
+import Team from "../images/team.png"
+import Link from "react-router-dom";
 
 
 const HomePage = () => {
@@ -31,33 +33,40 @@ const HomePage = () => {
                 </div>
             </header>
 
-            <section className="Opener">
-                <h2 className="Welcome">Prioritize smarter, achieve faster.</h2>
-                <p className="welcome-paragraph">Welcome to Auranuvor – your AI-powered task prioritization tool. Block distractions, track usage, and visualize productivity with interactive graphs. Auranuvor uses machine learning to prioritize tasks based on your behavior and deadlines, syncing seamlessly across devices. Focus on what matters most with Auranuvor – smart prioritization made simple.</p>
-                <button className="cta-button">Get Started</button>
-            </section>
+            <div className='EyeCandy'>
+                <section className="Opener">
+                    <img src={Team} alt='Team png' className='Team-logo' />
+                    <h2 className="Welcome">Prioritize smarter, achieve faster.</h2>
+                    <p className="welcome-paragraph">Welcome to Auranuvor – your AI-powered task prioritization tool. Block distractions, track usage, and visualize productivity with interactive graphs. Auranuvor uses machine learning to prioritize tasks based on your behavior and deadlines, syncing seamlessly across devices. Focus on what matters most with Auranuvor – smart prioritization made simple.</p>
+                    <button className="cta-button">Get Started</button>
+                </section>
 
-            {/* Features Section */}
-            <section className="AI-highlight">
-                <div className="feature AI">
-                    <img src={AI} alt="AI png" className="AI-logo" />
-                    <h3>Stay focused and locked-IN</h3>
-                    <p>Auranuvor uses machine learning to analyze behavior & deadlines.</p>
-                </div>
-            </section>
+                {/* Features Section */}
+                <section className="AI-highlight">
+                    <div className="feature AI">
+                        <img src={AI} alt="AI png" className="AI-logo" />
+                        <h3>Stay focused and locked-IN</h3>
+                        <p>Auranuvor uses machine learning to analyze behavior & deadlines.</p>
+                    </div>
+                </section>
 
-            <section className='calender-highlight'>
-                <div className="feature Focus-mode">
-                    <img src={logo} alt="Auranuvor Logo" className="logo" />
-                    <h3>Plan more effectively</h3>
-                    <p>Auranuvor allows you to plan your tasks more efficiently and reminds you when deadlines approach.</p>
-                </div>
-            </section>
+                <section className='calender-highlight'>
+                    <div className="feature Focus-mode">
+                        <img src={Calender} alt="Calender Logo" className="Calender-logo" />
+                        <h3>Plan more effectively</h3>
+                        <p>Auranuvor allows you to plan your tasks more efficiently and reminds you when deadlines approach.</p>
+                    </div>
+                </section>
 
-            {/* Chrome Extension */}
-            <section className='chrome'>
-                <h2 className='Track'>Chrome Extension</h2>
-            </section>
+                {/* Chrome Extension */}
+                <section className='chrome'>
+                    <h2 className='Track'>Chrome Extension</h2>
+                    <p>DownLoad our free chrome extendtion form the chrome store</p>
+                    <button>DownLoad</button>
+                </section>
+            </div>
+
+            <footer></footer>
         </div>
     );
 };
