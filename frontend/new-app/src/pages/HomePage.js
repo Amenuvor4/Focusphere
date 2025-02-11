@@ -1,23 +1,19 @@
 import React from 'react';
 import '../styles/HomePage.css';
+import logo from "../images/logo.png";
+import AI from "../images/AI.png";
+import Calender from "../images/calender.png"
 
-/*For the home section we should add a header where the tabs should include:
--Home
--Fetures
--Pricing:
--intergration
--DashBoard
--Sign/Up or Login */
+
 const HomePage = () => {
     return (
         <div className="homepage">
             <header className="header">
-               {/*Logo Section */}
+                {/* Logo Section */}
                 <div className="logo-section">
-                <img src="/images/logo192.png" alt="Auranuvor Logo" className="logo" />
-                <h1 className="site-name">Auranuvor</h1>
+                    <img src={logo} alt="Auranuvor Logo" className="logo" />
+                    <h1 className="site-name">Auranuvor</h1>
                 </div>
-
 
                 {/* Navigation Tabs */}
                 <nav className="nav-tabs">
@@ -30,28 +26,40 @@ const HomePage = () => {
 
                 {/* Login and Sign-Up Buttons */}
                 <div className="auth-buttons">
-                    <button className="login-button">
-                        Login
-                    </button>
-                    <button className="signup-button">
-                    Sign Up
-                    </button>
+                    <button className="login-button">Login</button>
+                    <button className="signup-button">Sign Up</button>
                 </div>
             </header>
 
-            <div className="Page">
-                <section className="Opener">
-                    <h2 className="Welcome">Welcome to Auranuvor</h2>
-                    <p className="welcome-paragraph">Increase your Aura and become more productive</p>
-                </section>
-                <section className="chrome">
-                    <h2 className="Track">Use AI to help</h2>
-                    <p className="AI-Usage">AI can help track your progress and suggest improvemtns by analizing your data</p>
+            <section className="Opener">
+                <h2 className="Welcome">Prioritize smarter, achieve faster.</h2>
+                <p className="welcome-paragraph">Welcome to Auranuvor – your AI-powered task prioritization tool. Block distractions, track usage, and visualize productivity with interactive graphs. Auranuvor uses machine learning to prioritize tasks based on your behavior and deadlines, syncing seamlessly across devices. Focus on what matters most with Auranuvor – smart prioritization made simple.</p>
+                <button className="cta-button">Get Started</button>
+            </section>
 
-                </section>
-            </div>
+            {/* Features Section */}
+            <section className="AI-highlight">
+                <div className="feature AI">
+                    <img src={AI} alt="AI png" className="AI-logo" />
+                    <h3>Stay focused and locked-IN</h3>
+                    <p>Auranuvor uses machine learning to analyze behavior & deadlines.</p>
+                </div>
+            </section>
+
+            <section className='calender-highlight'>
+                <div className="feature Focus-mode">
+                    <img src={logo} alt="Auranuvor Logo" className="logo" />
+                    <h3>Plan more effectively</h3>
+                    <p>Auranuvor allows you to plan your tasks more efficiently and reminds you when deadlines approach.</p>
+                </div>
+            </section>
+
+            {/* Chrome Extension */}
+            <section className='chrome'>
+                <h2 className='Track'>Chrome Extension</h2>
+            </section>
         </div>
-      );
+    );
 };
 
 export default HomePage;
