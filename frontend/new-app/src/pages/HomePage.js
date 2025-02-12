@@ -47,7 +47,7 @@ const HomePage = () => {
                 {/* Features Section */}
                 <section className="AI-highlight">
                     <div className="Texts">
-                        <h3>Stay focused and locked-IN</h3>
+                        <h2>Stay focused and locked-IN</h2>
                         <p>Auranuvor uses machine learning to analyze behavior & deadlines.</p>
                     </div>
                     <img src={AI} alt="AI png" className="AI-logo" />

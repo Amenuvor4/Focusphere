@@ -1,4 +1,6 @@
-/* General Styling for HomePage */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600&display=swap');
+
+
 .homepage {
   display: flex;
   flex-direction: column;
@@ -113,6 +115,20 @@ section {
 
 
 
+.Opener h2 {
+  font-family: 'Poppins', sans-serif;
+  font-size: 60px; /* Adjust size */
+  font-weight: 600;
+  color: #f8f9fa;
+  text-align: left; /* Align with text */
+
+  margin-bottom: 10px;
+  text-transform: uppercase;
+
+}
+
+
+
 .Opener button {
   background-color: white;
   color: #007bff;
@@ -147,6 +163,27 @@ section {
   filter: brightness(0) saturate(100%) invert(28%) sepia(98%) saturate(2100%) hue-rotate(197deg) brightness(102%) contrast(102%);/* Adjust the hue-rotate for different shades of blue */
   justify-content: right;
   width: 400px;  /* Adjust this value to make the image smaller */
+}
+
+.AI-highlight .Texts{
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  max-width: 600px;
+}
+
+.AI-highlight .Texts h2{
+  font-size: 60px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.AI-highlight .Texts p {
+  font-size: 1.2rem;
+  font-family: 'Inter', sans-serif;
+  line-height: 1.5;
 }
 
 .calender-highlight {
