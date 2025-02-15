@@ -4,7 +4,7 @@ import logo from "../images/logo.png";
 import AI from "../images/AI.png";
 import Calender from "../images/calender.png"
 import Team from "../images/team.png"
-import Link from "react-router-dom";
+import {Link} from "react-router-dom";
 
 
 const HomePage = () => {
@@ -28,7 +28,7 @@ const HomePage = () => {
 
                 {/* Login and Sign-Up Buttons */}
                 <div className="auth-buttons">
-                    <button className="login-button">Login</button>
+                    <Link to="/Login.js"><button className="login-button">Login</button></Link>
                     <button className="signup-button">Sign Up</button>
                 </div>
             </header>

@@ -1,0 +1,124 @@
+:root {
+    --primary-blue: #1e90ff;
+    --dark-blue: #1a7ae0;
+    --light-blue: #e6f3ff;
+    --white: #ffffff;
+    --light-gray: #f0f0f0;
+    --dark-gray: #333333;
+  }
+  
+  body {
+    background-color: var(--light-blue);
+    font-family: "Arial", sans-serif;
+  }
+  
+  .login-container {
+    max-width: 400px;
+    margin: 50px auto;
+    padding: 30px;
+    background-color: var(--white);
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+  }
+  
+  .login-container:hover {
+    transform: translateY(-5px);
+  }
+  
+  h2 {
+    text-align: center;
+    color: var(--primary-blue);
+    margin-bottom: 30px;
+    font-size: 28px;
+  }
+  
+  form {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  input {
+    margin-bottom: 15px;
+    padding: 12px;
+    border: 1px solid var(--light-gray);
+    border-radius: 5px;
+    font-size: 16px;
+    transition: border-color 0.3s ease;
+  }
+  
+  input:focus {
+    outline: none;
+    border-color: var(--primary-blue);
+  }
+  
+  button {
+    padding: 12px;
+    background-color: var(--primary-blue);
+    color: var(--white);
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.1s ease;
+    font-size: 16px;
+    font-weight: bold;
+  }
+  
+  button:hover {
+    background-color: var(--dark-blue);
+  }
+  
+  button:active {
+    transform: scale(0.98);
+  }
+  
+  .auth-options {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+  }
+  
+  .github-auth,
+  .google-auth {
+    flex: 1;
+    margin: 0 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    border-radius: 5px;
+    color: var(--white);
+    font-weight: bold;
+    transition: opacity 0.3s ease;
+  }
+  
+  .github-auth:hover,
+  .google-auth:hover {
+    opacity: 0.9;
+  }
+  
+  .github-auth {
+    background-color: #24292e;
+  }
+  
+  .google-auth {
+    background-color: #4285f4;
+  }
+  
+  .toggle-auth {
+    color: var(--primary-blue);
+    cursor: pointer;
+    text-decoration: underline;
+    transition: color 0.3s ease;
+  }
+  
+  .toggle-auth:hover {
+    color: var(--dark-blue);
+  }
+  
+  p {
+    text-align: center;
+    margin-top: 20px;
+    color: var(--dark-gray);
+  }
+  
