@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom"; // For redirection
-import { FaGithub, FaGoogle, FaEnvelope, FaLock, FaUser } from "react-icons/fa";
+import { FaGoogle, FaEnvelope, FaLock, FaUser } from "react-icons/fa";
 import '../styles/Login.css';
 
 

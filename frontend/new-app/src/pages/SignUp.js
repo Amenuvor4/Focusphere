@@ -1,16 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { FaUser, FaEnvelope, FaLock, FaGoogle, FaGithub } from "react-icons/fa";
 import "../styles/SignUp.css";
 
-const SignUp = () => {
+const SignUp = ({ onAuthSuccess }) => {
   const [isSignUp, setIsSignUp] = useState(true);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const router = useRouter(); // Router instance
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -32,8 +30,8 @@ const SignUp = () => {
       }
 
       if (!isSignUp) {
-        localStorage.setItem("token", data.token); // Store JWT token
-        router.push("/dashboard"); // Redirect after login
+        localStorage.setItem("token", data.token);
+        onAuthSuccess(data.user);
       } else {
         alert("Account created! Please log in.");
         setIsSignUp(false);
@@ -43,9 +41,10 @@ const SignUp = () => {
     }
   };
 
-  const handleOAuthLogin = (provider) => {
-    window.location.href = `/api/auth/${provider}`;
+  const handleOAuthLogin = (user) => {
+    console.log("User logged in:", user);
   };
+
 
   return (
     <div className="signup-container">
