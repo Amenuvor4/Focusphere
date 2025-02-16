@@ -13,7 +13,7 @@ function App() {
         <main className="p-6">
           <Routes>
             <Route path="/" element={<HomePage />} />
-            <Route path="/" element={<Login />} />
+            <Route path="/login" element={<Login />} />
           </Routes>
         </main>
       </div>

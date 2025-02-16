@@ -1,9 +1,9 @@
 "use client";
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom"; // For redirection
 import { FaGithub, FaGoogle, FaEnvelope, FaLock, FaUser } from "react-icons/fa";
 import '../styles/Login.css';
+
 
 const API_BASE_URL = "http://localhost:5000/api/auth"; // Change this to your backend URL
 
@@ -46,6 +46,8 @@ const Login = () => {
     window.location.href = `${API_BASE_URL}/google`; // Redirect to backend Google OAuth
   };
 
+
+
   return (
     <div className="login-container">
       <h2>{isLogin ? "Login" : "Sign Up"}</h2>
@@ -85,6 +87,11 @@ const Login = () => {
         </div>
         <button type="submit">{isLogin ? "Login" : "Sign Up"}</button>
       </form>
+
+      <div className="separator">
+        <span>or</span>
+      </div>
+
       <div className="auth-options">
         <button onClick={handleGoogleLogin} className="google-auth">
           <FaGoogle /> Google

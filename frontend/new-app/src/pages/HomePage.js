@@ -28,7 +28,7 @@ const HomePage = () => {
 
                 {/* Login and Sign-Up Buttons */}
                 <div className="auth-buttons">
-                    <Link to="/Login.js"><button className="login-button">Login</button></Link>
+                    <Link to="/Login"><button className="login-button">Login</button></Link>
                     <button className="signup-button">Sign Up</button>
                 </div>
             </header>
