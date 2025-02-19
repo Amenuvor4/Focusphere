@@ -22,8 +22,8 @@ const HomePage = () => {
             <a href="#contact" className="nav-link"> Contact</a>
           </nav>
           <div className="auth-buttons">
-            <Link to="/Login" className="login-button"><button className="login-button">Login</button></Link>
-            <Link to="/SignUp" className="signup-button"><button className="signup-button">Sign Up</button></Link>
+            <Link to="/Login" className="login-button">Login</Link>
+            <Link to="/SignUp" className="signup-button">Sign Up</Link>
           </div>
         </div>
       </header>
@@ -37,7 +37,7 @@ const HomePage = () => {
                 Welcome to Auranuvor – your AI-powered task prioritization tool. Focus on what matters most with smart
                 prioritization made simple.
               </p>
-              <Link to="/SignUp" className="cta-button"><button className="cta-button">Get Started</button></Link>
+              <Link to="/SignUp" className="cta-button">Get Started</Link>
             </div>
             <img src={Team || "/placeholder.svg"} alt="Team collaboration" className="hero-image" />
           </div>
