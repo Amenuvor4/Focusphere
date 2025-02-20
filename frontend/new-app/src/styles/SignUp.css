@@ -1,162 +1,175 @@
 :root {
-    --primary-blue: #1e90ff;
-    --google-blue: #4285f4;
-    --github-black: #24292e;
-    --light-blue: #f0f7ff;
-    --white: #ffffff;
-    --gray: #666666;
-  }
-  
-  body {
-    background-color: var(--light-blue);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    margin: 0;
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .signup-container {
-    background-color: var(--white);
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-    padding: 40px;
-    width: 100%;
-    max-width: 400px;
-    box-sizing: border-box;
-  }
-  
-  h1 {
-    color: var(--primary-blue);
-    font-size: 28px;
-    text-align: center;
-    margin: 0 0 30px 0;
-    font-weight: 600;
-  }
-  
-  .input-group {
-    position: relative;
-    margin-bottom: 20px;
-  }
-  
-  .input-group input {
-    width: 100%;
-    padding: 12px 12px 12px 40px;
-    border: 1px solid #e1e1e1;
-    border-radius: 8px;
-    font-size: 16px;
-    box-sizing: border-box;
-    transition: border-color 0.2s ease;
-  }
-  
-  .input-group input:focus {
-    outline: none;
-    border-color: var(--primary-blue);
-  }
-  
-  .input-icon {
-    position: absolute;
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #999;
-    font-size: 18px;
-  }
-  
-  button {
-    width: 100%;
-    padding: 12px;
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-    margin-bottom: 12px;
-  }
-  
-  button[type="submit"] {
-    background-color: var(--primary-blue);
-    color: var(--white);
-  }
-  
-  button[type="submit"]:hover {
-    background-color: #1a7ae0;
-  }
-  
-  .google-auth,
-  .github-auth {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    color: var(--white);
-  }
-  
-  .google-auth {
-    background-color: var(--google-blue);
-  }
-  
-  .google-auth:hover {
-    background-color: #3b78e7;
-  }
-  
-  .github-auth {
-    background-color: var(--github-black);
-  }
-  
-  .github-auth:hover {
-    background-color: #2f363d;
-  }
-  
-  .auth-options {
-    margin: 20px 0;
-  }
-  
-  .separator {
-    display: flex;
-    align-items: center;
-    text-align: center;
-    margin: 20px 0;
-  }
-  
-  .separator::before,
-  .separator::after {
-    content: "";
-    flex: 1;
-    border-bottom: 1px solid #e1e1e1;
-  }
-  
-  .separator span {
-    padding: 0 10px;
-    color: #666;
-    font-size: 14px;
-    text-transform: uppercase;
-  }
-  
-  p {
-    text-align: center;
-    color: var(--gray);
-    margin: 20px 0 0 0;
-    font-size: 14px;
-  }
-  
-  .toggle-auth {
-    color: var(--primary-blue);
-    cursor: pointer;
-    text-decoration: none;
-    font-weight: 500;
-  }
-  
-  .toggle-auth:hover {
-    text-decoration: underline;
-  }
-  
-  .error {
-    color: #dc3545;
-    text-align: center;
-    margin-bottom: 20px;
-    font-size: 14px;
-  }
-  
+  --primary-blue: #1e90ff;
+  --google-blue: #4285f4;
+  --github-black: #24292e;
+  --light-blue: #f0f7ff;
+  --white: #ffffff;
+  --gray: #666666;
+}
+
+body {
+  background-color: var(--light-blue);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.signup-container {
+  background-color: var(--white);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  padding: 40px;
+  width: 100%;
+  max-width: 400px;
+  box-sizing: border-box;
+}
+
+h1 {
+  color: var(--primary-blue);
+  font-size: 28px;
+  text-align: center;
+  margin: 0 0 30px 0;
+  font-weight: 600;
+}
+
+.input-group {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 12px 12px 12px 40px;
+  border: 1px solid #e1e1e1;
+  border-radius: 8px;
+  font-size: 16px;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease;
+}
+
+.input-group input:focus {
+  outline: none;
+  border-color: var(--primary-blue);
+}
+
+.input-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #999;
+  font-size: 18px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #999;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+button {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  margin-bottom: 12px;
+}
+
+button[type="submit"] {
+  background-color: var(--primary-blue);
+  color: var(--white);
+}
+
+button[type="submit"]:hover {
+  background-color: #1a7ae0;
+}
+
+.google-auth,
+.github-auth {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--white);
+}
+
+.google-auth {
+  background-color: var(--google-blue);
+}
+
+.google-auth:hover {
+  background-color: #3b78e7;
+}
+
+.github-auth {
+  background-color: var(--github-black);
+}
+
+.github-auth:hover {
+  background-color: #2f363d;
+}
+
+.auth-options {
+  margin: 20px 0;
+}
+
+.separator {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 20px 0;
+}
+
+.separator::before,
+.separator::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid #e1e1e1;
+}
+
+.separator span {
+  padding: 0 10px;
+  color: #666;
+  font-size: 14px;
+  text-transform: uppercase;
+}
+
+p {
+  text-align: center;
+  color: var(--gray);
+  margin: 20px 0 0 0;
+  font-size: 14px;
+}
+
+.toggle-auth {
+  color: var(--primary-blue);
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.toggle-auth:hover {
+  text-decoration: underline;
+}
+
+.error {
+  color: #dc3545;
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+p {
+  color: #24292e;
+}

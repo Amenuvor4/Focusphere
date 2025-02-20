@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FaUser, FaEnvelope, FaLock, FaGoogle, FaGithub } from "react-icons/fa";
+import { FaUser, FaEnvelope, FaLock, FaGoogle, FaGithub, FaEye, FaEyeSlash } from "react-icons/fa";
 import "../styles/SignUp.css";
 
 const SignUp = ({ onAuthSuccess }) => {
@@ -9,6 +9,7 @@ const SignUp = ({ onAuthSuccess }) => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -45,6 +46,9 @@ const SignUp = ({ onAuthSuccess }) => {
     window.location.href = `http://localhost:5000/api/auth/${provider}`;
   };
   
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword)
+  }
 
 
   return (
@@ -82,6 +86,9 @@ const SignUp = ({ onAuthSuccess }) => {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
+          <div className="password-toggle" onClick={togglePasswordVisibility}>
+            {showPassword ? <FaEyeSlash /> : <FaEye />}
+          </div>
         </div>
         <button type="submit">{isSignUp ? "Sign Up" : "Login"}</button>
       </form>
