@@ -41,9 +41,10 @@ const SignUp = ({ onAuthSuccess }) => {
     }
   };
 
-  const handleOAuthLogin = (user) => {
-    console.log("User logged in:", user);
+  const handleOAuthLogin = (provider) => {
+    window.location.href = `http://localhost:5000/api/auth/${provider}`;
   };
+  
 
 
   return (

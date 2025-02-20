@@ -113,7 +113,7 @@ router.get(
   passport.authenticate('google', { session: false }),
   (req, res) => {
     const { token, user } = req.user;
-    res.status(200).json({ token, user });
+    res.redirect(`http://localhost:3000/dashboard?token=${token}`)
   }
 );
 
@@ -126,7 +126,7 @@ router.get(
   passport.authenticate('github', { session: false }),
   (req, res) => {
     const { token, user } = req.user;
-    res.status(200).json({ token, user });
+    res.redirect(`http://localhost:3000/dashboard?token=${token}`)
   }
 );
 
