@@ -97,13 +97,12 @@ Issues: GitHub Issues
 
 Discussions: GitHub Discussions
 
-Contact: Email support@auranuvor.com
+Contact: Email daarius24@gmail.com
 
 👥 Maintainers & Contributors
 
-Lead Developer: [Your Name]
+Lead Developer: Darius Amenuvor
 
-Contributors: Open for contributions! Submit PRs or issues.
 
 📜 License
 
