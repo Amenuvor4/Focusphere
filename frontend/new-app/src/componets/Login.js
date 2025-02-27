@@ -1,4 +1,3 @@
-"use client";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom"; // For redirection
 import { FaGoogle, FaEnvelope, FaLock, FaUser } from "react-icons/fa";
@@ -24,7 +23,7 @@ const Login = () => {
 
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-        method: "POST",
+        method: "GET",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });

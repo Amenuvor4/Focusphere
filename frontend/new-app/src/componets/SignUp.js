@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 import { FaUser, FaEnvelope, FaLock, FaGoogle, FaGithub, FaEye, FaEyeSlash } from "react-icons/fa";
 import "../styles/SignUp.css";
@@ -13,7 +11,7 @@ const SignUp = ({ onAuthSuccess }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const endpoint = isSignUp ? "/api/auth/register" : "/api/auth/login";
+    const endpoint = isSignUp ? "http://localhost:5000/api/auth/register" : "http://localhost/api/auth/login";
     const payload = isSignUp
       ? { name, email, password }
       : { email, password, loginMethod: "email" };
@@ -25,7 +23,11 @@ const SignUp = ({ onAuthSuccess }) => {
         body: JSON.stringify(payload),
       });
 
-      const data = await response.json();
+      const text = await response.text();
+      console.log("Raw Response:", text);
+
+
+      const data = JSON.parse(text);
       if (!response.ok) {
         throw new Error(data.message || "Something went wrong");
       }
@@ -33,11 +35,14 @@ const SignUp = ({ onAuthSuccess }) => {
       if (!isSignUp) {
         localStorage.setItem("token", data.token);
         onAuthSuccess(data.user);
+        window.location.href = "/dashboard"; // Redirect after login
       } else {
-        alert("Account created! Please log in.");
-        setIsSignUp(false);
+        localStorage.setItem("token", data.token);
+        onAuthSuccess(data.user);
+        window.location.href = "/dashboard"; // Redirect after sign-up
       }
     } catch (error) {
+      console.error("Error:", error)
       alert(error.message);
     }
   };
@@ -80,7 +85,7 @@ const SignUp = ({ onAuthSuccess }) => {
         <div className="input-group">
           <FaLock className="input-icon" />
           <input
-            type="password"
+            type={showPassword ? "password" : "text"}
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
