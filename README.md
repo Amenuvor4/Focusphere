@@ -1,3 +1,8 @@
+Whats still needs to be implemented:
+- UI changes for the Dashboard
+- Ai-Usage
+
+
 Auranuvor - AI-powered task management platform.
 
 🚀 Overview
