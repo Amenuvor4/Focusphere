@@ -1,10 +1,10 @@
 import React from 'react';
+import './index.css';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 
 // Import componets
 import HomePage from './componets/HomePage';
-import Login from './componets/Login';
-import SignUp from './componets/SignUp';
+import Auth from './componets/Auth';
 import Dashboard from './componets/DashBoard';
 
 function App() {
@@ -15,8 +15,7 @@ function App() {
         <main className="p-6">
           <Routes>
             <Route path="/" element={<HomePage />} />
-            <Route path="/login" element={<Login />} />
-            <Route path ="/signUp" element={<SignUp />} />
+            <Route path="/Auth" element={<Auth />} />
             <Route path="/dashboard" element={<Dashboard />} />
           </Routes>
         </main>
