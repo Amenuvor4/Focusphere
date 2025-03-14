@@ -1,22 +1,19 @@
-const express = require('express');
 const dotenv = require('dotenv');
+dotenv.config(); // Load environment variables at the very top
+
+const express = require('express');
 const cors = require('cors');
-const connectDB = require('./config/db');
 const passport = require('passport');
-require('./config/passportConfig');
-
-// Load environment variables
-dotenv.config(); 
-
-// Check if environment variables are loaded correctly
-// console.log('GOOGLE_CLIENT_ID:', process.env.GOOGLE_CLIENT_ID || 'Not Found');
-// console.log('GOOGLE_CLIENT_SECRET:', process.env.GOOGLE_CLIENT_SECRET ? 'Loaded' : 'Not Found');
-// console.log('GOOGLE_CALLBACK_URL:', process.env.GOOGLE_CALLBACK_URL || 'Not Found');
+const path = require('path');
+const connectDB = require('./config/db');
+require('./config/passportConfig'); // Ensure passport strategies are loaded
 
 const app = express();
 
 // Connect to MongoDB
 connectDB();
+
+console.log("Server time:", new Date().toISOString());
 
 // Middleware for parsing JSON
 app.use(express.json());
@@ -24,6 +21,7 @@ app.use(express.json());
 // CORS middleware
 app.use(cors({
   origin: "http://localhost:3000", // Allow frontend
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], // Allow more HTTP methods
   credentials: true, // Allow cookies if needed
 }));
 
@@ -38,6 +36,17 @@ const taskRoutes = require('./routes/taskRoutes');
 app.use('/api/auth', authRoutes); 
 app.use('/api/tasks', taskRoutes); 
 
+// Serve static files in production
+const clientBuildPath = path.resolve(__dirname, 'client', 'build');
+if (require('fs').existsSync(clientBuildPath)) {
+  app.use(express.static(clientBuildPath));
+  app.get('*', (req, res) => {
+    res.sendFile(path.resolve(clientBuildPath, 'index.html'));
+  });
+} else {
+  console.warn("⚠️  client/build folder not found. Skipping static file serving.");
+}
+
 // Start the server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

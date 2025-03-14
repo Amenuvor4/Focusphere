@@ -5,7 +5,8 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 // Import componets
 import HomePage from './componets/HomePage';
 import Auth from './componets/Auth';
-import Dashboard from './componets/DashBoard';
+import Dashboard from './Dashboard/DashBoard';
+//C:\Users\Dell_i7_16gb_256gb\OneDrive\Desktop\Personal projects\Auranuvor\frontend\new-app\src\Dashboard\DashBoard.jsx
 
 function App() {
   return (

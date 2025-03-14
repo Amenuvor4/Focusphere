@@ -1,6 +1,6 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
-const passport= require('passport')
+const passport = require('passport');
 const protect = require('../middleware/authMiddleware');
 const User = require('../models/User');
 const dotenv = require('dotenv');
@@ -9,15 +9,29 @@ dotenv.config();
 
 const router = express.Router();
 
+const generateTokens = (userData) => {
+  const user = userData.user || userData;
+  if (!user || !user._id) {
+    console.error("Error in generateTokens: user or user._id is undefined", user);
+    throw new Error("Invalid user data in generateTokens");
+  }
 
-// Helper functions
-const generateToken = (user) => {
-  return jwt.sign({ id: user._id}, process.env.JWT_SECRET, { expiresIn: '1h'});
+  const payload = {
+    userId: user._id.toString(), // Convert ObjectId to string
+    email: user.email,
+    name: user.name
+  };
+
+  const accessToken = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '24h' });
+  const refreshToken = jwt.sign(payload, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
+
+  return { accessToken, refreshToken };
 };
+
 
 const formatUserResponse = (user) => {
   return {
-    id: user._id,
+    id: user.id,
     email: user.email,
     name: user.name,
     preferences: user.preferences,
@@ -43,6 +57,32 @@ router.post('/register', async (req, res) => {
   }
 });
 
+// Token refresh route
+router.post('/refresh-token', async (req, res) => {
+  const { refreshToken } = req.body;
+
+  if (!refreshToken) {
+    return res.status(401).json({ error: 'Refresh token required' });
+  }
+
+  try {
+    const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+    const user = await User.findById(decoded.userId);
+
+    if (!user) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+
+    const { accessToken, refreshToken: newRefreshToken } = generateTokens(user);
+    res.json({ accessToken, refreshToken: newRefreshToken });
+  } catch (error) {
+    if (error instanceof jwt.TokenExpiredError) {
+      return res.status(401).json({ error: 'Refresh token expired' });
+    }
+    res.status(401).json({ error: 'Invalid refresh token' });
+  }
+});
+
 // Login route
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
@@ -64,21 +104,26 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    const token = generateToken(user);
-    return res.status(200).json({ token, user: formatUserResponse(user) });
+    const { accessToken, refreshToken } = generateTokens(user);
+
+    res.status(200).json({
+      accessToken,
+      refreshToken,
+      user: {
+        name: user.name,
+        email: user.email,
+      },
+    });
   } catch (error) {
-    console.error("Login error:", error);
+    console.error('Login error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
-      
-
-
 // Protected route
 router.get('/profile', protect, async (req, res) => {
   try {
-    const user = await User.findById(req.user).select('-password');
+    const user = await User.findById(req.user.id).select('-password');
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -91,8 +136,11 @@ router.get('/profile', protect, async (req, res) => {
 
 // OAuth Callback Handler
 const handleOAuthCallback = (req, res) => {
-  const { token, user } = req.user;
-  res.redirect(`http://localhost:3000/dashboard?token=${token}`);
+  const user = req.user;
+  const { accessToken, refreshToken } = generateTokens(user);
+    
+  // Pass tokens as query parameters - fixed to use accessToken and refreshToken
+  res.redirect(`http://localhost:3000/auth?accessToken=${accessToken}&refreshToken=${refreshToken}`);
 };
 
 // Google Login
@@ -101,7 +149,7 @@ router.get('/google', passport.authenticate('google', { scope: ['profile', 'emai
 // Google Callback
 router.get(
   '/callback/google',
-  passport.authenticate('google', { session: false }),
+  passport.authenticate('google', { session: false, failureRedirect: '/auth?error=google_failed' }),
   handleOAuthCallback
 );
 

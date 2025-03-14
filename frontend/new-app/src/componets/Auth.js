@@ -1,13 +1,20 @@
-import { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom"; // For redirection
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { FaGoogle, FaEnvelope, FaLock, FaUser, FaEye, FaEyeSlash } from "react-icons/fa";
+import { jwtDecode } from "jwt-decode";
 
 const API_BASE_URL = "http://localhost:5000/api/auth";
 
 const Auth = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const params = new URLSearchParams(location.search);
   const initialIsLogin = params.get("mode") !== "signup";
+  
+  // Check for tokens in URL params (for OAuth callbacks)
+  const accessToken = params.get("accessToken");
+  const refreshToken = params.get("refreshToken");
+
   const [isLogin, setIsLogin] = useState(initialIsLogin);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -15,32 +22,87 @@ const Auth = () => {
   const [error, setError] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [processingRedirect, setProcessingRedirect] = useState(false);
 
+  // Handle tokens from URL (OAuth callback)
+  useEffect(() => {
+    if (accessToken && refreshToken && !processingRedirect) {
+      console.error("Tokens received from OAuth callback");
+      setProcessingRedirect(true);
+      
+      // Store tokens
+      localStorage.setItem("accessToken", accessToken);
+      localStorage.setItem("refreshToken", refreshToken);
+      
+      
+      // Add a small delay to allow console logs to be visible
+      setTimeout(() => {
+        console.error("Redirecting to dashboard from OAuth callback");
+        navigate("/dashboard");
+      }, 500);
+    }
+  }, [accessToken, refreshToken, navigate, processingRedirect]);
+
+  // Check if user is already authenticated
+  useEffect(() => {
+    if (processingRedirect) return; // Skip if we're already handling OAuth redirect
+    
+    const token = localStorage.getItem("accessToken");
+    if (token) {
+      try {
+        // Verify token hasn't expired
+        const decoded = jwtDecode(token);
+        const currentTime = Date.now() / 1000;
+        
+        if (decoded.exp > currentTime) {
+          console.error("Valid token found, user already authenticated");
+          console.error("Token expiration:", new Date(decoded.exp * 1000).toLocaleString());
+          console.error("Current time:", new Date(currentTime * 1000).toLocaleString());
+          console.error("Time remaining (seconds):", decoded.exp - currentTime);
+          
+          // Only redirect if we're on the auth page
+          if (location.pathname === "/auth") {
+            console.error("Redirecting to dashboard from auth check");
+            navigate("/dashboard");
+          }
+        } else {
+          console.error("Token expired, staying on auth page");
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
+        }
+      } catch (err) {
+        console.error("Token validation error:", err);
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+      }
+    } else {
+      console.error("No token found, staying on auth page");
+    }
+  }, [navigate, location.pathname, processingRedirect]);
 
   const validateEmail = (email) => {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return regex.test(email);
-  }
+  };
 
   const validatePassword = (password) => {
     return password.length >= 6;
-  }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
 
-
-    if(!validateEmail(email)){
+    if (!validateEmail(email)) {
       setError("Please enter a valid email address.");
       setIsLoading(false);
       return;
     }
 
-    if(!validatePassword(password)){
-      setError("Password must be at least 6 characters long")
+    if (!validatePassword(password)) {
+      setError("Password must be at least 6 characters long");
       setIsLoading(false);
       return;
     }
@@ -50,12 +112,12 @@ const Auth = () => {
       setIsLoading(false);
       return;
     }
-    
 
     const endpoint = isLogin ? "/login" : "/register";
     const payload = isLogin ? { email, password } : { name, email, password };
 
     try {
+      console.error(`Sending ${isLogin ? 'login' : 'signup'} request to ${API_BASE_URL}${endpoint}`);
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -63,14 +125,42 @@ const Auth = () => {
       });
 
       const data = await response.json();
+      console.error("Backend response:", data);
 
       if (!response.ok) {
         throw new Error(data.message || "Something went wrong");
       }
 
-      localStorage.setItem("token", data.token);
-      navigate("/dashboard"); // Redirect after login/register
+      // For registration, we need to login afterward
+      if (!isLogin) {
+        console.error("Registration successful, redirecting to login");
+        setIsLogin(true);
+        setIsLoading(false);
+        return;
+      }
+
+      // Store tokens in localStorage
+      localStorage.setItem("accessToken", data.accessToken);
+      localStorage.setItem("refreshToken", data.refreshToken);
+      console.error("Tokens stored successfully");
+
+      // Debug token expiration
+      const decoded = jwtDecode(data.accessToken);
+      const currentTime = Date.now() / 1000;
+      console.error("Token expiration:", new Date(decoded.exp * 1000).toLocaleString());
+      console.error("Current time:", new Date(currentTime * 1000).toLocaleString());
+      console.error("Time remaining (seconds):", decoded.exp - currentTime);
+
+      // Set flag to prevent redirect loops
+      setProcessingRedirect(true);
+      
+      // Delay redirect to see console logs
+      console.error("Redirecting to dashboard after successful login");
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 500);
     } catch (err) {
+      console.error("Auth error:", err.message);
       setError(err.message);
     } finally {
       setIsLoading(false);
@@ -78,10 +168,14 @@ const Auth = () => {
   };
 
   const handleGoogleLogin = () => {
+    setIsGoogleLoading(true);
     try {
-      window.location.href = `${API_BASE_URL}/google`; // Redirect to backend Google OAuth
+      console.error("Redirecting to Google OAuth");
+      window.location.href = `${API_BASE_URL}/google`;
     } catch (err) {
-      setError("Failed to redirect to Google OAuth. Please try again.")
+      console.error("Google OAuth redirect error:", err);
+      setError("Failed to redirect to Google OAuth. Please try again.");
+      setIsGoogleLoading(false);
     }
   };
 
@@ -154,9 +248,10 @@ const Auth = () => {
         <div className="space-y-4">
           <button
             onClick={handleGoogleLogin}
+            disabled={isGoogleLoading}
             className="w-full bg-[#4285f4] text-white py-3 rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-[#3b78e7] transition-colors"
           >
-            <FaGoogle /> Google
+            <FaGoogle /> {isGoogleLoading ? "Redirecting..." : "Google"}
           </button>
         </div>
 
@@ -166,7 +261,7 @@ const Auth = () => {
             onClick={() => setIsLogin(!isLogin)}
             className="text-[#1e90ff] font-medium cursor-pointer hover:underline"
           >
-            {isLoading ? "Loading..." : isLogin ? "Sign Up" : "Login"}
+            {isLogin ? "Sign Up" : "Login"}
           </span>
         </p>
       </div>
@@ -175,4 +270,3 @@ const Auth = () => {
 };
 
 export default Auth;
-
