@@ -1,4 +1,4 @@
-import { BarChart3, CheckSquare, Cog, FolderKanban, Plus } from "lucide-react";
+import { BarChart3, CheckSquare, Cog, FolderKanban, Plus, CalendarClock } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import { jwtDecode } from "jwt-decode";
 
@@ -182,6 +182,19 @@ export function DashboardSidebar({ currentView, setCurrentView }) {
               >
                 <Cog className="h-4 w-4" />
                 <span>Settings</span>
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => setCurrentView("calender")}
+                className={`w-full flex items-center justify-start gap-2 px-3 py-2 rounded-md ${
+                  currentView === "calender"
+                    ? "bg-blue-100 text-blue-800"
+                    : "text-gray-700 hover:bg-gray-100"
+                } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+              >
+                <CalendarClock className="h-4 w-4" />
+                <span>Calender</span>
               </button>
             </li>
           </ul>

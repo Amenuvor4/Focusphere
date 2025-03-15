@@ -22,6 +22,8 @@ export function TaskDetail({ isOpen, onClose, task, onEdit, onDelete }) {
     }
   };
 
+  task.dueDate = new Date(task.dueDate).toLocaleDateString();
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
@@ -70,8 +72,8 @@ export function TaskDetail({ isOpen, onClose, task, onEdit, onDelete }) {
               </div>
             </div>
             <div>
-              <h3 className="text-sm font-medium text-gray-500 mb-1">Project</h3>
-              <div>{task.project || "Uncategorized"}</div>
+              <h3 className="text-sm font-medium text-gray-500 mb-1">Goal</h3>
+              <div>{task.category || "Uncategorized"}</div>
             </div>
           </div>
           

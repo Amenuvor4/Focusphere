@@ -16,7 +16,6 @@ const getPriorityColor = (priority) => {
   };
 
   const [menuOpen, setMenuOpen] = React.useState(false);
-
   return (
     <div 
       className="p-3 bg-white border rounded-md shadow-sm cursor-pointer hover:shadow-md transition-shadow"
@@ -72,7 +71,7 @@ const getPriorityColor = (priority) => {
       <div className="mt-2 flex items-center justify-between">
         <div className="flex items-center gap-1 text-xs text-gray-500">
           <Calendar className="h-3 w-3" />
-          <span>{new Date(task.dueDate)}</span>
+          <span>{new Date(task.dueDate).toLocaleDateString()}</span>
         </div>
         <span className={`text-xs px-2 py-1 rounded-full ${getPriorityColor(task.priority)}`}>
           {task.priority}
