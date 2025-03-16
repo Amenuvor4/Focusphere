@@ -93,20 +93,6 @@ export function TaskDetail({ isOpen, onClose, task, onEdit, onDelete }) {
               </div>
             </div>
           )}
-          
-          {/* Tags */}
-          {task.tags && task.tags.length > 0 && (
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 mb-1">Tags</h3>
-              <div className="flex flex-wrap gap-2">
-                {task.tags.map((tag) => (
-                  <span key={tag} className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800 capitalize">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
         
         <div className="flex justify-between mt-6">

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
+import getValidToken from "./tokenUtils"
 
 export function TaskEditDialog({ isOpen, onClose, task, onSave }) {
   const [title, setTitle] = useState('');
@@ -7,8 +8,12 @@ export function TaskEditDialog({ isOpen, onClose, task, onSave }) {
   const [status, setStatus] = useState(task?.status || "todo");
   const [priority, setPriority] = useState('medium');
   const [dueDate, setDueDate] = useState('');
-  const [goal, setGoal] = useState('');
+  const [category, setCategory] = useState('');
+  const [goals, setGoals] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
+  // Populate form fields if editing an existing task
   useEffect(() => {
     if (task) {
       setTitle(task.title || '');
@@ -16,7 +21,7 @@ export function TaskEditDialog({ isOpen, onClose, task, onSave }) {
       setStatus(task.status || 'todo');
       setPriority(task.priority || 'medium');
       setDueDate(task.dueDate || '');
-      setGoal(task.goal || '');
+      setCategory(task.category || '');
     } else {
       // Reset form for new task
       setTitle('');
@@ -24,9 +29,44 @@ export function TaskEditDialog({ isOpen, onClose, task, onSave }) {
       setStatus('todo');
       setPriority('medium');
       setDueDate('');
-      setGoal('');
+      setCategory('');
     }
   }, [task, isOpen]);
+
+  // Fetch goals when the dialog is opened
+  useEffect(() => {
+    if (isOpen) {
+      const fetchGoals = async () => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+          const token = await getValidToken();
+          if (!token) {
+            return;
+          }
+
+          const response = await fetch('http://localhost:5000/api/goals', {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to fetch goals');
+          }
+
+          const data = await response.json();
+          setGoals(data);
+        } catch (error) {
+          console.error('Error fetching goals:', error);
+          setError('Failed to fetch goals. Please try again.');
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      fetchGoals();
+    }
+  }, [isOpen]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -38,7 +78,7 @@ export function TaskEditDialog({ isOpen, onClose, task, onSave }) {
       status,
       priority,
       dueDate,
-      goal
+      category,
     });
   };
 
@@ -49,14 +89,14 @@ export function TaskEditDialog({ isOpen, onClose, task, onSave }) {
       <div className="bg-white p-6 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold">{task ? "Edit Task" : "Create Task"}</h2>
-          <button 
+          <button
             className="p-1 rounded-full hover:bg-gray-200"
             onClick={onClose}
           >
             <X className="h-5 w-5" />
           </button>
         </div>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
@@ -68,7 +108,7 @@ export function TaskEditDialog({ isOpen, onClose, task, onSave }) {
               required
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
             <textarea
@@ -78,7 +118,7 @@ export function TaskEditDialog({ isOpen, onClose, task, onSave }) {
               rows={3}
             />
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
@@ -92,7 +132,7 @@ export function TaskEditDialog({ isOpen, onClose, task, onSave }) {
                 <option value="completed">Completed</option>
               </select>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
               <select
@@ -106,7 +146,7 @@ export function TaskEditDialog({ isOpen, onClose, task, onSave }) {
               </select>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
@@ -117,32 +157,44 @@ export function TaskEditDialog({ isOpen, onClose, task, onSave }) {
                 className="w-full p-2 border border-gray-300 rounded"
               />
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Goal</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
               <select
-                value={goal}
-                onChange={(e) => setGoal(e.target.value)}
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
                 className="w-full p-2 border border-gray-300 rounded"
+                disabled={isLoading}
               >
-                <option value="">Select a goal</option>
-                <option value="Website Redesign">Website Redesign</option>
-                <option value="Bug Fixes">Bug Fixes</option>
-                <option value="Authentication">Authentication</option>
-                <option value="Documentation">Documentation</option>
+                <option value="">Select a category</option>
+                {isLoading ? (
+                  <option value="" disabled>Loading categories...</option>
+                ) : (
+                  goals.map((goal) => (
+                    <option key={goal._id} value={goal.title}>
+                      {goal.title}
+                    </option>
+                  ))
+                )}
               </select>
             </div>
           </div>
-          
+
+          {error && (
+            <div className="text-sm text-red-500">
+              {error}
+            </div>
+          )}
+
           <div className="flex justify-end gap-2 pt-4">
-            <button 
+            <button
               type="button"
               className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
               onClick={onClose}
             >
               Cancel
             </button>
-            <button 
+            <button
               type="submit"
               className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
             >

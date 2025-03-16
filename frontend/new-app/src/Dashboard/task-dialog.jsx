@@ -11,7 +11,36 @@ export function TaskDialog({ isOpen, onClose, task }) {
   const [category, setCategory] = useState("");
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [goals, setGoals] = useState([]);
   const isEditing = !!task;
+
+
+  useEffect(() => {
+    if(isOpen){
+
+      const fetchGoals = async () => {
+        setIsLoading(true);
+        try {
+
+          const token = await localStorage('accessToken');
+          if(!token){
+            return;
+          }
+          const response = await fetch('http://localhost:5000/api/goals', {
+            headers: { Authorization: `Bearer ${token}`},
+          });
+          setGoals(response.data);
+
+          setLoading(false);
+        } catch (error){
+          console.error("Error fetching data:", error);
+          setLoading(false);
+        }
+      };
+      fetchGoals();
+    }
+  }, [isOpen]);
+
 
   useEffect(() => {
     if (task) {
@@ -153,12 +182,10 @@ export function TaskDialog({ isOpen, onClose, task }) {
                 id="category"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                options={[
-                  { value: "Website Redesign", label: "Website Redesign" },
-                  { value: "Bug Fixes", label: "Bug Fixes" },
-                  { value: "Authentication", label: "Authentication" },
-                  { value: "Documentation", label: "Documentation" },
-                ]}
+                options={goals.map((goal) => ({
+                  value: goal.title,
+                  label: goal.title,
+                }))}
               />
             </div>
           </div>

@@ -26,6 +26,7 @@ const getPriorityColor = (priority) => {
       <div className="flex items-start justify-between">
         <h4 className="font-medium text-sm">{task.title}</h4>
         <div className="relative">
+        <MoreHorizontal className="h-4 w-4" />
           <button 
             className="p-1 rounded-full hover:bg-gray-100"
             onClick={(e) => {
@@ -33,8 +34,9 @@ const getPriorityColor = (priority) => {
               setMenuOpen(!menuOpen);
             }}
           >
-            <MoreHorizontal className="h-4 w-4" />
+            
           </button>
+          
           
           {menuOpen && (
             <div 

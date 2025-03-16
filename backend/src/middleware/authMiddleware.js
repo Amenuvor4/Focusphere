@@ -4,7 +4,7 @@ const protect = (req, res, next) => {
   try {
     // Get token from authorization header
     const authHeader = req.headers.authorization;
-    console.log('Auth Header:', authHeader);
+    // console.log('Auth Header:', authHeader);
 
     // Extract token from "Bearer <token>"
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -12,7 +12,7 @@ const protect = (req, res, next) => {
     }
 
     const token = authHeader.split(' ')[1].trim();
-    console.log('Extracted Token:', token ? token.substring(0, 20) + '...' : 'none');
+    // console.log('Extracted Token:', token ? token.substring(0, 20) + '...' : 'none');
 
     // Verify the token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -21,7 +21,7 @@ const protect = (req, res, next) => {
       return res.status(401).json({ message: 'Invalid token format' });
     }
 
-    console.log('Token decoded successfully, userID:', decoded.userId);
+    // console.log('Token decoded successfully, userID:', decoded.userId);
 
     // Check if the token has expired
     const now = Math.floor(Date.now() / 1000);

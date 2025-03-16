@@ -4,7 +4,7 @@ import { TaskCard } from "./TaskCard"
 import { TaskDetail } from "./TaskDetail"
 import { TaskEditDialog } from "./TaskEditDialog"
 import { WelcomeBanner } from "./welcome-banner"
-import { jwtDecode } from "jwt-decode"
+import getValidToken from "./tokenUtils"
 import axios from "axios";
 
 
@@ -27,60 +27,6 @@ export function TaskList({ tasks: initialTasks = [], onTaskCreate, onTaskUpdate,
   })
 
 
-    // Check if token is expiring
-    const isTokenExpiring = (token) => {
-      try {
-        const decoded = jwtDecode(token);
-        const currentTime = Date.now() / 1000;
-        return decoded.exp - currentTime < 600; // Refresh if less than 10 minutes remaining
-      } catch (error) {
-        console.error("Token decoding error:", error);
-        return true; // Consider invalid tokens as expired
-      }
-    };
-
-
-
-    // Refresh token
-    const refreshToken = async () => {
-      try {
-        const refreshToken = localStorage.getItem('refreshToken');
-        if (!refreshToken) {
-          throw new Error('No refresh token found');
-        }
-  
-        const response = await fetch('http://localhost:5000/api/auth/refresh-token', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ refreshToken }),
-        });
-  
-        if (!response.ok) {
-          throw new Error(`Failed to refresh token: ${response.statusText}`);
-        }
-  
-        const data = await response.json();
-        localStorage.setItem('accessToken', data.accessToken);
-        localStorage.setItem('refreshToken', data.refreshToken);
-        return data.accessToken;
-      } catch (error) {
-        console.error('Token refresh failed:', error);
-        window.location.href = '/Auth';
-        return null;
-      }
-    };
-
-  // Get a valid token
-  const getValidToken = async () => {
-    const token = localStorage.getItem('accessToken');
-    if (!token || isTokenExpiring(token)) {
-      console.error("You stopped at at reteriving the token")
-      return await refreshToken();
-    }
-    return token;
-  };
 
   // Get user data
   useEffect(() => {
@@ -313,7 +259,7 @@ export function TaskList({ tasks: initialTasks = [], onTaskCreate, onTaskUpdate,
       }
 
       //API CALL TO DELETE TASK
-      await axios.delete(`https://localhost:5000/api/tasks/${taskId}`, {
+      await axios.delete(`http://localhost:5000/api/tasks/${taskId}`, {
         headers: {Authorization: `Bearer ${token}`},
       });
 
@@ -322,6 +268,7 @@ export function TaskList({ tasks: initialTasks = [], onTaskCreate, onTaskUpdate,
 
       onTaskDelete?.(taskId);
     } catch(error){
+      console.error("This is the errror:", taskId);
       console.error("Error deleting task:", error);
     }
   };

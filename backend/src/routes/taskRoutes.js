@@ -164,9 +164,109 @@ router.delete('/:id', async (req, res) => {
 
     res.status(200).json({ message: 'Task deleted successfully' });
   } catch (error) {
+    console.log("THe error for the backend");
     res.status(400).json({ error: error.message });
   }
 });
+
+
+// For analytics page
+router.get('/analytics', async (req, res) => {
+  try {
+    const { timeRange } = req.query;
+    const userId = req.user.id;
+
+    // Calculate date range based on timeRange
+    const now = new Date();
+    let startDate;
+    switch (timeRange) {
+      case 'Week':
+        startDate = new Date(now.setDate(now.getDate() - 7));
+        break;
+      case 'Month':
+        startDate = new Date(now.setMonth(now.getMonth() - 1));
+        break;
+      case 'Quarter':
+        startDate = new Date(now.setMonth(now.getMonth() - 3));
+        break;
+      case 'Year':
+        startDate = new Date(now.setFullYear(now.getFullYear() - 1));
+        break;
+      default:
+        startDate = new Date(0); // All time
+    }
+
+    // Fetch tasks within the date range
+    const tasks = await Task.find({
+      user_id: userId,
+      due_date: { $gte: startDate },
+    });
+
+    // Calculate analytics data
+    const tasksCompleted = tasks.filter(task => task.status === 'completed').length;
+    const tasksCreated = tasks.length;
+    const completionRate = (tasksCompleted / tasksCreated) * 100 || 0;
+    const averageCompletionTime = calculateAverageCompletionTime(tasks);
+
+    // Group tasks by category
+    const tasksByCategory = {};
+    tasks.forEach(task => {
+      tasksByCategory[task.category] = (tasksByCategory[task.category] || 0) + 1;
+    });
+
+    // Group tasks by priority
+    const tasksByPriority = { high: 0, medium: 0, low: 0 };
+    tasks.forEach(task => {
+      if (task.priority) tasksByPriority[task.priority]++;
+    });
+
+    // Prepare recent activity
+    const recentActivity = tasks
+      .sort((a, b) => new Date(b.due_date) - new Date(a.due_date))
+      .slice(0, 5)
+      .map(task => ({
+        type: task.status === 'completed' ? 'completed' : 'created',
+        task: task.title,
+        date: new Date(task.due_date).toLocaleDateString(),
+      }));
+
+    // Send the response
+    res.status(200).json({
+      tasksCompleted,
+      tasksCreated,
+      completionRate,
+      averageCompletionTime,
+      tasksByCategory: Object.entries(tasksByCategory).map(([name, count]) => ({
+        name,
+        count,
+        percentage: (count / tasksCreated) * 100,
+      })),
+      tasksByPriority: Object.entries(tasksByPriority).map(([name, count]) => ({
+        name,
+        count,
+        percentage: (count / tasksCreated) * 100,
+      })),
+      recentActivity,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Helper function to calculate average completion time
+function calculateAverageCompletionTime(tasks) {
+  const completedTasks = tasks.filter(task => task.status === 'completed' && task.due_date);
+  if (completedTasks.length === 0) return "0 days";
+
+  const totalTime = completedTasks.reduce((sum, task) => {
+    const completionTime = new Date(task.due_date) - new Date(task.createdAt);
+    return sum + completionTime;
+  }, 0);
+
+  const averageTime = totalTime / completedTasks.length;
+  const averageDays = (averageTime / (1000 * 60 * 60 * 24)).toFixed(1);
+  return `${averageDays} days`;
+}
 
 module.exports = router;
 
