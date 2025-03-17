@@ -74,10 +74,6 @@ Advanced user analytics dashboard
 📌 Getting Started
 
 Installation
-
-Clone the repository:
-
-git clone https://github.com/your-repo-url
 cd auranuvor
 
 Install dependencies:
