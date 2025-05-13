@@ -3,7 +3,7 @@ Whats still needs to be implemented:
 - Ai-Usage
 
 
-#Auranuvor - AI-powered task management platform.#
+# Auranuvor - AI-powered task management platform. #
 
 ## Overview ##
 
