@@ -3,13 +3,13 @@ Whats still needs to be implemented:
 - Ai-Usage
 
 
-Auranuvor - AI-powered task management platform.
+# Auranuvor - AI-powered task management platform. #
 
-🚀 Overview
+## Overview ##
 
 Auranuvor is a productivity-enhancing platform that helps users manage their tasks efficiently. It integrates AI-powered task prioritization, time management, and gamification features to improve focus and productivity. The system consists of a Chrome extension for blocking distractions and a central web application for task management and analytics.
 
-✨ Why Auranuvor?
+## Why Auranuvor? ##
 
 Boosts Productivity: Helps users stay focused by managing distractions.
 
@@ -19,7 +19,7 @@ Gamification: Encourages productivity through goal tracking and achievements.
 
 Cross-Platform Access: Available via a Chrome extension and a web dashboard.
 
-🛠 Technologies Used
+## Technologies Used ##
 
 Backend (Node.js & Express.js)
 
@@ -43,7 +43,7 @@ Version Control: GitHub
 
 Environment Management: dotenv
 
-📡 APIs Implemented
+## APIs Implemented ##
 
 Total APIs: 6+ RESTful endpoints
 
@@ -61,7 +61,7 @@ Task Management APIs (To Be Implemented):
 
 CRUD operations for tasks
 
-⏳ Features Yet to Be Implemented
+## Features Yet to Be Implemented ##
 
 AI-powered task prioritization
 
@@ -71,13 +71,9 @@ Full mobile app integration (React Native)
 
 Advanced user analytics dashboard
 
-📌 Getting Started
+## Getting Started ##
 
 Installation
-
-Clone the repository:
-
-git clone https://github.com/your-repo-url
 cd auranuvor
 
 Install dependencies:
@@ -96,7 +92,7 @@ Start the frontend:
 
 npm run dev
 
-🆘 Where to Get Help
+## Where to Get Help ##
 
 Issues: GitHub Issues
 
@@ -104,12 +100,12 @@ Discussions: GitHub Discussions
 
 Contact: Email daarius24@gmail.com
 
-👥 Maintainers & Contributors
+## Maintainers & Contributors ##
 
 Lead Developer: Darius Amenuvor
 
 
-📜 License
+## License ##
 
 MIT License - Open for public use and contributions.
 
