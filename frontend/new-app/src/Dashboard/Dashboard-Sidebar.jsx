@@ -1,13 +1,12 @@
-import { BarChart3, CheckSquare, Cog, FolderKanban, Plus, CalendarClock } from "lucide-react";
+import { BarChart3, CheckSquare, Cog, FolderKanban, CalendarClock } from "lucide-react";
 import React, { useState, useEffect } from "react";
-import getValidToken from "./tokenUtils"
+import getValidToken from "./tokenUtils";
 
 export function DashboardSidebar({ currentView, setCurrentView }) {
   const [userName, setUserName] = useState("John Doe");
   const [userEmail, setUserEmail] = useState("john@example.com");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-
 
   // Fetch user data
   useEffect(() => {
@@ -17,15 +16,14 @@ export function DashboardSidebar({ currentView, setCurrentView }) {
       try {
         setIsLoading(true);
         const token = await getValidToken();
-        if (!token || !isMounted){
+        if (!token || !isMounted) {
           return;
-
-        } 
+        }
         const response = await fetch("http://localhost:5000/api/auth/profile", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
         });
 
@@ -69,14 +67,6 @@ export function DashboardSidebar({ currentView, setCurrentView }) {
   return (
     <div className="hidden border-r bg-white md:block md:w-64">
       <div className="flex h-full flex-col">
-        {/* New Task Button */}
-        <div className="flex h-14 items-center border-b px-4">
-          <button className="w-full flex items-center justify-start gap-2 px-3 py-2 rounded-md border border-gray-300 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <Plus className="h-4 w-4" />
-            <span>New Task</span>
-          </button>
-        </div>
-
         {/* Navigation Menu */}
         <nav className="flex-1 overflow-auto p-2">
           <ul className="grid gap-1">
