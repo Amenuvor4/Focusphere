@@ -12,7 +12,7 @@ function App() {
     <Router>
       <div className="font-sans text-gray-800">
         {/* Main Content */}
-        <main className="p-6">
+        <main className="">
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/Auth" element={<Auth />} />
