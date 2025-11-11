@@ -3,13 +3,13 @@ Whats still needs to be implemented:
 - Ai-Usage
 
 
-# Auranuvor - AI-powered task management platform. #
+# Focusphere - AI-powered task management platform. #
 
 ## Overview ##
 
-Auranuvor is a productivity-enhancing platform that helps users manage their tasks efficiently. It integrates AI-powered task prioritization, time management, and gamification features to improve focus and productivity. The system consists of a Chrome extension for blocking distractions and a central web application for task management and analytics.
+Focusphere is a productivity-enhancing platform that helps users manage their tasks efficiently. It integrates AI-powered task prioritization, time management, and gamification features to improve focus and productivity. The system consists of a Chrome extension for blocking distractions and a central web application for task management and analytics.
 
-## Why Auranuvor? ##
+## Why Focusphere? ##
 
 Boosts Productivity: Helps users stay focused by managing distractions.
 
@@ -74,7 +74,7 @@ Advanced user analytics dashboard
 ## Getting Started ##
 
 Installation
-cd auranuvor
+cd Focusphere
 
 Install dependencies:
 
