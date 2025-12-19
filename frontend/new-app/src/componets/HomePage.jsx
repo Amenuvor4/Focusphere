@@ -17,7 +17,7 @@ const HomePage = () => {
           <div className="container mx-auto px-6 py-6 justify-center">
             <div className="flex items-center justify-between 2-full min-w-0 ">
               {/* Logo on the left */}
-              <h1 className="text-2xl font-bold text-white whitespace-nowrap">Auranuvor</h1>
+              <h1 className="text-2xl font-bold text-white whitespace-nowrap">Focusphere</h1>
 
               {/* Navigation Menu - Centered on large screens */}
               <nav className="hidden md:flex items-center space-x-8">
@@ -46,7 +46,7 @@ const HomePage = () => {
           <div className="max-w-3xl">
             <h2 className="text-5xl md:text-6xl font-bold text-white mb-6">Prioritize Smarter, Achieve Faster</h2>
             <p className="text-xl text-white/90 mb-8 max-w-2xl">
-              Welcome to Auranuvor – your AI-powered task prioritization tool. Focus on what matters most with smart
+              Welcome to Focusphere – your AI-powered task prioritization tool. Focus on what matters most with smart
               prioritization made simple.
             </p>
             <Link
@@ -64,7 +64,7 @@ const HomePage = () => {
         <div className="container mx-auto px-6">
           <h2 className="text-3xl font-bold text-center mb-4">Key Features</h2>
           <p className="text-xl text-center mb-16 text-gray-600 max-w-2xl mx-auto">
-            Discover how Auranuvor can transform your productivity with these powerful features.
+            Discover how Focusphere can transform your productivity with these powerful features.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
             <div className="group p-8 rounded-2xl transition-all hover:bg-gradient-to-br from-blue-50 to-cyan-50">
@@ -106,7 +106,7 @@ const HomePage = () => {
             <div className="md:w-1/2">
               <h2 className="text-3xl font-bold mb-6">Powered by Advanced AI</h2>
               <p className="text-xl mb-8 text-gray-600">
-                Auranuvor uses cutting-edge machine learning to analyze your work patterns and optimize your
+                Focusphere uses cutting-edge machine learning to analyze your work patterns and optimize your
                 productivity. Stay focused and achieve more with our intelligent task management system.
               </p>
               <ul className="space-y-4">
@@ -137,7 +137,7 @@ const HomePage = () => {
             <div className="md:w-1/2">
               <h2 className="text-3xl font-bold mb-6 text-white">Effortless Scheduling</h2>
               <p className="text-xl mb-8 text-white/90">
-                Our intuitive calendar integration ensures you never miss a deadline. Auranuvor helps you plan your
+                Our intuitive calendar integration ensures you never miss a deadline. Focusphere helps you plan your
                 tasks efficiently and reminds you as important dates approach.
               </p>
               <ul className="space-y-4">
@@ -169,7 +169,7 @@ const HomePage = () => {
         <div className="container mx-auto px-6 text-center">
           <h2 className="text-3xl font-bold mb-6">Ready to Boost Your Productivity?</h2>
           <p className="text-xl mb-8 text-gray-600 max-w-2xl mx-auto">
-            Join thousands of professionals who have transformed their work life with Auranuvor.
+            Join thousands of professionals who have transformed their work life with Focusphere.
           </p>
           <Link
             to="/Auth?mode=signup"
@@ -185,7 +185,7 @@ const HomePage = () => {
         <div className="container mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
             <div>
-              <h3 className="text-lg font-semibold mb-4">Auranuvor</h3>
+              <h3 className="text-lg font-semibold mb-4">Focusphere</h3>
               <p className="text-gray-600 mb-4">AI-powered task management for enhanced productivity.</p>
               <div className="flex space-x-4">
                 <a href="#github" className="text-gray-400 hover:text-blue-500 transition-colors">
@@ -221,7 +221,7 @@ const HomePage = () => {
             </div>
           </div>
           <div className="mt-12 pt-8 border-t border-gray-200 text-center">
-            <p className="text-gray-600">&copy; 2025 Auranuvor. All rights reserved.</p>
+            <p className="text-gray-600">&copy; 2025 Focusphere. All rights reserved.</p>
           </div>
         </div>
       </footer>

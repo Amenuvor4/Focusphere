@@ -7,7 +7,7 @@ export function DashboardHeader() {
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-blue px-4 md:px-6">
       <div className="flex items-center gap-2 md:gap-4">
-        <h1 className="text-xl font-bold color-blue">Auranuvor</h1>
+        <h1 className="text-xl font-bold color-blue">Focusphere</h1>
         <div className="hidden md:flex md:w-80">
           <div className="relative w-full">
           </div>

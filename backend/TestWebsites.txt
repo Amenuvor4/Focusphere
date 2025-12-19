@@ -5,9 +5,9 @@ http://localhost:5000/api/auth/github
 
 
 
-MONGO_URI=mongodb://localhost:27017/Auranuvor
+MONGO_URI=mongodb://localhost:27017/Focusphere
 PORT=5000
-JWT_SECRET=auranuvor
+JWT_SECRET=Focusphere
 
 # Google OAuth
 GOOGLE_CLIENT_ID=816477541088-p9pq6tkvc2csq0n4itci48uloaibs7g9.apps.googleusercontent.com
