@@ -1,0 +1,16 @@
+{
+  "name": "focusphere",
+  "version": "1.0.0",
+  "description": "AI-powered task prioritization tool",
+  "scripts": {
+    "install-all": "npm install && cd backend && npm install && cd .. && cd frontend && npm install && cd ..",
+    "dev": "concurrently --kill-others \"npm run server\" \"npm run client\"",
+    "server": "npm --prefix backend run dev",
+    "client": "npm --prefix frontend start",
+    "build": "npm --prefix frontend run build",
+    "start": "npm --prefix backend start"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
