@@ -20,18 +20,12 @@ const goalSchema = new mongoose.Schema({
   },
   deadline: { 
     type: Date,
-    validate: {
-      validator: function (value) {
-        return value > new Date(); // Ensure deadline is in the future
-      },
-      message: 'Deadline must be in the future',
-    },
   },
   priority: { 
     type: String, 
     enum: ['high', 'medium', 'low'], 
     default: 'medium',
-    set: (value) => value.toLowerCase(), // Convert to lowercase
+    set: (value) => value.toLowerCase(), 
   },
   tasks: [{ 
     type: mongoose.Schema.Types.ObjectId, 
@@ -46,6 +40,7 @@ const goalSchema = new mongoose.Schema({
 
 // Index for frequently queried field
 goalSchema.index({ userId: 1 });
+goalSchema.index({ title: 1, userId: 1 });
 
 // Virtual field to dynamically compute taskCount
 goalSchema.virtual('taskCount').get(function () {
@@ -56,12 +51,24 @@ goalSchema.virtual('taskCount').get(function () {
 goalSchema.set('toJSON', { virtuals: true });
 goalSchema.set('toObject', { virtuals: true });
 
-// Pre-save hook to validate referenced tasks
+// Pre-save hook to validate deadline only on creation
 goalSchema.pre('save', async function (next) {
+  // Only validate deadline as future date when creating a new goal
+  if (this.isNew && this.deadline && this.deadline <= new Date()) {
+    return next(new Error('Deadline must be in the future'));
+  }
+  
+// Validate that all referenced tasks exist (OPTIONAL - can be commented out for performance)
   if (this.tasks && this.tasks.length > 0) {
-    const tasksExist = await mongoose.model('Task').countDocuments({ _id: { $in: this.tasks } });
-    if (tasksExist !== this.tasks.length) {
-      return next(new Error('One or more tasks do not exist'));
+    try {
+      const tasksExist = await mongoose.model('Task').countDocuments({ 
+        _id: { $in: this.tasks } 
+      });
+      if (tasksExist !== this.tasks.length) {
+        return next(new Error('One or more tasks do not exist'));
+      }
+    } catch (error) {
+      console.error('Error validating tasks:', error);
     }
   }
   next();

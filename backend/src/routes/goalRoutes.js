@@ -1,12 +1,21 @@
 const express = require('express');
 const Goal = require('../models/Goal.js');
-const Task = require('../models/Task.js'); // Import Task model for updates
+const Task = require('../models/Task.js');
 const protect = require('../middleware/authMiddleware.js');
 const { default: mongoose } = require('mongoose');
 
 const router = express.Router();
 
-// Protect all routes
+// ===================================
+// TEST ENDPOINT - PUBLIC (NO AUTH)
+// ===================================
+router.get('/test', (req, res) => {
+  res.json({ message: 'Goals API is working' });
+});
+
+// ===================================
+// PROTECT ALL ROUTES AFTER THIS LINE
+// ===================================
 router.use(protect);
 
 // Validate ObjectID middleware
@@ -16,11 +25,6 @@ const validateObjectId = (req, res, next) => {
   }
   next();
 };
-
-// Test Route
-router.get('/test', (req, res) => {
-  res.json({ message: 'Goals API is working' });
-});
 
 // Create a Goal
 router.post('/', async (req, res) => {
@@ -57,6 +61,7 @@ router.post('/', async (req, res) => {
     const savedGoal = await goal.save();
     res.status(201).json({ message: 'Goal created successfully', goal: savedGoal });
   } catch (error) {
+    console.error('Goal creation error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -67,6 +72,7 @@ router.get('/', async (req, res) => {
     const goals = await Goal.find({ userId: req.user.id }).populate('tasks');
     res.status(200).json(goals);
   } catch (error) {
+    console.error('Goal fetch error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -82,6 +88,7 @@ router.get('/:id', validateObjectId, async (req, res) => {
 
     res.json(goal);
   } catch (error) {
+    console.error('Goal fetch error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -95,17 +102,14 @@ router.put('/:id', validateObjectId, async (req, res) => {
     if (progress !== undefined && (progress < 0 || progress > 100)) {
       return res.status(400).json({ error: 'Progress must be between 0 and 100' });
     }
-    if (deadline && new Date(deadline) <= new Date()) {
-      return res.status(400).json({ error: 'Deadline must be in the future' });
-    }
     if (priority && !['high', 'medium', 'low'].includes(priority)) {
       return res.status(400).json({ error: 'Invalid priority value' });
     }
 
-    const updatedGoal = await Goal.findByIdAndUpdate(
+    const updatedGoal = await Goal.findOneAndUpdate(
       { _id: req.params.id, userId: req.user.id },
       { title, description, progress, deadline, priority, tasks },
-      { new: true }
+      { new: true, runValidators: false }
     );
 
     if (!updatedGoal) {
@@ -114,6 +118,7 @@ router.put('/:id', validateObjectId, async (req, res) => {
 
     res.status(200).json({ message: 'Goal updated successfully', goal: updatedGoal });
   } catch (error) {
+    console.error('Goal update error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -133,6 +138,7 @@ router.delete('/:id', validateObjectId, async (req, res) => {
     await Goal.findByIdAndDelete(req.params.id);
     res.json({ message: 'Goal and associated tasks deleted successfully' });
   } catch (error) {
+    console.error('Goal deletion error:', error);
     res.status(500).json({ error: error.message });
   }
 });

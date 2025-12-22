@@ -17,7 +17,7 @@ const generateTokens = (userData) => {
   }
 
   const payload = {
-    userId: user._id.toString(), // Convert ObjectId to string
+    userId: user._id.toString(), 
     email: user.email,
     name: user.name
   };
@@ -27,7 +27,6 @@ const generateTokens = (userData) => {
 
   return { accessToken, refreshToken };
 };
-
 
 const formatUserResponse = (user) => {
   return {
@@ -53,6 +52,7 @@ router.post('/register', async (req, res) => {
 
     res.status(201).json({ message: 'User registered successfully' });
   } catch (error) {
+    console.error('Registration error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
@@ -79,6 +79,7 @@ router.post('/refresh-token', async (req, res) => {
     if (error instanceof jwt.TokenExpiredError) {
       return res.status(401).json({ error: 'Refresh token expired' });
     }
+    console.error('Token refresh error:', error);
     res.status(401).json({ error: 'Invalid refresh token' });
   }
 });
@@ -130,17 +131,27 @@ router.get('/profile', protect, async (req, res) => {
 
     res.status(200).json({ user: formatUserResponse(user) });
   } catch (error) {
+    console.error('Profile fetch error:', error);
     res.status(500).json({ message: 'Unable to fetch user profile', error: error.message });
   }
 });
 
-// OAuth Callback Handler
+// OAuth Callback Handler - IMPROVED with environment variable
 const handleOAuthCallback = (req, res) => {
-  const user = req.user;
-  const { accessToken, refreshToken } = generateTokens(user);
+  try {
+    const user = req.user;
+    const { accessToken, refreshToken } = generateTokens(user);
     
-  // Pass tokens as query parameters - fixed to use accessToken and refreshToken
-  res.redirect(`http://localhost:3000/auth?accessToken=${accessToken}&refreshToken=${refreshToken}`);
+    // Use environment variable for client URL (defaults to localhost:3000)
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+    
+    // Redirect with tokens as query parameters
+    res.redirect(`${clientUrl}/auth?accessToken=${accessToken}&refreshToken=${refreshToken}`);
+  } catch (error) {
+    console.error('OAuth callback error:', error);
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+    res.redirect(`${clientUrl}/auth?error=authentication_failed`);
+  }
 };
 
 // Google Login
@@ -159,7 +170,7 @@ router.get('/github', passport.authenticate('github', { scope: ['user:email'] })
 // GitHub Callback
 router.get(
   '/callback/github',
-  passport.authenticate('github', { session: false }),
+  passport.authenticate('github', { session: false, failureRedirect: '/auth?error=github_failed' }),
   handleOAuthCallback
 );
 

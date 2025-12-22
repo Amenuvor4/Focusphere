@@ -6,7 +6,16 @@ const Goal = require('../models/Goal');
 
 const router = express.Router();
 
-// Protect all routes
+// ===================================
+// TEST ENDPOINT - PUBLIC (NO AUTH)
+// ===================================
+router.get('/test', (req, res) => {
+  res.json({ message: "Tasks API is working" });
+});
+
+// ===================================
+// PROTECT ALL ROUTES AFTER THIS LINE
+// ===================================
 router.use(protect);
 
 // Transform task for frontend
@@ -18,11 +27,6 @@ const transformTask = (task) => ({
   status: task.status,
   dueDate: task.due_date,
   category: task.category,
-});
-
-//Add a simple test endpoint
-router.get('/test', (req, res) => {
-  res.json({ message: "Tasks API is working" });
 });
 
 // Create a Task
@@ -47,8 +51,7 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Invalid due date' });
     }
 
-
-    const goal = await Goal.findOne({ title: category, userId: req.user.id});
+    let goal = await Goal.findOne({ title: category, userId: req.user.id});
 
     // If no goal exists, create a new one
     if (!goal) {
@@ -63,7 +66,6 @@ router.post('/', async (req, res) => {
       await goal.save();
     } 
 
-
     const task = new Task({
       user_id: req.user.id,
       title,
@@ -74,10 +76,7 @@ router.post('/', async (req, res) => {
       category,
     });
 
-
-
     const savedTask = await task.save();
-
 
     if(goal){
       goal.tasks.push(savedTask._id);
@@ -89,7 +88,7 @@ router.post('/', async (req, res) => {
       task: transformTask(savedTask),
     });
   } catch (error) {
-    console.log("Task routes error line 66");
+    console.error("Task creation error:", error);
     res.status(400).json({ error: error.message });
   }
 });
@@ -103,7 +102,8 @@ router.get('/', async (req, res) => {
 
     const tasks = await Task.find({ user_id: req.user.id }).skip(skip).limit(limit);
     const totalTasks = await Task.countDocuments({ user_id: req.user.id });
-    totalPages = Math.ceil(totalTasks / limit);
+    
+    const totalPages = Math.ceil(totalTasks / limit);
 
     // Transform for frontend
     const transformedTasks = tasks.map(transformTask);
@@ -111,7 +111,7 @@ router.get('/', async (req, res) => {
     // Return the transformed tasks as a flat array
     res.status(200).json(transformedTasks);
   } catch (error) {
-    console.error("Task routes error line 92:", error);
+    console.error("Task fetch error:", error);
     res.status(400).json({ error: error.message });
   }
 });
@@ -126,7 +126,7 @@ router.put('/:id', async (req, res) => {
     const updatedTask = await Task.findOneAndUpdate(
       { _id: req.params.id, user_id: req.user.id },
       req.body,
-      { new: true }
+      { new: true, runValidators: false } // Disable validators for updates
     );
 
     if (!updatedTask) {
@@ -138,6 +138,7 @@ router.put('/:id', async (req, res) => {
       task: transformTask(updatedTask),
     });
   } catch (error) {
+    console.error("Task update error:", error);
     res.status(400).json({ error: error.message });
   }
 });
@@ -154,21 +155,19 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Task not found' });
     }
 
-
     // Find the goal with the matching category and remove the task ID
     const goal = await Goal.findOne({ title: deletedTask.category, userId: req.user.id });
     if (goal) {
-      goal.tasks = goal.tasks.filter(taskId => taskId.toString() !== deletedTask._id.toString()); // Remove task ID
+      goal.tasks = goal.tasks.filter(taskId => taskId.toString() !== deletedTask._id.toString());
       await goal.save();
     }
 
     res.status(200).json({ message: 'Task deleted successfully' });
   } catch (error) {
-    console.log("THe error for the backend");
+    console.error("Task deletion error:", error);
     res.status(400).json({ error: error.message });
   }
 });
-
 
 // For analytics page
 router.get('/analytics', async (req, res) => {
@@ -199,13 +198,13 @@ router.get('/analytics', async (req, res) => {
     // Fetch tasks within the date range
     const tasks = await Task.find({
       user_id: userId,
-      due_date: { $gte: startDate },
+      createdAt: { $gte: startDate },
     });
 
     // Calculate analytics data
     const tasksCompleted = tasks.filter(task => task.status === 'completed').length;
     const tasksCreated = tasks.length;
-    const completionRate = (tasksCompleted / tasksCreated) * 100 || 0;
+    const completionRate = tasksCreated > 0 ? (tasksCompleted / tasksCreated) * 100 : 0;
     const averageCompletionTime = calculateAverageCompletionTime(tasks);
 
     // Group tasks by category
@@ -222,44 +221,45 @@ router.get('/analytics', async (req, res) => {
 
     // Prepare recent activity
     const recentActivity = tasks
-      .sort((a, b) => new Date(b.due_date) - new Date(a.due_date))
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
       .slice(0, 5)
       .map(task => ({
         type: task.status === 'completed' ? 'completed' : 'created',
         task: task.title,
-        date: new Date(task.due_date).toLocaleDateString(),
+        date: new Date(task.createdAt).toLocaleDateString(),
       }));
 
     // Send the response
     res.status(200).json({
       tasksCompleted,
       tasksCreated,
-      completionRate,
+      completionRate: Math.round(completionRate),
       averageCompletionTime,
       tasksByCategory: Object.entries(tasksByCategory).map(([name, count]) => ({
         name,
         count,
-        percentage: (count / tasksCreated) * 100,
+        percentage: Math.round((count / tasksCreated) * 100),
       })),
       tasksByPriority: Object.entries(tasksByPriority).map(([name, count]) => ({
         name,
         count,
-        percentage: (count / tasksCreated) * 100,
+        percentage: tasksCreated > 0 ? Math.round((count / tasksCreated) * 100) : 0,
       })),
       recentActivity,
     });
   } catch (error) {
+    console.error("Analytics error:", error);
     res.status(500).json({ error: error.message });
   }
 });
 
 // Helper function to calculate average completion time
 function calculateAverageCompletionTime(tasks) {
-  const completedTasks = tasks.filter(task => task.status === 'completed' && task.due_date);
+  const completedTasks = tasks.filter(task => task.status === 'completed' && task.updatedAt);
   if (completedTasks.length === 0) return "0 days";
 
   const totalTime = completedTasks.reduce((sum, task) => {
-    const completionTime = new Date(task.due_date) - new Date(task.createdAt);
+    const completionTime = new Date(task.updatedAt) - new Date(task.createdAt);
     return sum + completionTime;
   }, 0);
 
@@ -269,4 +269,3 @@ function calculateAverageCompletionTime(tasks) {
 }
 
 module.exports = router;
-
