@@ -32,8 +32,9 @@ app.use(passport.initialize());
 const authRoutes = require('./routes/authRoutes'); 
 const taskRoutes = require('./routes/taskRoutes'); 
 const goalRoutes = require('./routes/goalRoutes');
+const aiRoutes = require('./routes/aiRoutes'); 
 
-
+app.use('/api/ai', aiRoutes);
 app.use('/api/auth', authRoutes); 
 app.use('/api/tasks', taskRoutes); 
 app.use('/api/goals', goalRoutes);
