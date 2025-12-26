@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Send, Loader2, Sparkles, Check, XIcon, Plus, Trash2, AlertCircle } from 'lucide-react';
+import { X, Send, Loader2, Sparkles, Check, XIcon, Plus, Trash2, AlertCircle, ChevronDown, ChevronUp, Edit } from 'lucide-react';
 
 const AIChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: "Hi! I'm your FocusSphere AI assistant. I can help you manage tasks, analyze your productivity, and provide insights. Try saying 'Create a task to finish my report' and I'll show you a preview to approve!"
+      content: "Hi! I'm your FocusSphere AI assistant. Try: 'Create 5 tasks for my project' or 'Update my report task to high priority'!"
     }
   ]);
   const [inputMessage, setInputMessage] = useState('');
@@ -21,12 +21,10 @@ const AIChatWidget = () => {
     scrollToBottom();
   }, [messages]);
 
-  // Get valid token
   const getValidToken = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      if (!token) return null;
-      return token;
+      return token || null;
     } catch (error) {
       console.error('Token error:', error);
       return null;
@@ -51,6 +49,12 @@ const AIChatWidget = () => {
           body = JSON.stringify(action.data);
           break;
 
+        case 'update_task':
+          endpoint = `http://localhost:5000/api/tasks/${action.data.taskId}`;
+          method = 'PUT';
+          body = JSON.stringify(action.data.updates);
+          break;
+
         case 'delete_task':
           endpoint = `http://localhost:5000/api/tasks/${action.data.taskId}`;
           method = 'DELETE';
@@ -64,6 +68,12 @@ const AIChatWidget = () => {
             progress: 0,
             tasks: []
           });
+          break;
+
+        case 'update_goal':
+          endpoint = `http://localhost:5000/api/goals/${action.data.goalId}`;
+          method = 'PUT';
+          body = JSON.stringify(action.data.updates);
           break;
 
         case 'delete_goal':
@@ -96,7 +106,7 @@ const AIChatWidget = () => {
     }
   };
 
-
+  // Handle action approval
   const handleActionApproval = async (messageIndex, actionIndex, approved) => {
     const message = messages[messageIndex];
     if (!message.suggestedActions || !message.suggestedActions[actionIndex]) return;
@@ -124,7 +134,7 @@ const AIChatWidget = () => {
       } else {
         const errorMessage = {
           role: 'assistant',
-          content: `❌ Sorry, I couldn't complete that action: ${result.error}`
+          content: `❌ Sorry, I couldn't complete that: ${result.error}`
         };
         setMessages([...updatedMessages, errorMessage]);
       }
@@ -132,7 +142,52 @@ const AIChatWidget = () => {
       setMessages(updatedMessages);
       const declineMessage = {
         role: 'assistant',
-        content: "No problem! Let me know if you'd like me to suggest something else."
+        content: "No problem! Let me know if you'd like something else."
+      };
+      setMessages([...updatedMessages, declineMessage]);
+    }
+  };
+
+  // Handle bulk approval (all actions)
+  const handleBulkApproval = async (messageIndex, approved) => {
+    const message = messages[messageIndex];
+    if (!message.suggestedActions) return;
+
+    const updatedMessages = [...messages];
+    
+    // Mark all as processing or declined
+    updatedMessages[messageIndex].suggestedActions = message.suggestedActions.map(action => ({
+      ...action,
+      status: approved ? 'processing' : 'declined'
+    }));
+    setMessages(updatedMessages);
+
+    if (approved) {
+      // Execute all actions
+      const results = await Promise.all(
+        message.suggestedActions.map(action => executeAction(action))
+      );
+
+      // Update statuses
+      updatedMessages[messageIndex].suggestedActions = message.suggestedActions.map((action, idx) => ({
+        ...action,
+        status: results[idx].success ? 'approved' : 'failed',
+        error: results[idx].error
+      }));
+      setMessages(updatedMessages);
+
+      // Add confirmation
+      const successCount = results.filter(r => r.success).length;
+      const confirmMessage = {
+        role: 'assistant',
+        content: `✅ Done! Successfully completed ${successCount} of ${results.length} actions.`
+      };
+      setMessages([...updatedMessages, confirmMessage]);
+    } else {
+      setMessages(updatedMessages);
+      const declineMessage = {
+        role: 'assistant',
+        content: "No problem! All actions declined."
       };
       setMessages([...updatedMessages, declineMessage]);
     }
@@ -186,7 +241,7 @@ const AIChatWidget = () => {
         ...newMessages,
         { 
           role: 'assistant', 
-          content: "Sorry, I'm having trouble connecting right now. Please try again in a moment." 
+          content: "Sorry, I'm having trouble right now. Please try again." 
         }
       ]);
     } finally {
@@ -244,17 +299,29 @@ const AIChatWidget = () => {
                   </div>
                 </div>
 
+                {/* Action Container - Single or Multiple */}
                 {message.suggestedActions && message.suggestedActions.length > 0 && (
-                  <div className="mt-3 space-y-2">
-                    {message.suggestedActions.map((action, actionIndex) => (
+                  message.suggestedActions.length === 1 ? (
+                    // Single action - show normally
+                    <div className="mt-3">
                       <ActionCard
-                        key={actionIndex}
-                        action={action}
-                        onApprove={() => handleActionApproval(messageIndex, actionIndex, true)}
-                        onDecline={() => handleActionApproval(messageIndex, actionIndex, false)}
+                        action={message.suggestedActions[0]}
+                        onApprove={() => handleActionApproval(messageIndex, 0, true)}
+                        onDecline={() => handleActionApproval(messageIndex, 0, false)}
                       />
-                    ))}
-                  </div>
+                    </div>
+                  ) : (
+                    // Multiple actions - show collapsible
+                    <div className="mt-3">
+                      <MultiActionCard
+                        actions={message.suggestedActions}
+                        onApprove={() => handleBulkApproval(messageIndex, true)}
+                        onDecline={() => handleBulkApproval(messageIndex, false)}
+                        onIndividualApprove={(idx) => handleActionApproval(messageIndex, idx, true)}
+                        onIndividualDecline={(idx) => handleActionApproval(messageIndex, idx, false)}
+                      />
+                    </div>
+                  )
                 )}
               </div>
             ))}
@@ -290,16 +357,11 @@ const AIChatWidget = () => {
                 className="rounded-md bg-blue-500 px-4 py-2 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
                 aria-label="Send message"
               >
-                {isLoading ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <Send className="h-5 w-5" />
-                )}
+                {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
               </button>
             </div>
-            
             <p className="text-xs text-gray-400 mt-2 text-center">
-              Try: "Create 3 tasks for project planning"
+              Try: "Create 5 tasks" or "Update task priority to high"
             </p>
           </div>
         </div>
@@ -308,15 +370,162 @@ const AIChatWidget = () => {
   );
 };
 
+// Multi-Action Card with Collapsible View
+const MultiActionCard = ({ actions, onApprove, onDecline, onIndividualApprove, onIndividualDecline }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  // Check statuses
+  const allProcessing = actions.every(a => a.status === 'processing');
+  const allApproved = actions.every(a => a.status === 'approved');
+  const allDeclined = actions.every(a => a.status === 'declined');
+  const someFailed = actions.some(a => a.status === 'failed');
+
+  if (allApproved) {
+    return (
+      <div className="border-2 border-green-500 bg-green-50 rounded-lg p-3">
+        <div className="flex items-center gap-2 text-green-700">
+          <Check className="h-5 w-5" />
+          <span className="font-medium">✅ All {actions.length} actions completed!</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (allDeclined) {
+    return (
+      <div className="border-2 border-gray-300 bg-gray-50 rounded-lg p-3 opacity-60">
+        <div className="flex items-center gap-2 text-gray-600">
+          <XIcon className="h-5 w-5" />
+          <span className="font-medium">All actions declined</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (allProcessing) {
+    return (
+      <div className="border-2 border-blue-500 bg-blue-50 rounded-lg p-3 animate-pulse">
+        <div className="flex items-center gap-2 text-blue-700">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          <span className="font-medium">Processing {actions.length} actions...</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="border-2 border-blue-200 bg-blue-50 rounded-lg p-4 space-y-3">
+      {/* Header */}
+      <div
+        className="flex items-center justify-between cursor-pointer"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 bg-white rounded-md">
+            <Plus className="h-4 w-4 text-blue-600" />
+          </div>
+          <span className="font-semibold text-sm">
+            {actions.length} Actions Ready
+          </span>
+        </div>
+        <button className="p-1 hover:bg-white/50 rounded transition-colors">
+          {isExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+        </button>
+      </div>
+
+      {/* Summary (Always Visible) */}
+      <div className="bg-white rounded-lg p-3 text-sm">
+        <div className="space-y-1">
+          {actions.slice(0, 3).map((action, idx) => (
+            <div key={idx} className="flex items-center gap-2 text-gray-700">
+              <span className="text-gray-400">•</span>
+              <span className="truncate">
+                {action.type.includes('create') && '🆕'}
+                {action.type.includes('update') && '✏️'}
+                {action.type.includes('delete') && '🗑️'}
+                {' '}
+                {action.data.title || action.data.updates?.title || 'Task'}
+              </span>
+            </div>
+          ))}
+          {actions.length > 3 && (
+            <div className="text-gray-500 text-xs">
+              +{actions.length - 3} more...
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Expanded View */}
+      {isExpanded && (
+        <div className="space-y-2 max-h-64 overflow-y-auto">
+          {actions.map((action, idx) => (
+            <div key={idx} className="bg-white rounded-lg p-3 border border-gray-200">
+              <ActionPreview action={action} />
+              {!action.status && (
+                <div className="flex gap-2 mt-2">
+                  <button
+                    onClick={() => onIndividualApprove(idx)}
+                    className="flex-1 bg-green-500 hover:bg-green-600 text-white rounded px-3 py-1.5 text-xs font-medium"
+                  >
+                    Accept
+                  </button>
+                  <button
+                    onClick={() => onIndividualDecline(idx)}
+                    className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded px-3 py-1.5 text-xs font-medium"
+                  >
+                    Decline
+                  </button>
+                </div>
+              )}
+              {action.status === 'approved' && (
+                <div className="text-green-600 text-xs mt-2 flex items-center gap-1">
+                  <Check className="h-3 w-3" /> Completed
+                </div>
+              )}
+              {action.status === 'failed' && (
+                <div className="text-red-600 text-xs mt-2">Failed: {action.error}</div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Bulk Actions (if not expanded) */}
+      {!isExpanded && (
+        <div className="flex gap-2 pt-2">
+          <button
+            onClick={onApprove}
+            className="flex-1 bg-green-500 hover:bg-green-600 text-white rounded-md px-4 py-2.5 text-sm font-medium transition-colors flex items-center justify-center gap-2"
+          >
+            <Check className="h-4 w-4" />
+            Accept All
+          </button>
+          <button
+            onClick={onDecline}
+            className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-md px-4 py-2.5 text-sm font-medium transition-colors flex items-center justify-center gap-2"
+          >
+            <XIcon className="h-4 w-4" />
+            Decline All
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Single Action Card
 const ActionCard = ({ action, onApprove, onDecline }) => {
   const getActionIcon = () => {
     if (action.type.includes('create')) return <Plus className="h-4 w-4" />;
+    if (action.type.includes('update')) return <Edit className="h-4 w-4" />;
     if (action.type.includes('delete')) return <Trash2 className="h-4 w-4" />;
     return null;
   };
 
   const getActionColor = () => {
     if (action.type.includes('create')) return 'border-green-200 bg-green-50';
+    if (action.type.includes('update')) return 'border-yellow-200 bg-yellow-50';
     if (action.type.includes('delete')) return 'border-red-200 bg-red-50';
     return 'border-blue-200 bg-blue-50';
   };
@@ -324,8 +533,10 @@ const ActionCard = ({ action, onApprove, onDecline }) => {
   const getActionTitle = () => {
     const typeMap = {
       'create_task': '🆕 Create Task',
+      'update_task': '✏️ Update Task',
       'delete_task': '🗑️ Delete Task',
       'create_goal': '🎯 Create Goal',
+      'update_goal': '✏️ Update Goal',
       'delete_goal': '❌ Delete Goal'
     };
     return typeMap[action.type] || 'Action';
@@ -333,10 +544,10 @@ const ActionCard = ({ action, onApprove, onDecline }) => {
 
   if (action.status === 'approved') {
     return (
-      <div className="border-2 border-green-500 bg-green-50 rounded-lg p-3 animate-fade-in">
+      <div className="border-2 border-green-500 bg-green-50 rounded-lg p-3">
         <div className="flex items-center gap-2 text-green-700">
           <Check className="h-5 w-5" />
-          <span className="font-medium">✅ Action completed successfully!</span>
+          <span className="font-medium">✅ Completed!</span>
         </div>
       </div>
     );
@@ -347,7 +558,7 @@ const ActionCard = ({ action, onApprove, onDecline }) => {
       <div className="border-2 border-gray-300 bg-gray-50 rounded-lg p-3 opacity-60">
         <div className="flex items-center gap-2 text-gray-600">
           <XIcon className="h-5 w-5" />
-          <span className="font-medium">Action declined</span>
+          <span className="font-medium">Declined</span>
         </div>
       </div>
     );
@@ -370,7 +581,7 @@ const ActionCard = ({ action, onApprove, onDecline }) => {
         <div className="flex items-center gap-2 text-red-700">
           <AlertCircle className="h-5 w-5" />
           <div>
-            <div className="font-medium">Action failed</div>
+            <div className="font-medium">Failed</div>
             <div className="text-sm">{action.error}</div>
           </div>
         </div>
@@ -379,7 +590,7 @@ const ActionCard = ({ action, onApprove, onDecline }) => {
   }
 
   return (
-    <div className={`border-2 ${getActionColor()} rounded-lg p-4 space-y-3 shadow-sm hover:shadow-md transition-shadow`}>
+    <div className={`border-2 ${getActionColor()} rounded-lg p-4 space-y-3 shadow-sm`}>
       <div className="flex items-center gap-2">
         <div className="p-1.5 bg-white rounded-md">
           {getActionIcon()}
@@ -387,120 +598,97 @@ const ActionCard = ({ action, onApprove, onDecline }) => {
         <span className="font-semibold text-sm">{getActionTitle()}</span>
       </div>
 
-      <div className="bg-white rounded-lg p-3 space-y-1.5 text-sm border border-gray-200">
-        {action.type === 'create_task' && (
-          <>
-            <div className="flex">
-              <span className="font-medium w-24">Title:</span>
-              <span className="text-gray-700">{action.data.title}</span>
-            </div>
-            {action.data.category && (
-              <div className="flex">
-                <span className="font-medium w-24">Category:</span>
-                <span className="text-gray-700">{action.data.category}</span>
-              </div>
-            )}
-            {action.data.priority && (
-              <div className="flex">
-                <span className="font-medium w-24">Priority:</span>
-                <span className={`capitalize ${
-                  action.data.priority === 'high' ? 'text-red-600 font-semibold' :
-                  action.data.priority === 'medium' ? 'text-yellow-600' :
-                  'text-green-600'
-                }`}>
-                  {action.data.priority}
-                </span>
-              </div>
-            )}
-            {action.data.due_date && (
-              <div className="flex">
-                <span className="font-medium w-24">Due Date:</span>
-                <span className="text-gray-700">{new Date(action.data.due_date).toLocaleDateString()}</span>
-              </div>
-            )}
-            {action.data.description && (
-              <div className="flex">
-                <span className="font-medium w-24">Description:</span>
-                <span className="text-gray-700">{action.data.description}</span>
-              </div>
-            )}
-          </>
-        )}
-
-        {action.type === 'delete_task' && (
-          <>
-            <div className="flex">
-              <span className="font-medium w-24">Task ID:</span>
-              <span className="text-gray-700 font-mono text-xs">{action.data.taskId}</span>
-            </div>
-            {action.data.reason && (
-              <div className="flex">
-                <span className="font-medium w-24">Reason:</span>
-                <span className="text-gray-700">{action.data.reason}</span>
-              </div>
-            )}
-          </>
-        )}
-
-        {action.type === 'create_goal' && (
-          <>
-            <div className="flex">
-              <span className="font-medium w-24">Title:</span>
-              <span className="text-gray-700">{action.data.title}</span>
-            </div>
-            {action.data.description && (
-              <div className="flex">
-                <span className="font-medium w-24">Description:</span>
-                <span className="text-gray-700">{action.data.description}</span>
-              </div>
-            )}
-            {action.data.priority && (
-              <div className="flex">
-                <span className="font-medium w-24">Priority:</span>
-                <span className="text-gray-700 capitalize">{action.data.priority}</span>
-              </div>
-            )}
-            {action.data.deadline && (
-              <div className="flex">
-                <span className="font-medium w-24">Deadline:</span>
-                <span className="text-gray-700">{new Date(action.data.deadline).toLocaleDateString()}</span>
-              </div>
-            )}
-          </>
-        )}
-
-        {action.type === 'delete_goal' && (
-          <>
-            <div className="flex">
-              <span className="font-medium w-24">Goal ID:</span>
-              <span className="text-gray-700 font-mono text-xs">{action.data.goalId}</span>
-            </div>
-            {action.data.reason && (
-              <div className="flex">
-                <span className="font-medium w-24">Reason:</span>
-                <span className="text-gray-700">{action.data.reason}</span>
-              </div>
-            )}
-          </>
-        )}
+      <div className="bg-white rounded-lg p-3 border border-gray-200">
+        <ActionPreview action={action} />
       </div>
 
       <div className="flex gap-2 pt-2">
         <button
           onClick={onApprove}
-          className="flex-1 bg-green-500 hover:bg-green-600 text-white rounded-md px-4 py-2.5 text-sm font-medium transition-colors flex items-center justify-center gap-2 shadow-sm"
+          className="flex-1 bg-green-500 hover:bg-green-600 text-white rounded-md px-4 py-2.5 text-sm font-medium flex items-center justify-center gap-2"
         >
           <Check className="h-4 w-4" />
           Accept
         </button>
         <button
           onClick={onDecline}
-          className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-md px-4 py-2.5 text-sm font-medium transition-colors flex items-center justify-center gap-2"
+          className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-md px-4 py-2.5 text-sm font-medium flex items-center justify-center gap-2"
         >
           <XIcon className="h-4 w-4" />
           Decline
         </button>
       </div>
+    </div>
+  );
+};
+
+// Action Preview Component
+const ActionPreview = ({ action }) => {
+  return (
+    <div className="space-y-1.5 text-sm">
+      {(action.type === 'create_task' || action.type === 'update_task') && (
+        <>
+          {action.data.title && (
+            <div className="flex">
+              <span className="font-medium w-24">Title:</span>
+              <span className="text-gray-700">{action.data.title}</span>
+            </div>
+          )}
+          {action.data.updates?.title && (
+            <div className="flex">
+              <span className="font-medium w-24">New Title:</span>
+              <span className="text-gray-700">{action.data.updates.title}</span>
+            </div>
+          )}
+          {(action.data.category || action.data.updates?.category) && (
+            <div className="flex">
+              <span className="font-medium w-24">Category:</span>
+              <span className="text-gray-700">{action.data.category || action.data.updates.category}</span>
+            </div>
+          )}
+          {(action.data.priority || action.data.updates?.priority) && (
+            <div className="flex">
+              <span className="font-medium w-24">Priority:</span>
+              <span className={`capitalize ${
+                (action.data.priority || action.data.updates?.priority) === 'high' ? 'text-red-600 font-semibold' :
+                (action.data.priority || action.data.updates?.priority) === 'medium' ? 'text-yellow-600' :
+                'text-green-600'
+              }`}>
+                {action.data.priority || action.data.updates.priority}
+              </span>
+            </div>
+          )}
+          {(action.data.status || action.data.updates?.status) && (
+            <div className="flex">
+              <span className="font-medium w-24">Status:</span>
+              <span className="text-gray-700 capitalize">{action.data.status || action.data.updates.status}</span>
+            </div>
+          )}
+        </>
+      )}
+      
+      {(action.type === 'create_goal' || action.type === 'update_goal') && (
+        <>
+          {action.data.title && (
+            <div className="flex">
+              <span className="font-medium w-24">Title:</span>
+              <span className="text-gray-700">{action.data.title}</span>
+            </div>
+          )}
+          {action.data.updates?.title && (
+            <div className="flex">
+              <span className="font-medium w-24">New Title:</span>
+              <span className="text-gray-700">{action.data.updates.title}</span>
+            </div>
+          )}
+          {action.data.updates?.progress !== undefined && (
+            <div className="flex">
+              <span className="font-medium w-24">Progress:</span>
+              <span className="text-gray-700">{action.data.updates.progress}%</span>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 };

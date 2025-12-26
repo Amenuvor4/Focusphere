@@ -3,23 +3,28 @@ const Task = require('../models/Task');
 const Goal = require('../models/Goal');
 
 /**
+ * Get default due date (2 days from now)
+ */
+const getDefaultDueDate = () => {
+  const date = new Date();
+  date.setDate(date.setDate(date.getDate() + 2));
+  return date;
+};
+
+/**
  * Get AI analysis of user's productivity data
  */
 exports.analyzeData = async (req, res) => {
   try {
     const userId = req.user.id;
-
-    // Fetch user's tasks and goals
     const tasks = await Task.find({ user_id: userId });
     const goals = await Goal.find({ userId });
 
-    // Calculate completion rate
     const completedTasks = tasks.filter(t => t.status === 'completed').length;
     const completionRate = tasks.length > 0 
       ? Math.round((completedTasks / tasks.length) * 100) 
       : 0;
 
-    // Get AI analysis
     const insights = await aiService.analyzeUserData({
       tasks,
       goals,
@@ -39,8 +44,6 @@ exports.analyzeData = async (req, res) => {
 exports.prioritizeTasks = async (req, res) => {
   try {
     const userId = req.user.id;
-
-    // Fetch incomplete tasks
     const tasks = await Task.find({ 
       user_id: userId,
       status: { $ne: 'completed' }
@@ -50,9 +53,7 @@ exports.prioritizeTasks = async (req, res) => {
       return res.json({ tasks: [] });
     }
 
-    // Get AI prioritization
     const prioritizedTasks = await aiService.prioritizeTasks(tasks);
-
     res.json({ tasks: prioritizedTasks });
   } catch (error) {
     console.error('AI prioritization error:', error);
@@ -102,7 +103,6 @@ exports.breakdownTask = async (req, res) => {
     }
 
     const subtasks = await aiService.suggestTaskBreakdown(title, description);
-
     res.json({ subtasks });
   } catch (error) {
     console.error('AI task breakdown error:', error);
@@ -118,7 +118,6 @@ exports.getAnalyticsInsights = async (req, res) => {
     const userId = req.user.id;
     const { timeRange } = req.query;
 
-    // Fetch analytics data (reuse logic from analytics endpoint)
     const now = new Date();
     let startDate;
     
@@ -150,7 +149,6 @@ exports.getAnalyticsInsights = async (req, res) => {
       ? Math.round((tasksCompleted / tasksCreated) * 100) 
       : 0;
 
-    // Calculate average completion time
     const completedTasks = tasks.filter(t => t.status === 'completed' && t.updatedAt);
     const totalTime = completedTasks.reduce((sum, task) => {
       const completionTime = new Date(task.updatedAt) - new Date(task.createdAt);
@@ -160,7 +158,6 @@ exports.getAnalyticsInsights = async (req, res) => {
     const averageDays = (averageTime / (1000 * 60 * 60 * 24)).toFixed(1);
     const averageCompletionTime = `${averageDays} days`;
 
-    // Group by category
     const tasksByCategory = {};
     tasks.forEach(task => {
       tasksByCategory[task.category] = (tasksByCategory[task.category] || 0) + 1;
@@ -172,7 +169,6 @@ exports.getAnalyticsInsights = async (req, res) => {
       percentage: Math.round((count / tasksCreated) * 100)
     }));
 
-    // Get AI insights
     const insights = await aiService.generateInsights({
       tasksCompleted,
       completionRate,
@@ -193,14 +189,12 @@ exports.getAnalyticsInsights = async (req, res) => {
 exports.suggestSchedule = async (req, res) => {
   try {
     const userId = req.user.id;
-
     const tasks = await Task.find({ 
       user_id: userId,
       status: { $ne: 'completed' }
     });
 
-    const suggestion = await aiService.suggestSchedule(tasks, {});
-
+    const suggestion = await aiService.suggestSchedule(tasks);
     res.json({ suggestion });
   } catch (error) {
     console.error('AI schedule error:', error);
@@ -214,12 +208,10 @@ exports.suggestSchedule = async (req, res) => {
 exports.suggestGoals = async (req, res) => {
   try {
     const userId = req.user.id;
-
     const tasks = await Task.find({ user_id: userId });
     const goals = await Goal.find({ userId });
 
     const suggestions = await aiService.suggestGoals(tasks, goals);
-
     res.json({ suggestions });
   } catch (error) {
     console.error('AI goal suggestion error:', error);

@@ -29,6 +29,14 @@ const transformTask = (task) => ({
   category: task.category,
 });
 
+
+//Default due date function
+const getDefaultDueDate = () => {
+  const date = new Date();
+  date.setDate(date.getDate() + 2);
+  return date;
+}
+
 // Create a Task
 router.post('/', async (req, res) => {
   try {
@@ -72,7 +80,7 @@ router.post('/', async (req, res) => {
       description,
       priority,
       status: status || 'todo',
-      due_date,
+      due_date: due_date ? new Date(due_date) : getDefaultDueDate(),  // ✅ FIXED LINE
       category,
     });
 

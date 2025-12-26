@@ -7,8 +7,18 @@ class AIService {
     this.model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
   }
 
+  /**
+   * Get default due date (2 days from now)
+   */
+  getDefaultDueDate() {
+    const date = new Date();
+    date.setDate(date.getDate() + 2);
+    return date.toISOString().split('T')[0]; // YYYY-MM-DD format
+  }
 
-  // Analyze user's task and goal data
+  /**
+   * Analyze user's task and goal data
+   */
   async analyzeUserData(userData) {
     const { tasks, goals, completionRate } = userData;
 
@@ -21,12 +31,7 @@ User Data:
 - Active Goals: ${goals?.length || 0}
 
 Recent Tasks:
-${
-  tasks
-    ?.slice(0, 5)
-    .map((t) => `- ${t.title} (${t.status}) - Priority: ${t.priority}`)
-    .join("\n") || "No tasks"
-}
+${tasks?.slice(0, 5).map((t) => `- ${t.title} (${t.status}) - Priority: ${t.priority}`).join("\n") || "No tasks"}
 
 Provide 2-3 key insights and 1-2 actionable recommendations. Keep it concise (3-4 sentences).`;
 
@@ -40,51 +45,70 @@ Provide 2-3 key insights and 1-2 actionable recommendations. Keep it concise (3-
   }
 
   /**
-   * Chat with AI - WITH ACTION DETECTION
-   * Detects when user wants to create/delete tasks or goals
+   * Chat with AI - WITH ACTION DETECTION (CREATE, UPDATE, DELETE)
    */
   async chat(message, context) {
     const { tasks, goals, conversationHistory } = context;
+
+    // Format tasks with IDs for AI to reference
+    const tasksInfo = tasks?.slice(0, 10).map(t => 
+      `- "${t.title}" (ID: ${t._id}, Status: ${t.status}, Priority: ${t.priority}, Category: ${t.category})`
+    ).join('\n') || 'No tasks';
+
+    const goalsInfo = goals?.slice(0, 5).map(g =>
+      `- "${g.title}" (ID: ${g._id}, Progress: ${g.progress}%, Priority: ${g.priority})`
+    ).join('\n') || 'No goals';
 
     const systemPrompt = `You are FocusSphere AI, a helpful productivity assistant.
 
 Current User Context:
 - User has ${tasks?.length || 0} tasks (${tasks?.filter((t) => t.status === "completed").length || 0} completed)
 - User has ${goals?.length || 0} active goals
-${
-  tasks?.length > 0
-    ? `\nRecent Tasks:\n${tasks
-        .slice(0, 5)
-        .map((t) => `- ${t.title} (${t.status}, ${t.priority})`)
-        .join("\n")}`
-    : ""
-}
 
-CRITICAL: When the user asks you to CREATE or DELETE tasks/goals, respond with:
+CURRENT TASKS:
+${tasksInfo}
+
+CURRENT GOALS:
+${goalsInfo}
+
+CRITICAL: When the user asks you to CREATE, UPDATE, or DELETE tasks/goals, respond with:
 1. A friendly message explaining what you'll do
 2. An ACTIONS block with structured data
 
-**ACTION FORMAT:**
+**ACTION FORMATS:**
 
-For CREATE TASK:
+=== CREATE TASK ===
 "I'll create that task for you!
 <ACTIONS>
-[{"type":"create_task","data":{"title":"Task name","category":"Work","priority":"high","description":"Details","due_date":"2025-12-25"}}]
+[{"type":"create_task","data":{"title":"Task name","category":"Work","priority":"high","description":"Details","due_date":"2025-12-30"}}]
 </ACTIONS>"
 
-For DELETE TASK (only if user has existing tasks):
+=== UPDATE TASK ===
+"I'll update that task for you!
+<ACTIONS>
+[{"type":"update_task","data":{"taskId":"ACTUAL_TASK_ID","updates":{"title":"New title","priority":"high","status":"in-progress"}}}]
+</ACTIONS>"
+
+=== DELETE TASK ===
 "I can remove that for you!
 <ACTIONS>
 [{"type":"delete_task","data":{"taskId":"ACTUAL_TASK_ID","reason":"User requested"}}]
 </ACTIONS>"
 
-For CREATE GOAL:
+=== CREATE GOAL ===
 "Let's create that goal!
 <ACTIONS>
 [{"type":"create_goal","data":{"title":"Goal name","description":"Details","priority":"medium","deadline":"2026-01-01"}}]
 </ACTIONS>"
 
-For MULTIPLE ACTIONS (e.g. "create 3 tasks"):
+=== UPDATE GOAL ===
+"I'll update that goal!
+<ACTIONS>
+[{"type":"update_goal","data":{"goalId":"ACTUAL_GOAL_ID","updates":{"title":"New title","progress":50}}}]
+</ACTIONS>"
+
+=== MULTIPLE ACTIONS ===
+When creating multiple items, use a single ACTIONS block:
 "I'll create these tasks for you!
 <ACTIONS>
 [
@@ -95,32 +119,35 @@ For MULTIPLE ACTIONS (e.g. "create 3 tasks"):
 </ACTIONS>"
 
 **IMPORTANT RULES:**
-- Only use ACTIONS when user explicitly asks to create/delete something
-- Use actual task/goal IDs from context when deleting
-- Set reasonable defaults (priority: "medium", category: "General" if not specified)
+- Only use ACTIONS when user explicitly asks to create/update/delete
+- Use actual task/goal IDs from the context above when updating/deleting
+- For updates, only include fields that are changing
+- Set reasonable defaults:
+  - priority: "medium" if not specified
+  - category: "General" if not specified
+  - due_date: Don't include if not specified (backend will set default)
 - For due dates, use ISO format (YYYY-MM-DD)
-- Be conversational and friendly in your message
+- Be conversational and friendly
 - If user asks general questions, respond normally without ACTIONS
 
-Examples:
-User: "Create a task to finish the report by Friday"
-You: "I'll create that task for you!
-<ACTIONS>
-[{"type":"create_task","data":{"title":"Finish the report","category":"Work","priority":"high","due_date":"2025-12-27"}}]
-</ACTIONS>"
+**UPDATE EXAMPLES:**
+User: "Change the priority of 'Finish report' to high"
+You: Look up the task ID, then respond with update_task action
 
-User: "Add 3 tasks for my morning routine"
-You: "Great! I'll create these morning routine tasks for you!
-<ACTIONS>
-[
-  {"type":"create_task","data":{"title":"Morning exercise","category":"Personal","priority":"medium"}},
-  {"type":"create_task","data":{"title":"Healthy breakfast","category":"Personal","priority":"medium"}},
-  {"type":"create_task","data":{"title":"Review daily goals","category":"Personal","priority":"medium"}}
-]
-</ACTIONS>"
+User: "Mark my grocery task as completed"
+You: Find task ID, respond with update_task changing status to "completed"
 
-User: "What should I focus on today?"
-You: "Based on your tasks, I recommend focusing on your high-priority items first. You have [X] urgent tasks that need attention. Would you like me to create a focused task list for today?"`;
+User: "Update my fitness goal progress to 75%"
+You: Find goal ID, respond with update_goal changing progress to 75
+
+User: "Rename 'Buy stuff' task to 'Buy groceries'"
+You: Find task ID, respond with update_task changing title
+
+**SEARCH LOGIC:**
+- When user says "my X task", look for task with title containing X
+- When user says "the X goal", look for goal with title containing X
+- If multiple matches, pick the first one or ask for clarification
+- Always use the actual _id from the context above`;
 
     let fullPrompt = systemPrompt + "\n\nConversation:\n";
 
@@ -137,8 +164,7 @@ You: "Based on your tasks, I recommend focusing on your high-priority items firs
       const responseText = result.response.text();
 
       // Parse for actions
-      const { message: cleanMessage, actions } =
-        this.parseResponse(responseText);
+      const { message: cleanMessage, actions } = this.parseResponse(responseText);
 
       return {
         message: cleanMessage,
@@ -160,17 +186,13 @@ You: "Based on your tasks, I recommend focusing on your high-priority items firs
    */
   parseResponse(text) {
     try {
-      // Check for ACTIONS block
       const actionsMatch = text.match(/<ACTIONS>([\s\S]*?)<\/ACTIONS>/);
 
       if (!actionsMatch) {
         return { message: text.trim(), actions: [] };
       }
 
-      // Extract message (everything except ACTIONS block)
       const message = text.replace(/<ACTIONS>[\s\S]*?<\/ACTIONS>/g, "").trim();
-
-      // Parse actions JSON
       const actionsJson = actionsMatch[1].trim();
       let actions = [];
 
@@ -182,10 +204,8 @@ You: "Based on your tasks, I recommend focusing on your high-priority items firs
           if (!action.type || !action.data) return false;
 
           const validTypes = [
-            "create_task",
-            "delete_task",
-            "create_goal",
-            "delete_goal",
+            "create_task", "update_task", "delete_task",
+            "create_goal", "update_goal", "delete_goal"
           ];
           if (!validTypes.includes(action.type)) return false;
 
@@ -196,9 +216,15 @@ You: "Based on your tasks, I recommend focusing on your high-priority items firs
               category: action.data.category || "General",
               priority: action.data.priority || "medium",
               description: action.data.description || "",
-              due_date: action.data.due_date || null,
+              // Only include due_date if explicitly provided, otherwise backend will set default
+              ...(action.data.due_date ? { due_date: action.data.due_date } : {}),
               status: "todo",
             };
+          }
+
+          // Set defaults for update_task
+          if (action.type === "update_task") {
+            if (!action.data.taskId || !action.data.updates) return false;
           }
 
           // Set defaults for create_goal
@@ -209,6 +235,11 @@ You: "Based on your tasks, I recommend focusing on your high-priority items firs
               priority: action.data.priority || "medium",
               deadline: action.data.deadline || null,
             };
+          }
+
+          // Validate update_goal
+          if (action.type === "update_goal") {
+            if (!action.data.goalId || !action.data.updates) return false;
           }
 
           return true;
@@ -225,30 +256,25 @@ You: "Based on your tasks, I recommend focusing on your high-priority items firs
     }
   }
 
+  /**
+   * Prioritize tasks using AI
+   */
   async prioritizeTasks(tasks) {
     if (!tasks || tasks.length === 0) return [];
 
     const tasksDescription = tasks
-      .map(
-        (t, i) =>
-          `${i + 1}. "${t.title}" - Due: ${t.due_date || "No deadline"}, Priority: ${t.priority}, Category: ${t.category}`
-      )
+      .map((t, i) => `${i + 1}. "${t.title}" - Due: ${t.due_date || "No deadline"}, Priority: ${t.priority}`)
       .join("\n");
 
-    const prompt = `Rank these tasks by urgency and importance (most important first).
-
-Tasks:
-${tasksDescription}
-
-Respond with ONLY a JSON array of task indices: [3, 1, 4, 2, 5]`;
+    const prompt = `Rank these tasks by urgency (most important first).
+Tasks: ${tasksDescription}
+Respond with ONLY a JSON array: [3, 1, 4, 2, 5]`;
 
     try {
       const result = await this.model.generateContent(prompt);
       const text = result.response.text().trim();
-
       const match = text.match(/\[[\d,\s]+\]/);
       if (!match) return tasks;
-
       const ranking = JSON.parse(match[0]);
       return ranking.map((index) => tasks[index - 1]).filter(Boolean);
     } catch (error) {
@@ -257,123 +283,59 @@ Respond with ONLY a JSON array of task indices: [3, 1, 4, 2, 5]`;
     }
   }
 
-  /**
-   * Suggest task breakdown
-   */
   async suggestTaskBreakdown(taskTitle, taskDescription) {
-    const prompt = `Break down this task into 3-5 smaller subtasks:
-
-Task: ${taskTitle}
-${taskDescription ? `Description: ${taskDescription}` : ""}
-
-Respond with ONLY a JSON array of subtask objects:
-[{"title":"Subtask 1","priority":"medium"},{"title":"Subtask 2","priority":"high"}]`;
+    const prompt = `Break down into 3-5 subtasks: ${taskTitle}
+Respond with JSON: [{"title":"Subtask 1","priority":"medium"}]`;
 
     try {
       const result = await this.model.generateContent(prompt);
-      const text = result.response.text().trim();
-
-      const match = text.match(/\[[\s\S]*\]/);
-      if (!match) return [];
-
-      return JSON.parse(match[0]);
+      const match = result.response.text().match(/\[[\s\S]*\]/);
+      return match ? JSON.parse(match[0]) : [];
     } catch (error) {
-      console.error("AI task breakdown error:", error);
       return [];
     }
   }
 
-  // Generate productivity insights for analytics/
   async generateInsights(analyticsData) {
-    const {
-      tasksCompleted,
-      completionRate,
-      tasksByCategory,
-      averageCompletionTime,
-    } = analyticsData;
-
-    const prompt = `Analyze this productivity data and provide 3 specific, actionable insights:
-
-- Tasks Completed: ${tasksCompleted}
-- Completion Rate: ${completionRate}%
-- Average Completion Time: ${averageCompletionTime}
-- Top Categories: ${tasksByCategory
-      ?.slice(0, 3)
-      .map((c) => `${c.name} (${c.count})`)
-      .join(", ")}
-
-Provide exactly 3 bullet points (each under 25 words), starting with "•"`;
+    const { tasksCompleted, completionRate, tasksByCategory } = analyticsData;
+    const prompt = `Analyze: ${tasksCompleted} tasks, ${completionRate}% rate. Give 3 insights (each <25 words), start with "•"`;
 
     try {
       const result = await this.model.generateContent(prompt);
-      const text = result.response.text();
-
-      const insights = text
-        .split("•")
-        .map((s) => s.trim())
-        .filter((s) => s.length > 0)
-        .slice(0, 3);
-
-      return insights;
-    } catch (error) {
-      console.error("AI insights error:", error);
-      return [
-        "Complete tasks consistently to improve productivity",
-        "Focus on high-priority items first",
-        "Break down large tasks into smaller steps",
+      const insights = result.response.text().split("•").filter(s => s.trim()).slice(0, 3);
+      return insights.length ? insights : [
+        "Complete tasks consistently",
+        "Focus on high-priority items",
+        "Break down large tasks"
       ];
+    } catch (error) {
+      return ["Complete tasks consistently", "Focus on priorities", "Break down tasks"];
     }
   }
 
-  // Suggest optimal task scheduling/
   async suggestSchedule(tasks) {
-    const tasksDescription = tasks
-      .filter((t) => t.status !== "completed")
-      .slice(0, 10)
-      .map(
-        (t) =>
-          `- ${t.title} (Priority: ${t.priority}, Due: ${t.due_date || "none"})`
-      )
+    const desc = tasks.filter(t => t.status !== "completed").slice(0, 10)
+      .map(t => `- ${t.title} (${t.priority})`)
       .join("\n");
-
-    const prompt = `Suggest an optimal order to tackle these tasks today:
-
-Tasks:
-${tasksDescription}
-
-Provide a brief schedule suggestion (2-3 sentences).`;
+    const prompt = `Suggest order for: ${desc}. Brief (2-3 sentences).`;
 
     try {
       const result = await this.model.generateContent(prompt);
       return result.response.text();
     } catch (error) {
-      console.error("AI schedule error:", error);
-      return "Focus on high-priority tasks first, then tackle medium-priority items.";
+      return "Focus on high-priority tasks first.";
     }
   }
 
-
-  // Generate goal recommendations
   async suggestGoals(tasks, existingGoals) {
-    const categories = [...new Set(tasks.map((t) => t.category))].join(", ");
-
-    const prompt = `Based on task categories: ${categories}
-
-Current goals: ${existingGoals.map((g) => g.title).join(", ")}
-
-Suggest 2-3 new goals (each under 8 words). Respond with JSON array:
-["Goal 1","Goal 2","Goal 3"]`;
+    const categories = [...new Set(tasks.map(t => t.category))].join(", ");
+    const prompt = `Categories: ${categories}. Current goals: ${existingGoals.map(g => g.title).join(", ")}. Suggest 2-3 new goals (<8 words each). JSON: ["Goal 1"]`;
 
     try {
       const result = await this.model.generateContent(prompt);
-      const text = result.response.text().trim();
-
-      const match = text.match(/\[.*\]/s);
-      if (!match) return [];
-
-      return JSON.parse(match[0]);
+      const match = result.response.text().match(/\[.*\]/s);
+      return match ? JSON.parse(match[0]) : [];
     } catch (error) {
-      console.error("AI goal suggestion error:", error);
       return [];
     }
   }
