@@ -4,12 +4,11 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 class AIService {
   constructor() {
-    this.model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+    this.model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
   }
 
-  /**
-   * Analyze user's task and goal data
-   */
+
+  // Analyze user's task and goal data
   async analyzeUserData(userData) {
     const { tasks, goals, completionRate } = userData;
 
@@ -226,9 +225,6 @@ You: "Based on your tasks, I recommend focusing on your high-priority items firs
     }
   }
 
-  /**
-   * Prioritize tasks using AI
-   */
   async prioritizeTasks(tasks) {
     if (!tasks || tasks.length === 0) return [];
 
@@ -287,9 +283,7 @@ Respond with ONLY a JSON array of subtask objects:
     }
   }
 
-  /**
-   * Generate productivity insights for analytics
-   */
+  // Generate productivity insights for analytics/
   async generateInsights(analyticsData) {
     const {
       tasksCompleted,
@@ -331,9 +325,7 @@ Provide exactly 3 bullet points (each under 25 words), starting with "•"`;
     }
   }
 
-  /**
-   * Suggest optimal task scheduling
-   */
+  // Suggest optimal task scheduling/
   async suggestSchedule(tasks) {
     const tasksDescription = tasks
       .filter((t) => t.status !== "completed")
@@ -360,9 +352,8 @@ Provide a brief schedule suggestion (2-3 sentences).`;
     }
   }
 
-  /**
-   * Generate goal recommendations
-   */
+
+  // Generate goal recommendations
   async suggestGoals(tasks, existingGoals) {
     const categories = [...new Set(tasks.map((t) => t.category))].join(", ");
 
