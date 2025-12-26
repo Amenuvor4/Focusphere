@@ -1,4 +1,11 @@
-import { BarChart3, CheckSquare, Cog, FolderKanban, CalendarClock } from "lucide-react";
+import {
+  BarChart3,
+  CheckSquare,
+  Cog,
+  FolderKanban,
+  CalendarClock,
+  Sparkles,
+} from "lucide-react";
 import React, { useState, useEffect } from "react";
 import getValidToken from "./tokenUtils";
 
@@ -107,6 +114,19 @@ export function DashboardSidebar({ currentView, setCurrentView }) {
               >
                 <BarChart3 className="h-4 w-4" />
                 <span>Analytics</span>
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => setCurrentView("ai-assistant")}
+                className={`w-full flex items-center justify-start gap-2 px-3 py-2 rounded-md ${
+                  currentView === "ai-assistant"
+                    ? "bg-blue-100 text-blue-800"
+                    : "text-gray-700 hover:bg-gray-100"
+                } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+              >
+                <Sparkles className="h-4 w-4" />
+                <span>AI Assistant</span>
               </button>
             </li>
             <li>

@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
 import {
-  X,
   Send,
   Loader2,
   Sparkles,
@@ -9,52 +8,112 @@ import {
   Plus,
   Trash2,
   AlertCircle,
+  Edit,
+  Image,
+  Download,
+  Search,
+  MessageSquare,
+  Trash,
   ChevronDown,
   ChevronUp,
-  Edit,
+  X,
 } from "lucide-react";
 
-const AIChatWidget = () => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([
-    {
-      role: "assistant",
-      content:
-        "Hi! I'm your FocusSphere AI assistant. Try: 'Create 5 tasks for my project' or 'Update my report task to high priority'!",
-    },
-  ]);
+const AIAssistant = () => {
+  const [conversations, setConversations] = useState([]);
+  const [currentConversationId, setCurrentConversationId] = useState(null);
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedImage, setSelectedImage] = useState(null);
   const messagesEndRef = useRef(null);
+  const fileInputRef = useRef(null);
 
-  const scrollToBottom = () => {
+  // Load conversations from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem("ai_conversations");
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      setConversations(parsed);
+      if (parsed.length > 0) {
+        setCurrentConversationId(parsed[0].id);
+      }
+    } else {
+      // Create initial conversation
+      createNewConversation();
+    }
+  }, []);
+
+  // Save conversations to localStorage
+  useEffect(() => {
+    if (conversations.length > 0) {
+      localStorage.setItem("ai_conversations", JSON.stringify(conversations));
+    }
+  }, [conversations]);
+
+  // Auto-scroll
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [conversations, currentConversationId]);
+
+  const createNewConversation = () => {
+    const newConv = {
+      id: Date.now().toString(),
+      title: "New Chat",
+      messages: [
+        {
+          role: "assistant",
+          content:
+            "Hi! I'm your FocusSphere AI assistant. I can help you create, update, and manage tasks and goals. You can also upload images for me to analyze!",
+        },
+      ],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setConversations([newConv, ...conversations]);
+    setCurrentConversationId(newConv.id);
   };
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+  const getCurrentConversation = () => {
+    return conversations.find((c) => c.id === currentConversationId);
+  };
+
+  const updateConversation = (updates) => {
+    setConversations(
+      conversations.map((c) =>
+        c.id === currentConversationId
+          ? { ...c, ...updates, updatedAt: new Date().toISOString() }
+          : c
+      )
+    );
+  };
+
+  const deleteConversation = (id) => {
+    const filtered = conversations.filter((c) => c.id !== id);
+    setConversations(filtered);
+    if (currentConversationId === id) {
+      setCurrentConversationId(filtered[0]?.id || null);
+    }
+    if (filtered.length === 0) {
+      createNewConversation();
+    }
+  };
 
   const getValidToken = async () => {
     try {
-      const token = localStorage.getItem("accessToken");
-      return token || null;
+      return localStorage.getItem("accessToken");
     } catch (error) {
       console.error("Token error:", error);
       return null;
     }
   };
 
-  // Execute approved action
   const executeAction = async (action) => {
     try {
       const token = await getValidToken();
       if (!token) throw new Error("Not authenticated");
 
-      let response;
-      let endpoint;
-      let method;
-      let body;
+      let response, endpoint, method, body;
 
       switch (action.type) {
         case "create_task":
@@ -62,50 +121,40 @@ const AIChatWidget = () => {
           method = "POST";
           body = JSON.stringify(action.data);
           break;
-
         case "update_task":
           endpoint = `http://localhost:5000/api/tasks/${action.data.taskId}`;
           method = "PUT";
           body = JSON.stringify(action.data.updates);
           break;
-
         case "delete_task":
           endpoint = `http://localhost:5000/api/tasks/${action.data.taskId}`;
           method = "DELETE";
           break;
-
         case "create_goal":
           endpoint = "http://localhost:5000/api/goals";
           method = "POST";
-          body = JSON.stringify({
-            ...action.data,
-            progress: 0,
-            tasks: [],
-          });
+          body = JSON.stringify({ ...action.data, progress: 0, tasks: [] });
           break;
-
         case "update_goal":
           endpoint = `http://localhost:5000/api/goals/${action.data.goalId}`;
           method = "PUT";
           body = JSON.stringify(action.data.updates);
           break;
-
         case "delete_goal":
           endpoint = `http://localhost:5000/api/goals/${action.data.goalId}`;
           method = "DELETE";
           break;
-
         default:
           throw new Error("Unknown action type");
       }
 
       response = await fetch(endpoint, {
-        method: method,
+        method,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: body,
+        body,
       });
 
       if (!response.ok) {
@@ -120,18 +169,19 @@ const AIChatWidget = () => {
     }
   };
 
-  // Handle action approval
   const handleActionApproval = async (messageIndex, actionIndex, approved) => {
-    const message = messages[messageIndex];
+    const conversation = getCurrentConversation();
+    const message = conversation.messages[messageIndex];
+
     if (!message.suggestedActions || !message.suggestedActions[actionIndex])
       return;
 
     const action = message.suggestedActions[actionIndex];
 
-    const updatedMessages = [...messages];
+    const updatedMessages = [...conversation.messages];
     updatedMessages[messageIndex].suggestedActions[actionIndex].status =
       approved ? "processing" : "declined";
-    setMessages(updatedMessages);
+    updateConversation({ messages: updatedMessages });
 
     if (approved) {
       const result = await executeAction(action);
@@ -140,87 +190,107 @@ const AIChatWidget = () => {
         result.success ? "approved" : "failed";
       updatedMessages[messageIndex].suggestedActions[actionIndex].error =
         result.error;
-      setMessages(updatedMessages);
+      updateConversation({ messages: updatedMessages });
 
-      if (result.success) {
-        const actionName = action.type.replace("_", " ");
-        const confirmMessage = {
-          role: "assistant",
-          content: `✅ Done! I've ${actionName}d successfully.`,
-        };
-        setMessages([...updatedMessages, confirmMessage]);
-      } else {
-        const errorMessage = {
-          role: "assistant",
-          content: `❌ Sorry, I couldn't complete that: ${result.error}`,
-        };
-        setMessages([...updatedMessages, errorMessage]);
-      }
+      const confirmMessage = result.success
+        ? {
+            role: "assistant",
+            content: `✅ Done! I've ${action.type.replace("_", " ")}d successfully.`,
+          }
+        : {
+            role: "assistant",
+            content: `❌ Sorry, I couldn't complete that: ${result.error}`,
+          };
+
+      updateConversation({ messages: [...updatedMessages, confirmMessage] });
     } else {
-      setMessages(updatedMessages);
+      updateConversation({ messages: updatedMessages });
       const declineMessage = {
         role: "assistant",
         content: "No problem! Let me know if you'd like something else.",
       };
-      setMessages([...updatedMessages, declineMessage]);
+      updateConversation({ messages: [...updatedMessages, declineMessage] });
     }
   };
 
-  // Handle bulk approval (all actions)
   const handleBulkApproval = async (messageIndex, approved) => {
-    const message = messages[messageIndex];
+    const conversation = getCurrentConversation();
+    const message = conversation.messages[messageIndex];
     if (!message.suggestedActions) return;
 
-    const updatedMessages = [...messages];
-
-    // Mark all as processing or declined
+    const updatedMessages = [...conversation.messages];
     updatedMessages[messageIndex].suggestedActions =
       message.suggestedActions.map((action) => ({
         ...action,
         status: approved ? "processing" : "declined",
       }));
-    setMessages(updatedMessages);
+    updateConversation({ messages: updatedMessages });
 
     if (approved) {
-      // Execute all actions
       const results = await Promise.all(
         message.suggestedActions.map((action) => executeAction(action))
       );
 
-      // Update statuses
       updatedMessages[messageIndex].suggestedActions =
         message.suggestedActions.map((action, idx) => ({
           ...action,
           status: results[idx].success ? "approved" : "failed",
           error: results[idx].error,
         }));
-      setMessages(updatedMessages);
+      updateConversation({ messages: updatedMessages });
 
-      // Add confirmation
       const successCount = results.filter((r) => r.success).length;
       const confirmMessage = {
         role: "assistant",
         content: `✅ Done! Successfully completed ${successCount} of ${results.length} actions.`,
       };
-      setMessages([...updatedMessages, confirmMessage]);
+      updateConversation({ messages: [...updatedMessages, confirmMessage] });
     } else {
-      setMessages(updatedMessages);
-      const declineMessage = {
-        role: "assistant",
-        content: "No problem! All actions declined.",
+      updateConversation({ messages: updatedMessages });
+    }
+  };
+
+  const handleImageSelect = (e) => {
+    const file = e.target.files[0];
+    if (file && file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSelectedImage({
+          file,
+          preview: reader.result,
+          name: file.name,
+        });
       };
-      setMessages([...updatedMessages, declineMessage]);
+      reader.readAsDataURL(file);
     }
   };
 
   const handleSendMessage = async () => {
-    if (!inputMessage.trim() || isLoading) return;
+    if ((!inputMessage.trim() && !selectedImage) || isLoading) return;
 
+    const conversation = getCurrentConversation();
     const userMessage = inputMessage.trim();
-    setInputMessage("");
+    const imageData = selectedImage;
 
-    const newMessages = [...messages, { role: "user", content: userMessage }];
-    setMessages(newMessages);
+    setInputMessage("");
+    setSelectedImage(null);
+
+    const newMessage = {
+      role: "user",
+      content: userMessage || "[Image uploaded]",
+      image: imageData?.preview,
+    };
+
+    const newMessages = [...conversation.messages, newMessage];
+    updateConversation({ messages: newMessages });
+
+    // Update title if it's still "New Chat"
+    if (conversation.title === "New Chat" && userMessage) {
+      const title =
+        userMessage.slice(0, 30) + (userMessage.length > 30 ? "..." : "");
+      updateConversation({ title });
+    }
+
     setIsLoading(true);
 
     try {
@@ -234,8 +304,8 @@ const AIChatWidget = () => {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          message: userMessage,
-          conversationHistory: messages
+          message: userMessage || "Analyze this image",
+          conversationHistory: conversation.messages
             .filter((m) => m.role !== "system" && !m.suggestedActions)
             .map((m) => ({ role: m.role, content: m.content })),
         }),
@@ -251,16 +321,14 @@ const AIChatWidget = () => {
         suggestedActions: data.suggestedActions || [],
       };
 
-      setMessages([...newMessages, aiMessage]);
+      updateConversation({ messages: [...newMessages, aiMessage] });
     } catch (error) {
       console.error("AI chat error:", error);
-      setMessages([
-        ...newMessages,
-        {
-          role: "assistant",
-          content: "Sorry, I'm having trouble right now. Please try again.",
-        },
-      ]);
+      const errorMessage = {
+        role: "assistant",
+        content: "Sorry, I'm having trouble right now. Please try again.",
+      };
+      updateConversation({ messages: [...newMessages, errorMessage] });
     } finally {
       setIsLoading(false);
     }
@@ -273,139 +341,270 @@ const AIChatWidget = () => {
     }
   };
 
-  return (
-    <>
-      {!isOpen && (
-        <button
-          onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg hover:shadow-xl transition-all hover:scale-110 animate-pulse"
-          aria-label="Open AI Assistant"
-        >
-          <Sparkles className="h-6 w-6" />
-        </button>
-      )}
+  const exportConversation = () => {
+    const conversation = getCurrentConversation();
+    const text = conversation.messages
+      .map((m) => `${m.role.toUpperCase()}: ${m.content}`)
+      .join("\n\n");
 
-      {isOpen && (
-        <div className="fixed bottom-6 right-6 z-50 flex h-[500px] w-[420px] flex-col rounded-lg bg-white shadow-2xl border border-gray-200">
-          <div className="flex items-center justify-between rounded-t-lg bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-3 text-white">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5" />
-              <span className="font-semibold">FocusSphere AI</span>
-            </div>
-            <button
-              onClick={() => setIsOpen(false)}
-              className="rounded-full p-1 hover:bg-white/20 transition-colors"
-              aria-label="Close chat"
+    const blob = new Blob([text], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `conversation-${conversation.id}.txt`;
+    a.click();
+  };
+
+  const filteredConversations = conversations.filter(
+    (c) =>
+      c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.messages.some((m) =>
+        m.content.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+  );
+
+  const conversation = getCurrentConversation();
+
+  return (
+    <div className="flex h-[calc(100vh-4rem)] gap-4">
+      {/* Sidebar - Chat History */}
+      <div className="w-80 bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col">
+        <div className="p-4 border-b">
+          <button
+            onClick={createNewConversation}
+            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg px-4 py-2.5 font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+          >
+            <Plus className="h-5 w-5" />
+            New Chat
+          </button>
+        </div>
+
+        <div className="p-3 border-b">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search conversations..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-2">
+          {filteredConversations.map((conv) => (
+            <div
+              key={conv.id}
+              onClick={() => setCurrentConversationId(conv.id)}
+              className={`group p-3 rounded-lg mb-2 cursor-pointer transition-colors ${
+                conv.id === currentConversationId
+                  ? "bg-blue-50 border-blue-200"
+                  : "hover:bg-gray-50"
+              }`}
             >
-              <X className="h-5 w-5" />
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                    <h3 className="font-medium text-sm truncate">
+                      {conv.title}
+                    </h3>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {new Date(conv.updatedAt).toLocaleDateString()}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {conv.messages.length} messages
+                  </p>
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (window.confirm("Delete this conversation?")) {
+                      deleteConversation(conv.id);
+                    }
+                  }}
+                  className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 rounded transition-opacity"
+                >
+                  <Trash className="h-4 w-4 text-red-500" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Main Chat Area */}
+      <div className="flex-1 bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col">
+        {/* Header */}
+        <div className="p-4 border-b flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg">
+              <Sparkles className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h1 className="font-semibold text-lg">AI Assistant</h1>
+              <p className="text-sm text-gray-500">
+                {conversation?.messages.length || 0} messages
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={exportConversation}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Export conversation"
+            >
+              <Download className="h-5 w-5 text-gray-600" />
+            </button>
+          </div>
+        </div>
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          {conversation?.messages.map((message, messageIndex) => (
+            <div key={messageIndex}>
+              <div
+                className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+              >
+                <div
+                  className={`max-w-[70%] rounded-lg px-4 py-3 ${
+                    message.role === "user"
+                      ? "bg-blue-500 text-white"
+                      : "bg-gray-100 text-gray-800"
+                  }`}
+                >
+                  {message.image && (
+                    <img
+                      src={message.image}
+                      alt="Uploaded"
+                      className="rounded-lg mb-2 max-w-full"
+                    />
+                  )}
+                  <p className="text-sm whitespace-pre-wrap">
+                    {message.content}
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Cards */}
+              {message.suggestedActions &&
+                message.suggestedActions.length > 0 &&
+                (message.suggestedActions.length === 1 ? (
+                  <div className="mt-3 ml-12">
+                    <ActionCard
+                      action={message.suggestedActions[0]}
+                      onApprove={() =>
+                        handleActionApproval(messageIndex, 0, true)
+                      }
+                      onDecline={() =>
+                        handleActionApproval(messageIndex, 0, false)
+                      }
+                    />
+                  </div>
+                ) : (
+                  <div className="mt-3 ml-12">
+                    <MultiActionCard
+                      actions={message.suggestedActions}
+                      onApprove={() => handleBulkApproval(messageIndex, true)}
+                      onDecline={() => handleBulkApproval(messageIndex, false)}
+                      onIndividualApprove={(idx) =>
+                        handleActionApproval(messageIndex, idx, true)
+                      }
+                      onIndividualDecline={(idx) =>
+                        handleActionApproval(messageIndex, idx, false)
+                      }
+                    />
+                  </div>
+                ))}
+            </div>
+          ))}
+
+          {isLoading && (
+            <div className="flex justify-start">
+              <div className="bg-gray-100 rounded-lg px-4 py-3 max-w-[70%]">
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                  <span className="text-sm text-gray-600">
+                    AI is thinking...
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Input Area */}
+        <div className="border-t p-4">
+          {selectedImage && (
+            <div className="mb-3 flex items-center gap-2 p-2 bg-blue-50 rounded-lg">
+              <img
+                src={selectedImage.preview}
+                alt="Preview"
+                className="h-12 w-12 object-cover rounded"
+              />
+              <span className="text-sm text-gray-700 flex-1">
+                {selectedImage.name}
+              </span>
+              <button
+                onClick={() => setSelectedImage(null)}
+                className="p-1 hover:bg-blue-100 rounded"
+              >
+                <X className="h-4 w-4 text-gray-500" />
+              </button>
+            </div>
+          )}
+
+          <div className="flex gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageSelect}
+              className="hidden"
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="p-3 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Upload image"
+            >
+              <Image className="h-5 w-5 text-gray-600" />
+            </button>
+            <input
+              type="text"
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Ask me anything..."
+              disabled={isLoading}
+              className="flex-1 rounded-lg border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50"
+            />
+            <button
+              onClick={handleSendMessage}
+              disabled={(!inputMessage.trim() && !selectedImage) || isLoading}
+              className="px-6 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg font-medium hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity flex items-center gap-2"
+            >
+              {isLoading ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Send className="h-5 w-5" />
+              )}
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {messages.map((message, messageIndex) => (
-              <div key={messageIndex}>
-                <div
-                  className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
-                >
-                  <div
-                    className={`max-w-[85%] rounded-lg px-4 py-2 ${
-                      message.role === "user"
-                        ? "bg-blue-500 text-white"
-                        : "bg-gray-100 text-gray-800"
-                    }`}
-                  >
-                    <p className="text-sm whitespace-pre-wrap">
-                      {message.content}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Action Container - Single or Multiple */}
-                {message.suggestedActions &&
-                  message.suggestedActions.length > 0 &&
-                  (message.suggestedActions.length === 1 ? (
-                    // Single action - show normally
-                    <div className="mt-3">
-                      <ActionCard
-                        action={message.suggestedActions[0]}
-                        onApprove={() =>
-                          handleActionApproval(messageIndex, 0, true)
-                        }
-                        onDecline={() =>
-                          handleActionApproval(messageIndex, 0, false)
-                        }
-                      />
-                    </div>
-                  ) : (
-                    // Multiple actions - show collapsible
-                    <div className="mt-3">
-                      <MultiActionCard
-                        actions={message.suggestedActions}
-                        onApprove={() => handleBulkApproval(messageIndex, true)}
-                        onDecline={() =>
-                          handleBulkApproval(messageIndex, false)
-                        }
-                        onIndividualApprove={(idx) =>
-                          handleActionApproval(messageIndex, idx, true)
-                        }
-                        onIndividualDecline={(idx) =>
-                          handleActionApproval(messageIndex, idx, false)
-                        }
-                      />
-                    </div>
-                  ))}
-              </div>
-            ))}
-
-            {isLoading && (
-              <div className="flex justify-start">
-                <div className="bg-gray-100 rounded-lg px-4 py-3 max-w-[85%]">
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
-                    <span className="text-sm text-gray-600">Thinking...</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div ref={messagesEndRef} />
-          </div>
-
-          <div className="border-t border-gray-200 p-4">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Ask me anything..."
-                disabled={isLoading}
-                className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:cursor-not-allowed"
-              />
-              <button
-                onClick={handleSendMessage}
-                disabled={!inputMessage.trim() || isLoading}
-                className="rounded-md bg-blue-500 px-4 py-2 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-                aria-label="Send message"
-              >
-                {isLoading ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <Send className="h-5 w-5" />
-                )}
-              </button>
-            </div>
-            <p className="text-xs text-gray-400 mt-2 text-center">
-              Try: "Create 5 tasks" or "Update task priority to high"
-            </p>
-          </div>
+          <p className="text-xs text-gray-400 mt-2 text-center">
+            Press Enter to send • Shift+Enter for new line
+          </p>
         </div>
-      )}
-    </>
+      </div>
+    </div>
   );
 };
 
-// Multi-Action Card with Collapsible View
+// Reuse components from widget
 const MultiActionCard = ({
   actions,
   onApprove,
@@ -415,11 +614,9 @@ const MultiActionCard = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // Check statuses
   const allProcessing = actions.every((a) => a.status === "processing");
   const allApproved = actions.every((a) => a.status === "approved");
   const allDeclined = actions.every((a) => a.status === "declined");
-  const someFailed = actions.some((a) => a.status === "failed");
 
   if (allApproved) {
     return (
@@ -460,7 +657,6 @@ const MultiActionCard = ({
 
   return (
     <div className="border-2 border-blue-200 bg-blue-50 rounded-lg p-4 space-y-3">
-      {/* Header */}
       <div
         className="flex items-center justify-between cursor-pointer"
         onClick={() => setIsExpanded(!isExpanded)}
@@ -482,7 +678,6 @@ const MultiActionCard = ({
         </button>
       </div>
 
-      {/* Summary (Always Visible) */}
       <div className="bg-white rounded-lg p-3 text-sm">
         <div className="space-y-1">
           {actions.slice(0, 3).map((action, idx) => (
@@ -504,7 +699,6 @@ const MultiActionCard = ({
         </div>
       </div>
 
-      {/* Expanded View */}
       {isExpanded && (
         <div className="space-y-2 max-h-64 overflow-y-auto">
           {actions.map((action, idx) => (
@@ -529,34 +723,23 @@ const MultiActionCard = ({
                   </button>
                 </div>
               )}
-              {action.status === "approved" && (
-                <div className="text-green-600 text-xs mt-2 flex items-center gap-1">
-                  <Check className="h-3 w-3" /> Completed
-                </div>
-              )}
-              {action.status === "failed" && (
-                <div className="text-red-600 text-xs mt-2">
-                  Failed: {action.error}
-                </div>
-              )}
             </div>
           ))}
         </div>
       )}
 
-      {/* Bulk Actions (if not expanded) */}
       {!isExpanded && (
         <div className="flex gap-2 pt-2">
           <button
             onClick={onApprove}
-            className="flex-1 bg-green-500 hover:bg-green-600 text-white rounded-md px-4 py-2.5 text-sm font-medium transition-colors flex items-center justify-center gap-2"
+            className="flex-1 bg-green-500 hover:bg-green-600 text-white rounded-md px-4 py-2.5 text-sm font-medium flex items-center justify-center gap-2"
           >
             <Check className="h-4 w-4" />
             Accept All
           </button>
           <button
             onClick={onDecline}
-            className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-md px-4 py-2.5 text-sm font-medium transition-colors flex items-center justify-center gap-2"
+            className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-md px-4 py-2.5 text-sm font-medium flex items-center justify-center gap-2"
           >
             <XIcon className="h-4 w-4" />
             Decline All
@@ -567,7 +750,6 @@ const MultiActionCard = ({
   );
 };
 
-// Single Action Card
 const ActionCard = ({ action, onApprove, onDecline }) => {
   const getActionIcon = () => {
     if (action.type.includes("create")) return <Plus className="h-4 w-4" />;
@@ -643,9 +825,7 @@ const ActionCard = ({ action, onApprove, onDecline }) => {
   }
 
   return (
-    <div
-      className={`border-2 ${getActionColor()} rounded-lg p-4 space-y-3 shadow-sm`}
-    >
+    <div className={`border-2 ${getActionColor()} rounded-lg p-4 space-y-3`}>
       <div className="flex items-center gap-2">
         <div className="p-1.5 bg-white rounded-md">{getActionIcon()}</div>
         <span className="font-semibold text-sm">{getActionTitle()}</span>
@@ -675,7 +855,6 @@ const ActionCard = ({ action, onApprove, onDecline }) => {
   );
 };
 
-// Action Preview Component
 const ActionPreview = ({ action }) => {
   return (
     <div className="space-y-1.5 text-sm">
@@ -719,14 +898,6 @@ const ActionPreview = ({ action }) => {
               </span>
             </div>
           )}
-          {(action.data.status || action.data.updates?.status) && (
-            <div className="flex">
-              <span className="font-medium w-24">Status:</span>
-              <span className="text-gray-700 capitalize">
-                {action.data.status || action.data.updates.status}
-              </span>
-            </div>
-          )}
         </>
       )}
 
@@ -736,12 +907,6 @@ const ActionPreview = ({ action }) => {
             <div className="flex">
               <span className="font-medium w-24">Title:</span>
               <span className="text-gray-700">{action.data.title}</span>
-            </div>
-          )}
-          {action.data.updates?.title && (
-            <div className="flex">
-              <span className="font-medium w-24">New Title:</span>
-              <span className="text-gray-700">{action.data.updates.title}</span>
             </div>
           )}
           {action.data.updates?.progress !== undefined && (
@@ -758,4 +923,4 @@ const ActionPreview = ({ action }) => {
   );
 };
 
-export default AIChatWidget;
+export default AIAssistant;

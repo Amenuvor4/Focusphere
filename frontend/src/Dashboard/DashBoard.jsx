@@ -6,6 +6,7 @@ import Goals from "./GoalList";
 import { Analytics } from "./Analytics";
 import { Settings } from "./Settings";
 import AIChatWidget from "../componets/AIChatWidget.jsx";
+import AIAssistant from "../componets/AIAssistant.jsx";
 
 export function Dashboard() {
   const [currentView, setCurrentView] = useState("tasks");
@@ -20,9 +21,10 @@ export function Dashboard() {
           {currentView === "goals" && <Goals />}
           {currentView === "analytics" && <Analytics />}
           {currentView === "settings" && <Settings />}
+          {currentView === "ai-assistant" && <AIAssistant />}
         </main>
       </div>
-      <AIChatWidget />
+      {currentView !== "ai-assistant" && <AIChatWidget />}
     </div>
   );
 }
