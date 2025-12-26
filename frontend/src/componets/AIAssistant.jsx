@@ -308,6 +308,7 @@ const AIAssistant = () => {
           conversationHistory: conversation.messages
             .filter((m) => m.role !== "system" && !m.suggestedActions)
             .map((m) => ({ role: m.role, content: m.content })),
+          imageData: imageData?.preview, // Send image data if present
         }),
       });
 

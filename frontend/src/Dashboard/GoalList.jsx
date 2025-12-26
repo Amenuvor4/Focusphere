@@ -1,161 +1,188 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
-import { Filter, Plus } from "lucide-react";
+import { Plus, Target } from "lucide-react";
+import getValidToken from "./tokenUtils";
 import GoalCard from "./GoalCard";
 import GoalDetails from "./GoalDetails";
-import getValidToken from "./tokenUtils"
+import GoalModal from "../componets/GoalModal.jsx";
 
-const Goals = () => {
+const GoalList = () => {
   const [goals, setGoals] = useState([]);
   const [tasks, setTasks] = useState([]);
-  const [selectedGoalId, setSelectedGoalId] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("all"); // "all", "high", "medium", "low"
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedGoal, setSelectedGoal] = useState(null);
+  const [viewingGoal, setViewingGoal] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-
-
-
-  // Fetch goals and tasks from the backend
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const token = await getValidToken('accessToken')
-
-        // Fetch goals
-        const goalsResponse = await axios.get("http://localhost:5000/api/goals", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setGoals(goalsResponse.data);
-
-        // Fetch tasks
-        const tasksResponse = await axios.get("http://localhost:5000/api/tasks", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setTasks(tasksResponse.data);
-
-        setLoading(false);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+    fetchGoals();
+    fetchTasks();
   }, []);
 
-  // Find the selected goal
-  const selectedGoal = goals.find((goal) => goal._id === selectedGoalId);
+  const fetchGoals = async () => {
+    try {
+      const token = await getValidToken();
+      if (!token) return;
 
-  // Filter tasks for the selected goal
-  const goalTasks = selectedGoalId
-    ? tasks.filter((task) => task.category === selectedGoal?.title)
-    : [];
+      const response = await fetch("http://localhost:5000/api/goals", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-  // Filter goals based on selected filter
-  const filteredGoals =
-    filter === "all"
-      ? goals
-      : goals.filter((goal) => goal.priority === filter);
-
-  const handleViewDetails = (goalId) => {
-    setSelectedGoalId(goalId);
+      if (response.ok) {
+        const data = await response.json();
+        setGoals(data);
+      }
+    } catch (error) {
+      console.error("Error fetching goals:", error);
+    }
   };
 
-  const handleClose = () => {
-    setSelectedGoalId(null);
+  const fetchTasks = async () => {
+    try {
+      const token = await getValidToken();
+      if (!token) return;
+
+      const response = await fetch("http://localhost:5000/api/tasks", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setTasks(data);
+      }
+    } catch (error) {
+      console.error("Error fetching tasks:", error);
+    }
   };
 
-  const handleFilterChange = (newFilter) => {
-    setFilter(newFilter);
+  const handleAddGoal = () => {
+    setIsAddModalOpen(true);
   };
 
-  if (loading) {
-    return <div className="p-8 text-center">Loading goals...</div>;
+  const handleEditGoal = (goal) => {
+    setSelectedGoal(goal);
+    setIsEditModalOpen(true);
+  };
+
+  const handleViewDetails = (goal) => {
+    setViewingGoal(goal);
+  };
+
+  const handleDeleteGoal = async (goalId) => {
+    if (!window.confirm("Are you sure you want to delete this goal?")) return;
+
+    try {
+      const token = await getValidToken();
+      const response = await fetch(
+        `http://localhost:5000/api/goals/${goalId}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (response.ok) {
+        setGoals(goals.filter((g) => g._id !== goalId));
+        alert("Goal deleted successfully!");
+      } else {
+        alert("Failed to delete goal");
+      }
+    } catch (error) {
+      console.error("Error deleting goal:", error);
+      alert("Error deleting goal");
+    }
+  };
+
+  const handleCloseDetails = () => {
+    setViewingGoal(null);
+  };
+
+  // If viewing goal details, show that instead
+  if (viewingGoal) {
+    const goalTasks = tasks.filter((task) =>
+      viewingGoal.tasks?.includes(task.id)
+    );
+
+    return (
+      <GoalDetails
+        goal={viewingGoal}
+        tasks={goalTasks}
+        onClose={handleCloseDetails}
+      />
+    );
   }
 
   return (
-    <div className="space-y-4 p-4">
-      {!selectedGoalId ? (
-        <>
-          {/* Goal List Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold tracking-tight">Goals</h2>
-              <p className="text-gray-500">Track your long-term objectives and progress</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <button
-                  className="flex items-center gap-1 rounded-md border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50"
-                  onClick={() => {
-                    // Toggle filter dropdown logic would go here
-                  }}
-                >
-                  <Filter className="h-4 w-4" />
-                  Filter: {filter.charAt(0).toUpperCase() + filter.slice(1)}
-                </button>
-                <div className="absolute right-0 mt-1 w-36 rounded-md border bg-white shadow-lg z-10 hidden">
-                  <div className="py-1">
-                    <button
-                      className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
-                      onClick={() => handleFilterChange("all")}
-                    >
-                      All
-                    </button>
-                    <button
-                      className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
-                      onClick={() => handleFilterChange("high")}
-                    >
-                      High Priority
-                    </button>
-                    <button
-                      className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
-                      onClick={() => handleFilterChange("medium")}
-                    >
-                      Medium Priority
-                    </button>
-                    <button
-                      className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
-                      onClick={() => handleFilterChange("low")}
-                    >
-                      Low Priority
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <button className="flex items-center gap-1 rounded-md bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700">
-                <Plus className="h-4 w-4" />
-                Add Goal
-              </button>
-            </div>
-          </div>
+    <div className="w-full">
+      {/* Header */}
+      <div className="mb-6 flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold">Goals</h1>
+          <p className="text-gray-500">Track your long-term objectives</p>
+        </div>
+        <button
+          onClick={handleAddGoal}
+          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          <Plus className="h-5 w-5" />
+          Add Goal
+        </button>
+      </div>
 
-          {/* Goal Cards Grid */}
-          {filteredGoals.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filteredGoals.map((goal) => (
-                <GoalCard
-                  key={goal._id}
-                  goal={goal}
-                  onViewDetails={handleViewDetails}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-gray-500">No goals found with the selected filter.</p>
-            </div>
-          )}
-        </>
+      {/* Goals Grid */}
+      {goals.length === 0 ? (
+        <div className="text-center py-12 bg-white rounded-lg border">
+          <Target className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+          <h3 className="text-lg font-medium text-gray-900 mb-1">
+            No goals yet
+          </h3>
+          <p className="text-gray-500 mb-4">
+            Get started by creating your first goal
+          </p>
+          <button
+            onClick={handleAddGoal}
+            className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+          >
+            <Plus className="h-5 w-5" />
+            Create Goal
+          </button>
+        </div>
       ) : (
-        <GoalDetails
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {goals.map((goal) => (
+            <GoalCard
+              key={goal._id}
+              goal={goal}
+              onViewDetails={handleViewDetails}
+              onEdit={handleEditGoal}
+              onDelete={handleDeleteGoal}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Modals */}
+      {isAddModalOpen && (
+        <GoalModal
+          isOpen={isAddModalOpen}
+          onClose={() => setIsAddModalOpen(false)}
+          onSave={fetchGoals}
+        />
+      )}
+
+      {isEditModalOpen && selectedGoal && (
+        <GoalModal
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setSelectedGoal(null);
+          }}
+          onSave={fetchGoals}
           goal={selectedGoal}
-          tasks={goalTasks}
-          onClose={handleClose}
         />
       )}
     </div>
   );
 };
 
-export default Goals;
+export default GoalList;

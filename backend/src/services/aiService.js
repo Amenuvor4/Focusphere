@@ -7,18 +7,12 @@ class AIService {
     this.model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
   }
 
-  /**
-   * Get default due date (2 days from now)
-   */
   getDefaultDueDate() {
     const date = new Date();
     date.setDate(date.getDate() + 2);
-    return date.toISOString().split('T')[0]; // YYYY-MM-DD format
+    return date.toISOString().split('T')[0];
   }
 
-  /**
-   * Analyze user's task and goal data
-   */
   async analyzeUserData(userData) {
     const { tasks, goals, completionRate } = userData;
 
@@ -45,12 +39,11 @@ Provide 2-3 key insights and 1-2 actionable recommendations. Keep it concise (3-
   }
 
   /**
-   * Chat with AI - WITH ACTION DETECTION (CREATE, UPDATE, DELETE)
+   * Chat with AI - WITH ANALYTICS + IMAGE SUPPORT
    */
   async chat(message, context) {
-    const { tasks, goals, conversationHistory } = context;
+    const { tasks, goals, conversationHistory, analytics, imageData } = context;
 
-    // Format tasks with IDs for AI to reference
     const tasksInfo = tasks?.slice(0, 10).map(t => 
       `- "${t.title}" (ID: ${t._id}, Status: ${t.status}, Priority: ${t.priority}, Category: ${t.category})`
     ).join('\n') || 'No tasks';
@@ -58,6 +51,17 @@ Provide 2-3 key insights and 1-2 actionable recommendations. Keep it concise (3-
     const goalsInfo = goals?.slice(0, 5).map(g =>
       `- "${g.title}" (ID: ${g._id}, Progress: ${g.progress}%, Priority: ${g.priority})`
     ).join('\n') || 'No goals';
+
+    // Add analytics context if available
+    const analyticsInfo = analytics ? `
+ANALYTICS DATA:
+- Tasks Completed: ${analytics.tasksCompleted}
+- Tasks Created: ${analytics.tasksCreated}
+- Completion Rate: ${analytics.completionRate}%
+- Average Completion Time: ${analytics.averageCompletionTime}
+- Top Categories: ${analytics.tasksByCategory?.slice(0, 3).map(c => `${c.name} (${c.count})`).join(', ')}
+- Priority Distribution: High: ${analytics.tasksByPriority?.find(p => p.name === 'high')?.count || 0}, Medium: ${analytics.tasksByPriority?.find(p => p.name === 'medium')?.count || 0}, Low: ${analytics.tasksByPriority?.find(p => p.name === 'low')?.count || 0}
+` : '';
 
     const systemPrompt = `You are FocusSphere AI, a helpful productivity assistant.
 
@@ -70,6 +74,8 @@ ${tasksInfo}
 
 CURRENT GOALS:
 ${goalsInfo}
+
+${analyticsInfo}
 
 CRITICAL: When the user asks you to CREATE, UPDATE, or DELETE tasks/goals, respond with:
 1. A friendly message explaining what you'll do
@@ -108,46 +114,36 @@ CRITICAL: When the user asks you to CREATE, UPDATE, or DELETE tasks/goals, respo
 </ACTIONS>"
 
 === MULTIPLE ACTIONS ===
-When creating multiple items, use a single ACTIONS block:
-"I'll create these tasks for you!
-<ACTIONS>
-[
-  {"type":"create_task","data":{"title":"Task 1","category":"Work","priority":"high"}},
-  {"type":"create_task","data":{"title":"Task 2","category":"Work","priority":"medium"}},
-  {"type":"create_task","data":{"title":"Task 3","category":"Work","priority":"low"}}
-]
-</ACTIONS>"
+When creating multiple items, use a single ACTIONS block with array of actions.
+
+**ANALYTICS QUERIES:**
+When user asks about their productivity, stats, progress, or performance:
+- Reference the analytics data above
+- Provide specific numbers and percentages
+- Compare categories and priorities
+- Suggest improvements based on data
+
+Examples:
+"How am I doing?" → Use analytics to give overview
+"What should I focus on?" → Analyze category distribution
+"Am I getting better?" → Compare completion rate and time
+
+**IMAGE ANALYSIS:**
+When user uploads an image:
+- Describe what you see
+- Extract any tasks, todos, or action items
+- If it's a screenshot of text, transcribe it
+- If it's a diagram or chart, explain it
+- Offer to create tasks from the image content
 
 **IMPORTANT RULES:**
 - Only use ACTIONS when user explicitly asks to create/update/delete
 - Use actual task/goal IDs from the context above when updating/deleting
 - For updates, only include fields that are changing
-- Set reasonable defaults:
-  - priority: "medium" if not specified
-  - category: "General" if not specified
-  - due_date: Don't include if not specified (backend will set default)
+- Set reasonable defaults (priority: "medium", category: "General" if not specified)
 - For due dates, use ISO format (YYYY-MM-DD)
 - Be conversational and friendly
-- If user asks general questions, respond normally without ACTIONS
-
-**UPDATE EXAMPLES:**
-User: "Change the priority of 'Finish report' to high"
-You: Look up the task ID, then respond with update_task action
-
-User: "Mark my grocery task as completed"
-You: Find task ID, respond with update_task changing status to "completed"
-
-User: "Update my fitness goal progress to 75%"
-You: Find goal ID, respond with update_goal changing progress to 75
-
-User: "Rename 'Buy stuff' task to 'Buy groceries'"
-You: Find task ID, respond with update_task changing title
-
-**SEARCH LOGIC:**
-- When user says "my X task", look for task with title containing X
-- When user says "the X goal", look for goal with title containing X
-- If multiple matches, pick the first one or ask for clarification
-- Always use the actual _id from the context above`;
+- Use analytics data to provide insights when asked`;
 
     let fullPrompt = systemPrompt + "\n\nConversation:\n";
 
@@ -160,10 +156,24 @@ You: Find task ID, respond with update_task changing title
     fullPrompt += `User: ${message}\nAssistant:`;
 
     try {
-      const result = await this.model.generateContent(fullPrompt);
+      let result;
+
+      // If image data is provided, use vision model
+      if (imageData) {
+        const imagePart = {
+          inlineData: {
+            data: imageData.split(',')[1], // Remove data:image/xxx;base64, prefix
+            mimeType: imageData.match(/data:([^;]+);/)[1]
+          }
+        };
+
+        result = await this.model.generateContent([fullPrompt, imagePart]);
+      } else {
+        result = await this.model.generateContent(fullPrompt);
+      }
+
       const responseText = result.response.text();
 
-      // Parse for actions
       const { message: cleanMessage, actions } = this.parseResponse(responseText);
 
       return {
@@ -181,9 +191,6 @@ You: Find task ID, respond with update_task changing title
     }
   }
 
-  /**
-   * Parse AI response to extract message and actions
-   */
   parseResponse(text) {
     try {
       const actionsMatch = text.match(/<ACTIONS>([\s\S]*?)<\/ACTIONS>/);
@@ -199,7 +206,6 @@ You: Find task ID, respond with update_task changing title
       try {
         actions = JSON.parse(actionsJson);
 
-        // Validate and clean actions
         actions = actions.filter((action) => {
           if (!action.type || !action.data) return false;
 
@@ -209,25 +215,21 @@ You: Find task ID, respond with update_task changing title
           ];
           if (!validTypes.includes(action.type)) return false;
 
-          // Set defaults for create_task
           if (action.type === "create_task") {
             action.data = {
               title: action.data.title || "Untitled Task",
               category: action.data.category || "General",
               priority: action.data.priority || "medium",
               description: action.data.description || "",
-              // Only include due_date if explicitly provided, otherwise backend will set default
               ...(action.data.due_date ? { due_date: action.data.due_date } : {}),
               status: "todo",
             };
           }
 
-          // Set defaults for update_task
           if (action.type === "update_task") {
             if (!action.data.taskId || !action.data.updates) return false;
           }
 
-          // Set defaults for create_goal
           if (action.type === "create_goal") {
             action.data = {
               title: action.data.title || "Untitled Goal",
@@ -237,7 +239,6 @@ You: Find task ID, respond with update_task changing title
             };
           }
 
-          // Validate update_goal
           if (action.type === "update_goal") {
             if (!action.data.goalId || !action.data.updates) return false;
           }
@@ -256,9 +257,6 @@ You: Find task ID, respond with update_task changing title
     }
   }
 
-  /**
-   * Prioritize tasks using AI
-   */
   async prioritizeTasks(tasks) {
     if (!tasks || tasks.length === 0) return [];
 
@@ -285,6 +283,7 @@ Respond with ONLY a JSON array: [3, 1, 4, 2, 5]`;
 
   async suggestTaskBreakdown(taskTitle, taskDescription) {
     const prompt = `Break down into 3-5 subtasks: ${taskTitle}
+${taskDescription ? `Description: ${taskDescription}` : ''}
 Respond with JSON: [{"title":"Subtask 1","priority":"medium"}]`;
 
     try {

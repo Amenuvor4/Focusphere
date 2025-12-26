@@ -3,15 +3,6 @@ const Task = require('../models/Task');
 const Goal = require('../models/Goal');
 
 /**
- * Get default due date (2 days from now)
- */
-const getDefaultDueDate = () => {
-  const date = new Date();
-  date.setDate(date.setDate(date.getDate() + 2));
-  return date;
-};
-
-/**
  * Get AI analysis of user's productivity data
  */
 exports.analyzeData = async (req, res) => {
@@ -62,11 +53,11 @@ exports.prioritizeTasks = async (req, res) => {
 };
 
 /**
- * Chat with AI
+ * Chat with AI (with analytics and image support)
  */
 exports.chat = async (req, res) => {
   try {
-    const { message, conversationHistory } = req.body;
+    const { message, conversationHistory, imageData } = req.body;
     const userId = req.user.id;
 
     if (!message || message.trim().length === 0) {
@@ -77,11 +68,16 @@ exports.chat = async (req, res) => {
     const tasks = await Task.find({ user_id: userId });
     const goals = await Goal.find({ userId });
 
-    // Get AI response
+    // Fetch analytics data
+    const analytics = await getAnalyticsData(userId);
+
+    // Get AI response with full context
     const response = await aiService.chat(message, {
       tasks,
       goals,
-      conversationHistory: conversationHistory || []
+      conversationHistory: conversationHistory || [],
+      analytics, // Add analytics to context
+      imageData // Add image if provided
     });
 
     res.json(response);
@@ -90,6 +86,62 @@ exports.chat = async (req, res) => {
     res.status(500).json({ error: 'Failed to process message' });
   }
 };
+
+/**
+ * Helper function to get analytics data
+ */
+async function getAnalyticsData(userId) {
+  try {
+    const tasks = await Task.find({ user_id: userId });
+
+    const tasksCompleted = tasks.filter(t => t.status === 'completed').length;
+    const tasksCreated = tasks.length;
+    const completionRate = tasksCreated > 0 
+      ? Math.round((tasksCompleted / tasksCreated) * 100) 
+      : 0;
+
+    // Calculate average completion time
+    const completedTasks = tasks.filter(t => t.status === 'completed' && t.updatedAt);
+    const totalTime = completedTasks.reduce((sum, task) => {
+      const completionTime = new Date(task.updatedAt) - new Date(task.createdAt);
+      return sum + completionTime;
+    }, 0);
+    const averageTime = completedTasks.length > 0 ? totalTime / completedTasks.length : 0;
+    const averageDays = (averageTime / (1000 * 60 * 60 * 24)).toFixed(1);
+    const averageCompletionTime = `${averageDays} days`;
+
+    // Group by category
+    const tasksByCategory = {};
+    tasks.forEach(task => {
+      tasksByCategory[task.category] = (tasksByCategory[task.category] || 0) + 1;
+    });
+
+    const categoryData = Object.entries(tasksByCategory).map(([name, count]) => ({
+      name,
+      count,
+      percentage: Math.round((count / tasksCreated) * 100)
+    }));
+
+    // Group by priority
+    const tasksByPriority = [
+      { name: 'high', count: tasks.filter(t => t.priority === 'high').length },
+      { name: 'medium', count: tasks.filter(t => t.priority === 'medium').length },
+      { name: 'low', count: tasks.filter(t => t.priority === 'low').length }
+    ];
+
+    return {
+      tasksCompleted,
+      tasksCreated,
+      completionRate,
+      averageCompletionTime,
+      tasksByCategory: categoryData,
+      tasksByPriority
+    };
+  } catch (error) {
+    console.error('Error fetching analytics:', error);
+    return null;
+  }
+}
 
 /**
  * Get task breakdown suggestions
