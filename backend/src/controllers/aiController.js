@@ -56,7 +56,7 @@ exports.prioritizeTasks = async (req, res) => {
  */
 exports.chat = async (req, res) => {
   try {
-    const { message, conversationHistory, imageData } = req.body;
+    const { message, conversationHistory, imageData, isNewChat } = req.body;
     const userId = req.user.id;
 
     if (!message || message.trim().length === 0) {
@@ -89,13 +89,18 @@ exports.chat = async (req, res) => {
     // Get AI response with full context
     const response = await aiService.chat(message, {
       tasks,
-      goals: enrichedGoals, // Use enriched goals with task details
+      goals: enrichedGoals, 
       conversationHistory: conversationHistory || [],
-      analytics, // Add analytics to context
-      imageData, // Add image if provided
+      analytics, 
+      imageData, 
     });
 
-    res.json(response);
+    let suggestedTitle = null;
+    if(isNewChat){
+        suggestedTitle = await aiService.generateChatTitle(message);
+    }
+
+    res.json({ response, suggestedTitle });
   } catch (error) {
     console.error("AI chat error:", error);
     res.status(500).json({ error: "Failed to process message" });

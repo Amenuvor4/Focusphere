@@ -28,9 +28,12 @@ const AIAssistant = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
+  const initialized = useRef(false);
 
   // Load conversations from localStorage on mount
   useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
     const saved = localStorage.getItem("ai_conversations");
     if (saved) {
       const parsed = JSON.parse(saved);
@@ -70,7 +73,7 @@ const AIAssistant = () => {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    setConversations([newConv, ...conversations]);
+    setConversations((prev) => [newConv, ...prev]);
     setCurrentConversationId(newConv.id);
   };
 
@@ -90,12 +93,27 @@ const AIAssistant = () => {
 
   const deleteConversation = (id) => {
     const filtered = conversations.filter((c) => c.id !== id);
-    setConversations(filtered);
     if (currentConversationId === id) {
       setCurrentConversationId(filtered[0]?.id || null);
     }
     if (filtered.length === 0) {
-      createNewConversation();
+      const newConv = {
+        id: Date.now().toString(),
+        title: "New Chat",
+        messages: [
+          {
+            role: "assistant",
+            content:
+              "Hi! I'm your FocusSphere AI assistant. I can help you create, update, and manage tasks and goals. You can also upload images for me to analyze!",
+          },
+        ],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      setConversations([newConv]);
+      setCurrentConversationId(newConv.id);
+    } else {
+      setConversations(filtered);
     }
   };
 
@@ -271,6 +289,7 @@ const AIAssistant = () => {
     const conversation = getCurrentConversation();
     const userMessage = inputMessage.trim();
     const imageData = selectedImage;
+    const isNewChat = conversation.title === "New Chat";
 
     setInputMessage("");
     setSelectedImage(null);
@@ -283,13 +302,6 @@ const AIAssistant = () => {
 
     const newMessages = [...conversation.messages, newMessage];
     updateConversation({ messages: newMessages });
-
-    // Update title if it's still "New Chat"
-    if (conversation.title === "New Chat" && userMessage) {
-      const title =
-        userMessage.slice(0, 30) + (userMessage.length > 30 ? "..." : "");
-      updateConversation({ title });
-    }
 
     setIsLoading(true);
 
@@ -308,7 +320,8 @@ const AIAssistant = () => {
           conversationHistory: conversation.messages
             .filter((m) => m.role !== "system" && !m.suggestedActions)
             .map((m) => ({ role: m.role, content: m.content })),
-          imageData: imageData?.preview, // Send image data if present
+          imageData: imageData?.preview,
+            isNewChat: isNewChat,
         }),
       });
 
@@ -322,7 +335,12 @@ const AIAssistant = () => {
         suggestedActions: data.suggestedActions || [],
       };
 
-      updateConversation({ messages: [...newMessages, aiMessage] });
+      const updates = {messages: [...newMessages, aiMessage]};
+      if(data.suggestedTitle && isNewChat){
+        updates.title = data.suggestedTitle;
+      }
+
+      updateConversation(updates);
     } catch (error) {
       console.error("AI chat error:", error);
       const errorMessage = {

@@ -3,6 +3,7 @@ const Goal = require('../models/Goal.js');
 const Task = require('../models/Task.js');
 const protect = require('../middleware/authMiddleware.js');
 const { default: mongoose } = require('mongoose');
+const { parseDateString } = require('../utils/Datehelper');
 
 const router = express.Router();
 
@@ -52,7 +53,7 @@ router.post('/', async (req, res) => {
       title,
       description,
       progress,
-      deadline,
+      deadline: deadline ? parseDateString(deadline) : null,
       priority: priority || 'medium',
       tasks,
       userId: req.user.id,
@@ -70,7 +71,16 @@ router.post('/', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const goals = await Goal.find({ userId: req.user.id }).populate('tasks');
-    res.status(200).json(goals);
+
+    const formattedGoals = goals.map(goal =>{
+      const goalObj = goal.toObject();
+      if (goalObj.deadline) {
+        const date = new Date(goalObj.deadline);
+        goalObj.deadline = date.toISOString().split('T')[0];  
+      }
+      return goalObj;
+    });
+    res.status(200).json(formattedGoals);
   } catch (error) {
     console.error('Goal fetch error:', error);
     res.status(500).json({ error: error.message });
@@ -86,7 +96,13 @@ router.get('/:id', validateObjectId, async (req, res) => {
       return res.status(404).json({ message: 'Goal not found' });
     }
 
-    res.json(goal);
+    const goalObj = goal.toObject();
+    if (goalObj.deadline) {
+      const date = new Date(goalObj.deadline);
+      goalObj.deadline = date.toISOString().split('T')[0]; 
+    }
+    
+    res.status(200).json(goalObj);
   } catch (error) {
     console.error('Goal fetch error:', error);
     res.status(500).json({ error: error.message });
@@ -98,6 +114,13 @@ router.put('/:id', validateObjectId, async (req, res) => {
   try {
     const { title, description, progress, deadline, priority, tasks } = req.body;
 
+    const updateData = {};
+    if (title !== undefined) updateData.title = title;
+    if (description !== undefined) updateData.description = description;
+    if (progress !== undefined) updateData.progress = progress;
+    if (priority !== undefined) updateData.priority = priority;
+    if (tasks !== undefined) updateData.tasks = tasks;
+
     // Manual validation
     if (progress !== undefined && (progress < 0 || progress > 100)) {
       return res.status(400).json({ error: 'Progress must be between 0 and 100' });
@@ -105,11 +128,14 @@ router.put('/:id', validateObjectId, async (req, res) => {
     if (priority && !['high', 'medium', 'low'].includes(priority)) {
       return res.status(400).json({ error: 'Invalid priority value' });
     }
+    if (deadline !==undefined){
+      updateDate.deadline = deadline ? parseDateString(deadline) : null;
+    }
 
     const updatedGoal = await Goal.findOneAndUpdate(
       { _id: req.params.id, userId: req.user.id },
-      { title, description, progress, deadline, priority, tasks },
-      { new: true, runValidators: false }
+      updateData,
+      { new: true, runValidators: true }
     );
 
     if (!updatedGoal) {

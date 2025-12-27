@@ -4,7 +4,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 class AIService {
   constructor() {
-    this.model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    this.model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-002" });
   }
 
   getDefaultDueDate() {
@@ -416,6 +416,40 @@ Respond with JSON: [{"title":"Subtask 1","priority":"medium"}]`;
       return [];
     }
   }
+
+async generateChatTitle(firstMessage) {
+  const prompt = `Generate a short, concise title (3-6 words max) for a chat conversation that starts with this message: "${firstMessage}"
+
+Rules:
+- Maximum 6 words
+- No quotes or punctuation at the end
+- Descriptive but brief
+- Title case
+
+Examples:
+"Create 5 tasks for my project" → "Project Task Creation"
+"Help me plan my week" → "Weekly Planning"
+"What's my productivity like?" → "Productivity Analysis"
+
+Title:`;
+
+  try {
+    const result = await this.model.generateContent(prompt);
+    const title = result.response.text().trim();
+    
+    // Clean up the title (remove quotes if present)
+    const cleanTitle = title.replace(/^["']|["']$/g, '');
+    
+    // Limit to 50 characters max
+    return cleanTitle.slice(0, 50);
+  } catch (error) {
+    console.error('Title generation error:', error);
+    // Fallback to first few words
+    return firstMessage.split(' ').slice(0, 4).join(' ');
+  }
 }
+}
+
+
 
 module.exports = new AIService();
