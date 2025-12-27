@@ -89,15 +89,15 @@ exports.chat = async (req, res) => {
     // Get AI response with full context
     const response = await aiService.chat(message, {
       tasks,
-      goals: enrichedGoals, 
+      goals: enrichedGoals,
       conversationHistory: conversationHistory || [],
-      analytics, 
-      imageData, 
+      analytics,
+      imageData,
     });
 
     let suggestedTitle = null;
-    if(isNewChat){
-        suggestedTitle = await aiService.generateChatTitle(message);
+    if (isNewChat) {
+      suggestedTitle = await aiService.generateChatTitle(message);
     }
 
     res.json({ response, suggestedTitle });
