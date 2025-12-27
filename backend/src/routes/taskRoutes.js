@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const Task = require('../models/Task');
 const protect = require('../middleware/authMiddleware');
 const Goal = require('../models/Goal');
+const { updateGoalProgressForTask } = require('../utils/goalProgressCalculator');
 
 const router = express.Router();
 
@@ -89,6 +90,7 @@ router.post('/', async (req, res) => {
     if(goal){
       goal.tasks.push(savedTask._id);
       await goal.save();
+      await updateGoalProgressForTask(savedTask._id);
     }
     
     res.status(201).json({ 
@@ -131,6 +133,11 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({ error: 'Invalid Task ID' });
     }
 
+    const oldTask = await Task.findById(req.params.id);
+    if (!oldTask) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+    const oldStatus = oldTask?.status;
     const updatedTask = await Task.findOneAndUpdate(
       { _id: req.params.id, user_id: req.user.id },
       req.body,
@@ -139,6 +146,10 @@ router.put('/:id', async (req, res) => {
 
     if (!updatedTask) {
       return res.status(404).json({ error: 'Task not found' });
+    }
+
+    if(oldStatus !== updatedTask.status){
+      await updateGoalProgressForTask(updatedTask._id);
     }
 
     res.status(200).json({ 
@@ -168,6 +179,7 @@ router.delete('/:id', async (req, res) => {
     if (goal) {
       goal.tasks = goal.tasks.filter(taskId => taskId.toString() !== deletedTask._id.toString());
       await goal.save();
+      await updateGoalProgressForTask(deletedTask._id);
     }
 
     res.status(200).json({ message: 'Task deleted successfully' });

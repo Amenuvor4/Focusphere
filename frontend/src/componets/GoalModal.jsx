@@ -137,25 +137,35 @@ const GoalModal = ({ isOpen, onClose, onSave, goal = null }) => {
           </div>
 
           {/* Progress */}
-          {isEditing && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Progress: {formData.progress}%
-              </label>
-              <input
-                type="range"
-                name="progress"
-                min="0"
-                max="100"
-                value={formData.progress}
-                onChange={handleChange}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-              />
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
-                <span>0%</span>
-                <span>50%</span>
-                <span>100%</span>
+          {isEditing && goal && (
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-blue-900">
+                  Current Progress
+                </span>
+                <span className="text-sm font-bold text-blue-700">
+                  {goal.progress || 0}%
+                </span>
               </div>
+              <div className="h-2 w-full rounded-full bg-blue-200">
+                <div
+                  className="h-2 rounded-full bg-blue-600 transition-all"
+                  style={{ width: `${goal.progress || 0}%` }}
+                ></div>
+              </div>
+              <p className="text-xs text-blue-700 mt-2">
+                Progress is automatically calculated based on completed tasks
+                {goal.tasks && goal.tasks.length > 0 && (
+                  <>
+                    {" "}
+                    (
+                    {Math.round(
+                      ((goal.progress || 0) * goal.tasks.length) / 100
+                    )}{" "}
+                    of {goal.tasks.length} tasks completed)
+                  </>
+                )}
+              </p>
             </div>
           )}
 

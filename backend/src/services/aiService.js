@@ -4,13 +4,13 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 class AIService {
   constructor() {
-    this.model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    this.model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
   }
 
   getDefaultDueDate() {
     const date = new Date();
     date.setDate(date.getDate() + 2);
-    return date.toISOString().split('T')[0];
+    return date.toISOString().split("T")[0];
   }
 
   async analyzeUserData(userData) {
@@ -25,7 +25,12 @@ User Data:
 - Active Goals: ${goals?.length || 0}
 
 Recent Tasks:
-${tasks?.slice(0, 5).map((t) => `- ${t.title} (${t.status}) - Priority: ${t.priority}`).join("\n") || "No tasks"}
+${
+  tasks
+    ?.slice(0, 5)
+    .map((t) => `- ${t.title} (${t.status}) - Priority: ${t.priority}`)
+    .join("\n") || "No tasks"
+}
 
 Provide 2-3 key insights and 1-2 actionable recommendations. Keep it concise (3-4 sentences).`;
 
@@ -44,24 +49,63 @@ Provide 2-3 key insights and 1-2 actionable recommendations. Keep it concise (3-
   async chat(message, context) {
     const { tasks, goals, conversationHistory, analytics, imageData } = context;
 
-    const tasksInfo = tasks?.slice(0, 10).map(t => 
-      `- "${t.title}" (ID: ${t._id}, Status: ${t.status}, Priority: ${t.priority}, Category: ${t.category})`
-    ).join('\n') || 'No tasks';
+    const tasksInfo =
+      tasks
+        ?.slice(0, 10)
+        .map(
+          (t) =>
+            `- "${t.title}" (ID: ${t._id}, Status: ${t.status}, Priority: ${t.priority}, Category: ${t.category})`
+        )
+        .join("\n") || "No tasks";
 
-    const goalsInfo = goals?.slice(0, 5).map(g =>
-      `- "${g.title}" (ID: ${g._id}, Progress: ${g.progress}%, Priority: ${g.priority})`
-    ).join('\n') || 'No goals';
+    // Format goals with full details including tasks
+    const goalsInfo =
+      goals
+        ?.slice(0, 10)
+        .map((g) => {
+          const taskCount = g.tasks?.length || 0;
+          const description = g.description || "No description";
+          const taskDetails = g.taskDetails || [];
+
+          let goalInfo = `- **"${g.title}"** (ID: ${g._id})
+  Description: ${description}
+  Progress: ${g.progress || 0}%
+  Priority: ${g.priority}
+  Tasks: ${taskCount} task${taskCount !== 1 ? "s" : ""}`;
+
+          // Add task details if available
+          if (taskDetails.length > 0) {
+            const taskSummary = taskDetails
+              .slice(0, 5)
+              .map(
+                (t) => `    • ${t.title} (${t.status}, ${t.priority} priority)`
+              )
+              .join("\n");
+            goalInfo += `\n  Associated Tasks:\n${taskSummary}`;
+            if (taskDetails.length > 5) {
+              goalInfo += `\n    • ...and ${taskDetails.length - 5} more`;
+            }
+          }
+
+          return goalInfo;
+        })
+        .join("\n\n") || "No goals";
 
     // Add analytics context if available
-    const analyticsInfo = analytics ? `
+    const analyticsInfo = analytics
+      ? `
 ANALYTICS DATA:
 - Tasks Completed: ${analytics.tasksCompleted}
 - Tasks Created: ${analytics.tasksCreated}
 - Completion Rate: ${analytics.completionRate}%
 - Average Completion Time: ${analytics.averageCompletionTime}
-- Top Categories: ${analytics.tasksByCategory?.slice(0, 3).map(c => `${c.name} (${c.count})`).join(', ')}
-- Priority Distribution: High: ${analytics.tasksByPriority?.find(p => p.name === 'high')?.count || 0}, Medium: ${analytics.tasksByPriority?.find(p => p.name === 'medium')?.count || 0}, Low: ${analytics.tasksByPriority?.find(p => p.name === 'low')?.count || 0}
-` : '';
+- Top Categories: ${analytics.tasksByCategory
+          ?.slice(0, 3)
+          .map((c) => `${c.name} (${c.count})`)
+          .join(", ")}
+- Priority Distribution: High: ${analytics.tasksByPriority?.find((p) => p.name === "high")?.count || 0}, Medium: ${analytics.tasksByPriority?.find((p) => p.name === "medium")?.count || 0}, Low: ${analytics.tasksByPriority?.find((p) => p.name === "low")?.count || 0}
+`
+      : "";
 
     const systemPrompt = `You are FocusSphere AI, a helpful productivity assistant.
 
@@ -123,6 +167,18 @@ When user asks about their productivity, stats, progress, or performance:
 - Compare categories and priorities
 - Suggest improvements based on data
 
+**GOAL QUERIES:**
+When user asks about their goals:
+- DEFAULT RESPONSE: Show title, description, progress, and number of tasks for each goal
+- If user asks for "details" or "more info": Also include priority and specific task breakdowns
+- Format clearly with bullet points or sections
+- Be conversational and helpful
+
+Examples:
+"What are my goals?" → List each goal with title, description, progress, task count
+"Tell me about my Planning goal" → Show all details including tasks within that goal
+"Go more in depth" → Add priority info and task details
+
 Examples:
 "How am I doing?" → Use analytics to give overview
 "What should I focus on?" → Analyze category distribution
@@ -162,9 +218,9 @@ When user uploads an image:
       if (imageData) {
         const imagePart = {
           inlineData: {
-            data: imageData.split(',')[1], // Remove data:image/xxx;base64, prefix
-            mimeType: imageData.match(/data:([^;]+);/)[1]
-          }
+            data: imageData.split(",")[1], 
+            mimeType: imageData.match(/data:([^;]+);/)[1],
+          },
         };
 
         result = await this.model.generateContent([fullPrompt, imagePart]);
@@ -174,7 +230,8 @@ When user uploads an image:
 
       const responseText = result.response.text();
 
-      const { message: cleanMessage, actions } = this.parseResponse(responseText);
+      const { message: cleanMessage, actions } =
+        this.parseResponse(responseText);
 
       return {
         message: cleanMessage,
@@ -210,8 +267,12 @@ When user uploads an image:
           if (!action.type || !action.data) return false;
 
           const validTypes = [
-            "create_task", "update_task", "delete_task",
-            "create_goal", "update_goal", "delete_goal"
+            "create_task",
+            "update_task",
+            "delete_task",
+            "create_goal",
+            "update_goal",
+            "delete_goal",
           ];
           if (!validTypes.includes(action.type)) return false;
 
@@ -221,7 +282,9 @@ When user uploads an image:
               category: action.data.category || "General",
               priority: action.data.priority || "medium",
               description: action.data.description || "",
-              ...(action.data.due_date ? { due_date: action.data.due_date } : {}),
+              ...(action.data.due_date
+                ? { due_date: action.data.due_date }
+                : {}),
               status: "todo",
             };
           }
@@ -261,7 +324,10 @@ When user uploads an image:
     if (!tasks || tasks.length === 0) return [];
 
     const tasksDescription = tasks
-      .map((t, i) => `${i + 1}. "${t.title}" - Due: ${t.due_date || "No deadline"}, Priority: ${t.priority}`)
+      .map(
+        (t, i) =>
+          `${i + 1}. "${t.title}" - Due: ${t.due_date || "No deadline"}, Priority: ${t.priority}`
+      )
       .join("\n");
 
     const prompt = `Rank these tasks by urgency (most important first).
@@ -283,7 +349,7 @@ Respond with ONLY a JSON array: [3, 1, 4, 2, 5]`;
 
   async suggestTaskBreakdown(taskTitle, taskDescription) {
     const prompt = `Break down into 3-5 subtasks: ${taskTitle}
-${taskDescription ? `Description: ${taskDescription}` : ''}
+${taskDescription ? `Description: ${taskDescription}` : ""}
 Respond with JSON: [{"title":"Subtask 1","priority":"medium"}]`;
 
     try {
@@ -301,20 +367,32 @@ Respond with JSON: [{"title":"Subtask 1","priority":"medium"}]`;
 
     try {
       const result = await this.model.generateContent(prompt);
-      const insights = result.response.text().split("•").filter(s => s.trim()).slice(0, 3);
-      return insights.length ? insights : [
-        "Complete tasks consistently",
-        "Focus on high-priority items",
-        "Break down large tasks"
-      ];
+      const insights = result.response
+        .text()
+        .split("•")
+        .filter((s) => s.trim())
+        .slice(0, 3);
+      return insights.length
+        ? insights
+        : [
+            "Complete tasks consistently",
+            "Focus on high-priority items",
+            "Break down large tasks",
+          ];
     } catch (error) {
-      return ["Complete tasks consistently", "Focus on priorities", "Break down tasks"];
+      return [
+        "Complete tasks consistently",
+        "Focus on priorities",
+        "Break down tasks",
+      ];
     }
   }
 
   async suggestSchedule(tasks) {
-    const desc = tasks.filter(t => t.status !== "completed").slice(0, 10)
-      .map(t => `- ${t.title} (${t.priority})`)
+    const desc = tasks
+      .filter((t) => t.status !== "completed")
+      .slice(0, 10)
+      .map((t) => `- ${t.title} (${t.priority})`)
       .join("\n");
     const prompt = `Suggest order for: ${desc}. Brief (2-3 sentences).`;
 
@@ -327,8 +405,8 @@ Respond with JSON: [{"title":"Subtask 1","priority":"medium"}]`;
   }
 
   async suggestGoals(tasks, existingGoals) {
-    const categories = [...new Set(tasks.map(t => t.category))].join(", ");
-    const prompt = `Categories: ${categories}. Current goals: ${existingGoals.map(g => g.title).join(", ")}. Suggest 2-3 new goals (<8 words each). JSON: ["Goal 1"]`;
+    const categories = [...new Set(tasks.map((t) => t.category))].join(", ");
+    const prompt = `Categories: ${categories}. Current goals: ${existingGoals.map((g) => g.title).join(", ")}. Suggest 2-3 new goals (<8 words each). JSON: ["Goal 1"]`;
 
     try {
       const result = await this.model.generateContent(prompt);
