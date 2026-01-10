@@ -21,14 +21,11 @@ const AIChatWidget = ({
   createNewConversation,
   deleteConversation,
   updateConversation,
-  getCurrentConversation
+  getCurrentConversation,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const conversation = getCurrentConversation();
-    const messages = useMemo(() => 
-    conversation?.messages || [], 
-    [conversation]
-  );
+  const messages = useMemo(() => conversation?.messages || [], [conversation]);
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
@@ -137,7 +134,7 @@ const AIChatWidget = ({
     const updatedMessages = [...messages];
     updatedMessages[messageIndex].suggestedActions[actionIndex].status =
       approved ? "processing" : "declined";
-    updateConversation({messages: updatedMessages  });
+    updateConversation({ messages: updatedMessages });
 
     if (approved) {
       const result = await executeAction(action);
@@ -146,7 +143,7 @@ const AIChatWidget = ({
         result.success ? "approved" : "failed";
       updatedMessages[messageIndex].suggestedActions[actionIndex].error =
         result.error;
-      updateConversation({messages: updatedMessages  });
+      updateConversation({ messages: updatedMessages });
 
       if (result.success) {
         const actionName = action.type.replace("_", " ");
@@ -163,7 +160,7 @@ const AIChatWidget = ({
         updateConversation([...messages, errorMessage]);
       }
     } else {
-      updateConversation({messages: updatedMessages  });
+      updateConversation({ messages: updatedMessages });
       const declineMessage = {
         role: "assistant",
         content: "No problem! Let me know if you'd like something else.",
@@ -185,7 +182,7 @@ const AIChatWidget = ({
         ...action,
         status: approved ? "processing" : "declined",
       }));
-    updateConversation({messages: updatedMessages  });
+    updateConversation({ messages: updatedMessages });
 
     if (approved) {
       // Execute all actions
@@ -200,7 +197,7 @@ const AIChatWidget = ({
           status: results[idx].success ? "approved" : "failed",
           error: results[idx].error,
         }));
-      updateConversation({messages: updatedMessages  });
+      updateConversation({ messages: updatedMessages });
 
       // Add confirmation
       const successCount = results.filter((r) => r.success).length;
@@ -208,9 +205,9 @@ const AIChatWidget = ({
         role: "assistant",
         content: `✅ Done! Successfully completed ${successCount} of ${results.length} actions.`,
       };
-      updateConversation({messages: [...messages, confirmMessage]});
+      updateConversation({ messages: [...messages, confirmMessage] });
     } else {
-     updateConversation({messages: updatedMessages  });
+      updateConversation({ messages: updatedMessages });
       const declineMessage = {
         role: "assistant",
         content: "No problem! All actions declined.",
@@ -226,7 +223,7 @@ const AIChatWidget = ({
     setInputMessage("");
 
     const newMessages = [...messages, { role: "user", content: userMessage }];
-    updateConversation({messages: newMessages  });
+    updateConversation({ messages: newMessages });
     setIsLoading(true);
 
     try {
@@ -234,13 +231,10 @@ const AIChatWidget = ({
       if (!token) throw new Error("Not authenticated");
 
       // Token oberload prevention
-      const recentHistory = newMessages
-        .slice(-10)
-        .map((m) => ({
-          role: m.role,
-          content: m.content,
-        }));
-
+      const recentHistory = newMessages.slice(-10).map((m) => ({
+        role: m.role,
+        content: m.content,
+      }));
 
       const response = await fetch("http://localhost:5000/api/ai/chat", {
         method: "POST",
@@ -265,7 +259,7 @@ const AIChatWidget = ({
         suggestedActions: data.response.suggestedActions || [],
       };
 
-      updateConversation({messages: [...newMessages, aiMessage]});
+      updateConversation({ messages: [...newMessages, aiMessage] });
     } catch (error) {
       console.error("AI chat error:", error);
       updateConversation({
@@ -443,7 +437,7 @@ const MultiActionCard = ({
         <div className="flex items-center gap-2 text-green-700">
           <Check className="h-5 w-5" />
           <span className="font-medium">
-             All {actions.length} actions completed!
+            All {actions.length} actions completed!
           </span>
         </div>
       </div>

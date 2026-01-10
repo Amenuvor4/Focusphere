@@ -99,14 +99,13 @@ exports.chat = async (req, res) => {
       suggestedTitle = await aiService.generateChatTitle(message);
     }
 
-    res.json({ 
+    res.json({
       response: {
         message: response.message,
-        suggestedActions: response.suggestedActions
+        suggestedActions: response.suggestedActions,
       },
-      suggestedTitle 
+      suggestedTitle,
     });
-    
   } catch (error) {
     console.error("AI chat error:", error);
     res.status(500).json({ error: "Failed to process message" });

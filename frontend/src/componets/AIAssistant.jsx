@@ -26,10 +26,10 @@ const AIAssistant = ({
   createNewConversation,
   deleteConversation,
   updateConversation,
-  getCurrentConversation
+  getCurrentConversation,
 }) => {
   const conversation = getCurrentConversation();
-  const messages = useMemo(() => conversation?.messages || [], [conversation])
+  const messages = useMemo(() => conversation?.messages || [], [conversation]);
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -37,16 +37,15 @@ const AIAssistant = ({
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
 
-
   const getValidToken = async () => {
-  try {
-    const token = localStorage.getItem("accessToken");
-    return token || null;
-  } catch (error) {
-    console.error("Token error:", error);
-    return null;
-  }
-};
+    try {
+      const token = localStorage.getItem("accessToken");
+      return token || null;
+    } catch (error) {
+      console.error("Token error:", error);
+      return null;
+    }
+  };
   // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -215,8 +214,8 @@ const AIAssistant = ({
     const userMessage = inputMessage.trim();
     setInputMessage("");
 
-    const newMessages = [...messages, {role: "user", content: userMessage }];
-    updateConversation({messages: newMessages});
+    const newMessages = [...messages, { role: "user", content: userMessage }];
+    updateConversation({ messages: newMessages });
     setIsLoading(true);
 
     try {
@@ -224,12 +223,10 @@ const AIAssistant = ({
       if (!token) throw new Error("Not authenticated");
 
       // Token oberload prevention
-      const recentHistory = newMessages
-        .slice(-10)
-        .map((m) => ({
-          role: m.role,
-          content: m.content,
-        }));
+      const recentHistory = newMessages.slice(-10).map((m) => ({
+        role: m.role,
+        content: m.content,
+      }));
 
       const response = await fetch("http://localhost:5000/api/ai/chat", {
         method: "POST",
@@ -253,7 +250,7 @@ const AIAssistant = ({
         suggestedActions: data.response.suggestedActions || [],
       };
 
-      updateConversation({ messages: [...newMessages, aiMessage]});
+      updateConversation({ messages: [...newMessages, aiMessage] });
     } catch (error) {
       console.error("AI chat error:", error);
       const errorMessage = {

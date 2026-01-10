@@ -3,8 +3,8 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 class AIService {
   constructor() {
     this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    this.model = this.genAI.getGenerativeModel({ 
-      model: "gemini-2.5-flash"
+    this.model = this.genAI.getGenerativeModel({
+      model: "gemini-2.5-flash",
     });
   }
 
@@ -12,38 +12,47 @@ class AIService {
    * Main chat method with conversation history
    */
   async chat(message, context) {
-    const { 
-      tasks, 
-      goals, 
-      conversationHistory = [], 
-      analytics, 
-      imageData 
+    const {
+      tasks,
+      goals,
+      conversationHistory = [],
+      analytics,
+      imageData,
     } = context;
 
     try {
       // Build conversation context (last 10 messages)
       const recentHistory = conversationHistory.slice(-10);
-      const contextText = recentHistory.length > 0
-        ? recentHistory
-            .map(msg => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`)
-            .join('\n')
-        : '';
+      const contextText =
+        recentHistory.length > 0
+          ? recentHistory
+              .map(
+                (msg) =>
+                  `${msg.role === "user" ? "User" : "Assistant"}: ${msg.content}`
+              )
+              .join("\n")
+          : "";
 
       // Format tasks info
-      const tasksInfo = tasks
-        ?.slice(0, 10)
-        .map(t => `- "${t.title}" (ID: ${t._id}, Status: ${t.status}, Priority: ${t.priority}, Category: ${t.category})`)
-        .join('\n') || 'No tasks';
+      const tasksInfo =
+        tasks
+          ?.slice(0, 10)
+          .map(
+            (t) =>
+              `- "${t.title}" (ID: ${t._id}, Status: ${t.status}, Priority: ${t.priority}, Category: ${t.category})`
+          )
+          .join("\n") || "No tasks";
 
       // Format goals info
-      const goalsInfo = goals
-        ?.slice(0, 10)
-        .map(g => {
-          const taskCount = g.tasks?.length || 0;
-          const description = g.description || 'No description';
-          return `- **"${g.title}"** (ID: ${g._id})\n  Description: ${description}\n  Progress: ${g.progress || 0}%\n  Tasks: ${taskCount}`;
-        })
-        .join('\n\n') || 'No goals';
+      const goalsInfo =
+        goals
+          ?.slice(0, 10)
+          .map((g) => {
+            const taskCount = g.tasks?.length || 0;
+            const description = g.description || "No description";
+            return `- **"${g.title}"** (ID: ${g._id})\n  Description: ${description}\n  Progress: ${g.progress || 0}%\n  Tasks: ${taskCount}`;
+          })
+          .join("\n\n") || "No goals";
 
       // Build system prompt
       const systemPrompt = `You are FocusSphere AI, an intelligent productivity assistant.
@@ -58,7 +67,7 @@ CORE BEHAVIORS:
    - If user gives a command → Execute and confirm
 
 CURRENT USER CONTEXT:
-- User has ${tasks?.length || 0} tasks (${tasks?.filter(t => t.status === 'completed').length || 0} completed)
+- User has ${tasks?.length || 0} tasks (${tasks?.filter((t) => t.status === "completed").length || 0} completed)
 - User has ${goals?.length || 0} active goals
 
 CURRENT TASKS:
@@ -89,7 +98,7 @@ Respond naturally based on context. If this is a casual acknowledgment, respond 
       if (imageData) {
         const imagePart = {
           inlineData: {
-            data: imageData.split(',')[1],
+            data: imageData.split(",")[1],
             mimeType: imageData.match(/data:([^;]+);/)[1],
           },
         };
@@ -99,13 +108,13 @@ Respond naturally based on context. If this is a casual acknowledgment, respond 
       }
 
       const responseText = result.response.text();
-      const { message: cleanMessage, actions } = this.parseResponse(responseText);
+      const { message: cleanMessage, actions } =
+        this.parseResponse(responseText);
 
       return {
         message: cleanMessage,
         suggestedActions: actions.length > 0 ? actions : [],
       };
-
     } catch (error) {
       console.error("Gemini API error:", error);
       throw new Error("AI service unavailable");
@@ -123,26 +132,33 @@ Respond naturally based on context. If this is a casual acknowledgment, respond 
         return { message: text.trim(), actions: [] };
       }
 
-      const message = text.replace(/<ACTIONS>[\s\S]*?<\/ACTIONS>/g, '').trim();
+      const message = text.replace(/<ACTIONS>[\s\S]*?<\/ACTIONS>/g, "").trim();
       const actionsJson = actionsMatch[1].trim();
       let actions = [];
 
       try {
         actions = JSON.parse(actionsJson);
         // Validate and clean actions
-        actions = actions.filter(action => {
+        actions = actions.filter((action) => {
           if (!action.type || !action.data) return false;
-          const validTypes = ['create_task', 'update_task', 'delete_task', 'create_goal', 'update_goal', 'delete_goal'];
+          const validTypes = [
+            "create_task",
+            "update_task",
+            "delete_task",
+            "create_goal",
+            "update_goal",
+            "delete_goal",
+          ];
           return validTypes.includes(action.type);
         });
       } catch (parseError) {
-        console.error('Failed to parse actions JSON:', parseError);
+        console.error("Failed to parse actions JSON:", parseError);
         return { message: text.trim(), actions: [] };
       }
 
       return { message, actions };
     } catch (error) {
-      console.error('Response parsing error:', error);
+      console.error("Response parsing error:", error);
       return { message: text.trim(), actions: [] };
     }
   }
@@ -167,11 +183,11 @@ Title:`;
     try {
       const result = await this.model.generateContent(prompt);
       const title = result.response.text().trim();
-      const cleanTitle = title.replace(/^["']|["']$/g, '');
+      const cleanTitle = title.replace(/^["']|["']$/g, "");
       return cleanTitle.slice(0, 50);
     } catch (error) {
-      console.error('Title generation error:', error);
-      return firstMessage.split(' ').slice(0, 4).join(' ');
+      console.error("Title generation error:", error);
+      return firstMessage.split(" ").slice(0, 4).join(" ");
     }
   }
 
@@ -179,7 +195,7 @@ Title:`;
   getDefaultDueDate() {
     const date = new Date();
     date.setDate(date.getDate() + 2);
-    return date.toISOString().split('T')[0];
+    return date.toISOString().split("T")[0];
   }
 }
 
