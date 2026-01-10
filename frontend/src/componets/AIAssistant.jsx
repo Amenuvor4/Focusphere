@@ -19,112 +19,36 @@ import {
   X,
 } from "lucide-react";
 
-const AIAssistant = () => {
-  const [conversations, setConversations] = useState([]);
-  const [currentConversationId, setCurrentConversationId] = useState(null);
+const AIAssistant = ({
+  conversations,
+  currentConversationId,
+  setCurrentConversationId,
+  createNewConversation,
+  deleteConversation,
+  updateConversation,
+  getCurrentConversation
+}) => {
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedImage, setSelectedImage] = useState(null);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
-  const initialized = useRef(false);
 
-  // Load conversations from localStorage on mount
-  useEffect(() => {
-    if (initialized.current) return;
-    initialized.current = true;
-    const saved = localStorage.getItem("ai_conversations");
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      setConversations(parsed);
-      if (parsed.length > 0) {
-        setCurrentConversationId(parsed[0].id);
-      }
-    } else {
-      // Create initial conversation
-      createNewConversation();
-    }
-  }, []);
 
-  // Save conversations to localStorage
-  useEffect(() => {
-    if (conversations.length > 0) {
-      localStorage.setItem("ai_conversations", JSON.stringify(conversations));
-    }
-  }, [conversations]);
-
+  const getValidToken = async () => {
+  try {
+    const token = localStorage.getItem("accessToken");
+    return token || null;
+  } catch (error) {
+    console.error("Token error:", error);
+    return null;
+  }
+};
   // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [conversations, currentConversationId]);
-
-  const createNewConversation = () => {
-    const newConv = {
-      id: Date.now().toString(),
-      title: "New Chat",
-      messages: [
-        {
-          role: "assistant",
-          content:
-            "Hi! I'm your FocusSphere AI assistant. I can help you create, update, and manage tasks and goals. You can also upload images for me to analyze!",
-        },
-      ],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    setConversations((prev) => [newConv, ...prev]);
-    setCurrentConversationId(newConv.id);
-  };
-
-  const getCurrentConversation = () => {
-    return conversations.find((c) => c.id === currentConversationId);
-  };
-
-  const updateConversation = (updates) => {
-    setConversations(
-      conversations.map((c) =>
-        c.id === currentConversationId
-          ? { ...c, ...updates, updatedAt: new Date().toISOString() }
-          : c
-      )
-    );
-  };
-
-  const deleteConversation = (id) => {
-    const filtered = conversations.filter((c) => c.id !== id);
-    if (currentConversationId === id) {
-      setCurrentConversationId(filtered[0]?.id || null);
-    }
-    if (filtered.length === 0) {
-      const newConv = {
-        id: Date.now().toString(),
-        title: "New Chat",
-        messages: [
-          {
-            role: "assistant",
-            content:
-              "Hi! I'm your FocusSphere AI assistant. I can help you create, update, and manage tasks and goals. You can also upload images for me to analyze!",
-          },
-        ],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      setConversations([newConv]);
-      setCurrentConversationId(newConv.id);
-    } else {
-      setConversations(filtered);
-    }
-  };
-
-  const getValidToken = async () => {
-    try {
-      return localStorage.getItem("accessToken");
-    } catch (error) {
-      console.error("Token error:", error);
-      return null;
-    }
-  };
 
   const executeAction = async (action) => {
     try {
@@ -331,8 +255,8 @@ const AIAssistant = () => {
 
       const aiMessage = {
         role: "assistant",
-        content: data.message,
-        suggestedActions: data.suggestedActions || [],
+        content: data.response.message,
+        suggestedActions: data.response.suggestedActions || [],
       };
 
       const updates = {messages: [...newMessages, aiMessage]};
@@ -386,7 +310,6 @@ const AIAssistant = () => {
 
   return (
     <div className="flex h-[calc(100vh-4rem)] gap-4">
-      {/* Sidebar - Chat History */}
       <div className="w-80 bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col">
         <div className="p-4 border-b">
           <button

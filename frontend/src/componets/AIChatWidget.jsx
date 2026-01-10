@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import {
   X,
   Send,
@@ -14,15 +14,21 @@ import {
   Edit,
 } from "lucide-react";
 
-const AIChatWidget = () => {
+const AIChatWidget = ({
+  conversations,
+  currentConversationId,
+  setCurrentConversationId,
+  createNewConversation,
+  deleteConversation,
+  updateConversation,
+  getCurrentConversation
+}) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([
-    {
-      role: "assistant",
-      content:
-        "Hi! I'm your FocusSphere AI assistant. Try: 'Create 5 tasks for my project' or 'Update my report task to high priority'!",
-    },
-  ]);
+  const conversation = getCurrentConversation();
+    const messages = useMemo(() => 
+    conversation?.messages || [], 
+    [conversation]
+  );
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
@@ -131,7 +137,7 @@ const AIChatWidget = () => {
     const updatedMessages = [...messages];
     updatedMessages[messageIndex].suggestedActions[actionIndex].status =
       approved ? "processing" : "declined";
-    setMessages(updatedMessages);
+    updateConversation({messages: updatedMessages  });
 
     if (approved) {
       const result = await executeAction(action);
@@ -140,7 +146,7 @@ const AIChatWidget = () => {
         result.success ? "approved" : "failed";
       updatedMessages[messageIndex].suggestedActions[actionIndex].error =
         result.error;
-      setMessages(updatedMessages);
+      updateConversation({messages: updatedMessages  });
 
       if (result.success) {
         const actionName = action.type.replace("_", " ");
@@ -148,21 +154,21 @@ const AIChatWidget = () => {
           role: "assistant",
           content: `✅ Done! I've ${actionName}d successfully.`,
         };
-        setMessages([...updatedMessages, confirmMessage]);
+        updateConversation([...messages, confirmMessage]);
       } else {
         const errorMessage = {
           role: "assistant",
           content: `❌ Sorry, I couldn't complete that: ${result.error}`,
         };
-        setMessages([...updatedMessages, errorMessage]);
+        updateConversation([...messages, errorMessage]);
       }
     } else {
-      setMessages(updatedMessages);
+      updateConversation({messages: updatedMessages  });
       const declineMessage = {
         role: "assistant",
         content: "No problem! Let me know if you'd like something else.",
       };
-      setMessages([...updatedMessages, declineMessage]);
+      updateConversation([...messages, declineMessage]);
     }
   };
 
@@ -179,7 +185,7 @@ const AIChatWidget = () => {
         ...action,
         status: approved ? "processing" : "declined",
       }));
-    setMessages(updatedMessages);
+    updateConversation({messages: updatedMessages  });
 
     if (approved) {
       // Execute all actions
@@ -194,7 +200,7 @@ const AIChatWidget = () => {
           status: results[idx].success ? "approved" : "failed",
           error: results[idx].error,
         }));
-      setMessages(updatedMessages);
+      updateConversation({messages: updatedMessages  });
 
       // Add confirmation
       const successCount = results.filter((r) => r.success).length;
@@ -202,14 +208,14 @@ const AIChatWidget = () => {
         role: "assistant",
         content: `✅ Done! Successfully completed ${successCount} of ${results.length} actions.`,
       };
-      setMessages([...updatedMessages, confirmMessage]);
+      updateConversation({messages: [...messages, confirmMessage]});
     } else {
-      setMessages(updatedMessages);
+     updateConversation({messages: updatedMessages  });
       const declineMessage = {
         role: "assistant",
         content: "No problem! All actions declined.",
       };
-      setMessages([...updatedMessages, declineMessage]);
+      updateConversation([...messages, declineMessage]);
     }
   };
 
@@ -220,7 +226,7 @@ const AIChatWidget = () => {
     setInputMessage("");
 
     const newMessages = [...messages, { role: "user", content: userMessage }];
-    setMessages(newMessages);
+    updateConversation({messages: newMessages  });
     setIsLoading(true);
 
     try {
@@ -244,23 +250,26 @@ const AIChatWidget = () => {
       if (!response.ok) throw new Error("Failed to get AI response");
 
       const data = await response.json();
+      console.log(data);
 
       const aiMessage = {
         role: "assistant",
-        content: data.message,
-        suggestedActions: data.suggestedActions || [],
+        content: data.response.message,
+        suggestedActions: data.response.suggestedActions || [],
       };
 
-      setMessages([...newMessages, aiMessage]);
+      updateConversation({messages: [...newMessages, aiMessage]});
     } catch (error) {
       console.error("AI chat error:", error);
-      setMessages([
-        ...newMessages,
-        {
-          role: "assistant",
-          content: "Sorry, I'm having trouble right now. Please try again.",
-        },
-      ]);
+      updateConversation({
+        messages: [
+          ...messages,
+          {
+            role: "assistant",
+            content: "Sorry, I'm having trouble right now. Please try again.",
+          },
+        ],
+      });
     } finally {
       setIsLoading(false);
     }
@@ -278,7 +287,7 @@ const AIChatWidget = () => {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg hover:shadow-xl transition-all hover:scale-110 animate-pulse"
+          className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg hover:shadow-xl transition-all hover:scale-110"
           aria-label="Open AI Assistant"
         >
           <Sparkles className="h-6 w-6" />
@@ -427,7 +436,7 @@ const MultiActionCard = ({
         <div className="flex items-center gap-2 text-green-700">
           <Check className="h-5 w-5" />
           <span className="font-medium">
-            ✅ All {actions.length} actions completed!
+             All {actions.length} actions completed!
           </span>
         </div>
       </div>
@@ -453,6 +462,17 @@ const MultiActionCard = ({
           <span className="font-medium">
             Processing {actions.length} actions...
           </span>
+        </div>
+      </div>
+    );
+  }
+
+  if (someFailed) {
+    return (
+      <div className="border-2 border-gray-300 bg-gray-50 rounded-lg p-3 opacity-60">
+        <div className="flex items-center gap-2 text-gray-600">
+          <XIcon className="h-5 w-5" />
+          <span className="font-medium">Some actions failed</span>
         </div>
       </div>
     );

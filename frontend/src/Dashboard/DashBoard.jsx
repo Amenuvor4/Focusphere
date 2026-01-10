@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { DashboardHeader } from "./Dashboard-Header";
 import { DashboardSidebar } from "./Dashboard-Sidebar";
 import { TaskList } from "./TaskList.jsx";
@@ -10,23 +10,140 @@ import AIAssistant from "../componets/AIAssistant.jsx";
 
 export function Dashboard() {
   const [currentView, setCurrentView] = useState("tasks");
+  const [conversations, setConversations] = useState([]);
+  const [currentConversationId, setCurrentConversationId] = useState(null);
+  const initialized = useRef(false);
+
+  function createInitialConversation() {
+    const newConv = {
+      id: Date.now().toString(),
+      title: "New Chat",
+      messages: [
+        {
+          role: "assistant",
+          content:
+            "Hi! I'm your FocusSphere AI assistant. Try: 'Create 5 tasks for my project' or 'Update my report task to high priority'!",
+        },
+      ],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setConversations([newConv]);
+    setCurrentConversationId(newConv.id);
+  }
+
+  function createNewConversation() {
+    const newConv = {
+      id: Date.now().toString(),
+      title: "New Chat",
+      messages: [
+        {
+          role: "assistant",
+          content:
+            "Hi! I'm your FocusSphere AI assistant. Try: 'Create 5 tasks for my project' or 'Update my report task to high priority'!",
+        },
+      ],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setConversations((prev) => [newConv, ...prev]);
+    setCurrentConversationId(newConv.div);
+  }
+
+  function deleteConversation(id) {
+    const filtered = conversations.filter((c) => c.id !== id);
+
+    if (currentConversationId === id) {
+      setCurrentConversationId(filtered[0]?.id || null);
+    }
+
+    if (filtered.length === 0) {
+      createInitialConversation();
+    } else {
+      setConversations(filtered);
+    }
+  }
+
+  function updateConversation(updates) {
+    setConversations(
+      conversations.map((c) =>
+        c.id === currentConversationId
+          ? { ...c, ...updates, updatedAt: new Date().toISOString() }
+          : c
+      )
+    );
+  }
+
+  function getCurrentConversation() {
+    return conversations.find((c) => c.id === currentConversationId);
+  }
+
+  useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
+
+    const saved = localStorage.getItem("ai_conversations");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setConversations(parsed);
+        if (parsed.length > 0) {
+          setCurrentConversationId(parsed[0].id);
+        }
+      } catch (error) {
+        console.error("Error loading conversations:", error);
+        createInitialConversation();
+      }
+    } else {
+      createInitialConversation();
+    }
+  }, []);
+
+  useEffect(() => {
+    if (conversations.length > 0) {
+      localStorage.setItem("ai_conversations", JSON.stringify(conversations));
+    }
+  }, [conversations]);
 
   return (
     <div className="flex h-screen flex-col">
       <DashboardHeader />
       <div className="flex flex-1 overflow-hidden">
-        <DashboardSidebar currentView={currentView} setCurrentView={setCurrentView} />
+        <DashboardSidebar
+          currentView={currentView}
+          setCurrentView={setCurrentView}
+        />
         <main className="flex-1 overflow-y-auto bg-gray-100/40 p-4 md:p-6">
           {currentView === "tasks" && <TaskList />}
           {currentView === "goals" && <Goals />}
           {currentView === "analytics" && <Analytics />}
           {currentView === "settings" && <Settings />}
-          {currentView === "ai-assistant" && <AIAssistant />}
+          {currentView === "ai-assistant" && (
+            <AIAssistant
+              conversations={conversations}
+              currentConversationId={currentConversationId}
+              setCurrentConversationId={setCurrentConversationId}
+              createNewConversation={createNewConversation}
+              deleteConversation={deleteConversation}
+              updateConversation={updateConversation}
+              getCurrentConversation={getCurrentConversation}
+            />
+          )}
         </main>
       </div>
-      {currentView !== "ai-assistant" && <AIChatWidget />}
+      {currentView !== "ai-assistant" && (
+        <AIChatWidget
+          conversations={conversations}
+          currentConversationId={currentConversationId}
+          setCurrentConversationId={setCurrentConversationId}
+          createNewConversation={createNewConversation}
+          deleteConversation={deleteConversation}
+          updateConversation={updateConversation}
+          getCurrentConversation={getCurrentConversation}
+        />
+      )}
     </div>
   );
 }
 
-export  default Dashboard;
+export default Dashboard;
