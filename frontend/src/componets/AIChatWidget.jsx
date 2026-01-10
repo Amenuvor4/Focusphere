@@ -233,6 +233,15 @@ const AIChatWidget = ({
       const token = await getValidToken();
       if (!token) throw new Error("Not authenticated");
 
+      // Token oberload prevention
+      const recentHistory = newMessages
+        .slice(-10)
+        .map((m) => ({
+          role: m.role,
+          content: m.content,
+        }));
+
+
       const response = await fetch("http://localhost:5000/api/ai/chat", {
         method: "POST",
         headers: {
@@ -241,9 +250,7 @@ const AIChatWidget = ({
         },
         body: JSON.stringify({
           message: userMessage,
-          conversationHistory: messages
-            .filter((m) => m.role !== "system" && !m.suggestedActions)
-            .map((m) => ({ role: m.role, content: m.content })),
+          conversationHistory: recentHistory,
         }),
       });
 

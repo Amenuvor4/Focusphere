@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import {
   Send,
   Loader2,
@@ -28,6 +28,8 @@ const AIAssistant = ({
   updateConversation,
   getCurrentConversation
 }) => {
+  const conversation = getCurrentConversation();
+  const messages = useMemo(() => conversation?.messages || [], [conversation])
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -210,28 +212,24 @@ const AIAssistant = ({
   const handleSendMessage = async () => {
     if ((!inputMessage.trim() && !selectedImage) || isLoading) return;
 
-    const conversation = getCurrentConversation();
     const userMessage = inputMessage.trim();
-    const imageData = selectedImage;
-    const isNewChat = conversation.title === "New Chat";
-
     setInputMessage("");
-    setSelectedImage(null);
 
-    const newMessage = {
-      role: "user",
-      content: userMessage || "[Image uploaded]",
-      image: imageData?.preview,
-    };
-
-    const newMessages = [...conversation.messages, newMessage];
-    updateConversation({ messages: newMessages });
-
+    const newMessages = [...messages, {role: "user", content: userMessage }];
+    updateConversation({messages: newMessages});
     setIsLoading(true);
 
     try {
       const token = await getValidToken();
       if (!token) throw new Error("Not authenticated");
+
+      // Token oberload prevention
+      const recentHistory = newMessages
+        .slice(-10)
+        .map((m) => ({
+          role: m.role,
+          content: m.content,
+        }));
 
       const response = await fetch("http://localhost:5000/api/ai/chat", {
         method: "POST",
@@ -240,12 +238,8 @@ const AIAssistant = ({
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          message: userMessage || "Analyze this image",
-          conversationHistory: conversation.messages
-            .filter((m) => m.role !== "system" && !m.suggestedActions)
-            .map((m) => ({ role: m.role, content: m.content })),
-          imageData: imageData?.preview,
-            isNewChat: isNewChat,
+          message: userMessage,
+          conversationHistory: recentHistory,
         }),
       });
 
@@ -259,12 +253,7 @@ const AIAssistant = ({
         suggestedActions: data.response.suggestedActions || [],
       };
 
-      const updates = {messages: [...newMessages, aiMessage]};
-      if(data.suggestedTitle && isNewChat){
-        updates.title = data.suggestedTitle;
-      }
-
-      updateConversation(updates);
+      updateConversation({ messages: [...newMessages, aiMessage]});
     } catch (error) {
       console.error("AI chat error:", error);
       const errorMessage = {
@@ -305,8 +294,6 @@ const AIAssistant = ({
         m.content.toLowerCase().includes(searchQuery.toLowerCase())
       )
   );
-
-  const conversation = getCurrentConversation();
 
   return (
     <div className="flex h-[calc(100vh-4rem)] gap-4">

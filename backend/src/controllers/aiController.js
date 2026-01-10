@@ -86,7 +86,6 @@ exports.chat = async (req, res) => {
     // Fetch analytics data
     const analytics = await getAnalyticsData(userId);
 
-    // Get AI response with full context
     const response = await aiService.chat(message, {
       tasks,
       goals: enrichedGoals,
@@ -100,7 +99,14 @@ exports.chat = async (req, res) => {
       suggestedTitle = await aiService.generateChatTitle(message);
     }
 
-    res.json({ response, suggestedTitle });
+    res.json({ 
+      response: {
+        message: response.message,
+        suggestedActions: response.suggestedActions
+      },
+      suggestedTitle 
+    });
+    
   } catch (error) {
     console.error("AI chat error:", error);
     res.status(500).json({ error: "Failed to process message" });
