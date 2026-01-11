@@ -298,7 +298,7 @@ const AIAssistant = ({
         <div className="p-4 border-b">
           <button
             onClick={createNewConversation}
-            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg px-4 py-2.5 font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+            className="w-full bg-blue-600 text-white rounded-lg px-4 py-2.5 font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
           >
             <Plus className="h-5 w-5" />
             New Chat
@@ -325,7 +325,7 @@ const AIAssistant = ({
               onClick={() => setCurrentConversationId(conv.id)}
               className={`group p-3 rounded-lg mb-2 cursor-pointer transition-colors ${
                 conv.id === currentConversationId
-                  ? "bg-blue-50 border-blue-200"
+                  ? "bg-blue-100 border border-blue-200"
                   : "hover:bg-gray-50"
               }`}
             >
@@ -366,7 +366,7 @@ const AIAssistant = ({
         {/* Header */}
         <div className="p-4 border-b flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg">
+            <div className="p-2 bg-blue-600 rounded-lg">
               <Sparkles className="h-5 w-5 text-white" />
             </div>
             <div>
@@ -397,7 +397,7 @@ const AIAssistant = ({
                 <div
                   className={`max-w-[70%] rounded-lg px-4 py-3 ${
                     message.role === "user"
-                      ? "bg-blue-500 text-white"
+                      ? "bg-blue-600 text-white"
                       : "bg-gray-100 text-gray-800"
                   }`}
                 >
@@ -466,7 +466,7 @@ const AIAssistant = ({
         {/* Input Area */}
         <div className="border-t p-4">
           {selectedImage && (
-            <div className="mb-3 flex items-center gap-2 p-2 bg-blue-50 rounded-lg">
+            <div className="mb-3 flex items-center gap-2 p-2 bg-blue-100 rounded-lg">
               <img
                 src={selectedImage.preview}
                 alt="Preview"
@@ -477,7 +477,7 @@ const AIAssistant = ({
               </span>
               <button
                 onClick={() => setSelectedImage(null)}
-                className="p-1 hover:bg-blue-100 rounded"
+                className="p-1 hover:bg-blue-200 rounded"
               >
                 <X className="h-4 w-4 text-gray-500" />
               </button>
@@ -511,7 +511,7 @@ const AIAssistant = ({
             <button
               onClick={handleSendMessage}
               disabled={(!inputMessage.trim() && !selectedImage) || isLoading}
-              className="px-6 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg font-medium hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity flex items-center gap-2"
+              className="px-6 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
             >
               {isLoading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
