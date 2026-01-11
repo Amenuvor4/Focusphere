@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from "react";
-import { DashboardHeader } from "./Dashboard-Header";
 import { DashboardSidebar } from "./Dashboard-Sidebar";
 import { TaskList } from "./TaskList.jsx";
 import Goals from "./GoalList";
@@ -107,7 +106,6 @@ export function Dashboard() {
 
   return (
     <div className="flex h-screen flex-col">
-      <DashboardHeader />
       <div className="flex flex-1 overflow-hidden">
         <DashboardSidebar
           currentView={currentView}

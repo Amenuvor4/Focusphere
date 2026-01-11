@@ -1,21 +1,22 @@
 import {
   BarChart3,
   CheckSquare,
-  Cog,
   FolderKanban,
-  CalendarClock,
   Sparkles,
+  LogOut,
+  ChevronDown,
 } from "lucide-react";
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import getValidToken from "./tokenUtils";
 
 export function DashboardSidebar({ currentView, setCurrentView }) {
-  const [userName, setUserName] = useState("John Doe");
-  const [userEmail, setUserEmail] = useState("john@example.com");
+  const navigate = useNavigate();
+  const [userName, setUserName] = useState("User");
+  const [userEmail, setUserEmail] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
-  // Fetch user data
   useEffect(() => {
     let isMounted = true;
 
@@ -23,9 +24,8 @@ export function DashboardSidebar({ currentView, setCurrentView }) {
       try {
         setIsLoading(true);
         const token = await getValidToken();
-        if (!token || !isMounted) {
-          return;
-        }
+        if (!token || !isMounted) return;
+
         const response = await fetch("http://localhost:5000/api/auth/profile", {
           method: "GET",
           headers: {
@@ -42,12 +42,10 @@ export function DashboardSidebar({ currentView, setCurrentView }) {
         if (isMounted && data.user && data.user.name && data.user.email) {
           setUserName(data.user.name);
           setUserEmail(data.user.email);
-          setError(null);
         }
       } catch (error) {
         if (isMounted) {
           console.error("Error fetching user data:", error);
-          setError("Failed to fetch user data. Please try again.");
         }
       } finally {
         if (isMounted) {
@@ -63,113 +61,94 @@ export function DashboardSidebar({ currentView, setCurrentView }) {
     };
   }, []);
 
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
+  const handleLogout = () => {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    navigate("/login");
+  };
 
-  if (error) {
-    return <div>{error}</div>;
-  }
+  const navItems = [
+    { id: "tasks", label: "Tasks", icon: CheckSquare },
+    { id: "goals", label: "Goals", icon: FolderKanban },
+    { id: "analytics", label: "Analytics", icon: BarChart3 },
+    { id: "ai-assistant", label: "AI Assistant", icon: Sparkles },
+  ];
 
   return (
-    <div className="hidden border-r bg-white md:block md:w-64">
+    <div className="hidden border-r border-blue-100 bg-white md:flex md:w-64 md:flex-col">
       <div className="flex h-full flex-col">
+        {/* Logo Section */}
+        <div className="border-b border-blue-100 px-6 py-5">
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-blue-600">Focusphere</h1>
+          </div>
+        </div>
+
         {/* Navigation Menu */}
-        <nav className="flex-1 overflow-auto p-2">
-          <ul className="grid gap-1">
-            <li>
-              <button
-                onClick={() => setCurrentView("tasks")}
-                className={`w-full flex items-center justify-start gap-2 px-3 py-2 rounded-md ${
-                  currentView === "tasks"
-                    ? "bg-blue-100 text-blue-800"
-                    : "text-gray-700 hover:bg-gray-100"
-                } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-              >
-                <CheckSquare className="h-4 w-4" />
-                <span>Tasks</span>
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={() => setCurrentView("goals")}
-                className={`w-full flex items-center justify-start gap-2 px-3 py-2 rounded-md ${
-                  currentView === "goals"
-                    ? "bg-blue-100 text-blue-800"
-                    : "text-gray-700 hover:bg-gray-100"
-                } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-              >
-                <FolderKanban className="h-4 w-4" />
-                <span>Goals</span>
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={() => setCurrentView("analytics")}
-                className={`w-full flex items-center justify-start gap-2 px-3 py-2 rounded-md ${
-                  currentView === "analytics"
-                    ? "bg-blue-100 text-blue-800"
-                    : "text-gray-700 hover:bg-gray-100"
-                } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-              >
-                <BarChart3 className="h-4 w-4" />
-                <span>Analytics</span>
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={() => setCurrentView("ai-assistant")}
-                className={`w-full flex items-center justify-start gap-2 px-3 py-2 rounded-md ${
-                  currentView === "ai-assistant"
-                    ? "bg-blue-100 text-blue-800"
-                    : "text-gray-700 hover:bg-gray-100"
-                } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-              >
-                <Sparkles className="h-4 w-4" />
-                <span>AI Assistant</span>
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={() => setCurrentView("settings")}
-                className={`w-full flex items-center justify-start gap-2 px-3 py-2 rounded-md ${
-                  currentView === "settings"
-                    ? "bg-blue-100 text-blue-800"
-                    : "text-gray-700 hover:bg-gray-100"
-                } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-              >
-                <Cog className="h-4 w-4" />
-                <span>Settings</span>
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={() => setCurrentView("calender")}
-                className={`w-full flex items-center justify-start gap-2 px-3 py-2 rounded-md ${
-                  currentView === "calender"
-                    ? "bg-blue-100 text-blue-800"
-                    : "text-gray-700 hover:bg-gray-100"
-                } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-              >
-                <CalendarClock className="h-4 w-4" />
-                <span>Calender</span>
-              </button>
-            </li>
+        <nav className="flex-1 overflow-auto px-3 py-4">
+          <ul className="space-y-1">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = currentView === item.id;
+
+              return (
+                <li key={item.id}>
+                  <button
+                    onClick={() => setCurrentView(item.id)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                      isActive
+                        ? "bg-blue-600 text-white shadow-lg shadow-blue-500/25"
+                        : "text-blue-700 hover:bg-blue-50 hover:text-blue-900"
+                    }`}
+                  >
+                    <Icon
+                      className={`h-5 w-5 ${isActive ? "text-white" : "text-blue-600"}`}
+                    />
+                    <span className="font-medium">{item.label}</span>
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         </nav>
 
         {/* User Profile Section */}
-        <div className="border-t p-4">
-          <div className="flex items-center gap-3">
-            <img
-              src="/placeholder.svg?height=40&width=40"
-              alt="User"
-              className="h-10 w-10 rounded-full"
-            />
-            <div className="flex flex-col">
-              <span className="text-sm font-medium">{userName}</span>
-              <span className="text-xs text-gray-500">{userEmail}</span>
-            </div>
+        <div className="border-t border-blue-100 bg-white p-3">
+          <div className="relative">
+            <button
+              onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+              className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-blue-50 transition-colors"
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-white font-semibold shadow-md">
+                {isLoading ? "..." : userName.charAt(0).toUpperCase()}
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-sm font-medium text-gray-900 truncate">
+                  {isLoading ? "Loading..." : userName}
+                </p>
+                <p className="text-xs text-blue-600 truncate">
+                  {isLoading ? "" : userEmail}
+                </p>
+              </div>
+              <ChevronDown
+                className={`h-4 w-4 text-blue-400 transition-transform ${
+                  isProfileMenuOpen ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+
+            {/* Dropdown Menu */}
+            {isProfileMenuOpen && (
+              <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-xl shadow-xl border border-blue-100 py-1">
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors rounded-lg"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span>Logout</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
