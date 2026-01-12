@@ -30,7 +30,7 @@ const validateObjectId = (req, res, next) => {
 // Create a Goal
 router.post('/', async (req, res) => {
   try {
-    const { title, description, progress, deadline, priority, tasks } = req.body;
+    let { title, description, progress, deadline, priority, tasks } = req.body;
 
     // Manual validation
     if (!title) {
@@ -45,8 +45,15 @@ router.post('/', async (req, res) => {
     if (deadline && new Date(deadline) <= new Date()) {
       return res.status(400).json({ error: 'Deadline must be in the future' });
     }
-    if (priority && !['high', 'medium', 'low'].includes(priority)) {
-      return res.status(400).json({ error: 'Invalid priority value' });
+
+    // Sanitize and validate priority
+    if (priority) {
+      priority = priority.toLowerCase();
+      if (!['high', 'medium', 'low'].includes(priority)) {
+        return res.status(400).json({
+          error: `Invalid priority value: "${priority}". Must be "low", "medium", or "high"`
+        });
+      }
     }
 
     const goal = new Goal({
@@ -112,21 +119,28 @@ router.get('/:id', validateObjectId, async (req, res) => {
 // Update Goal
 router.put('/:id', validateObjectId, async (req, res) => {
   try {
-    const { title, description, progress, deadline, priority, tasks } = req.body;
+    let { title, description, progress, deadline, priority, tasks } = req.body;
 
     const updateData = {};
     if (title !== undefined) updateData.title = title;
     if (description !== undefined) updateData.description = description;
     if (progress !== undefined) updateData.progress = progress;
-    if (priority !== undefined) updateData.priority = priority;
     if (tasks !== undefined) updateData.tasks = tasks;
 
     // Manual validation
     if (progress !== undefined && (progress < 0 || progress > 100)) {
       return res.status(400).json({ error: 'Progress must be between 0 and 100' });
     }
-    if (priority && !['high', 'medium', 'low'].includes(priority)) {
-      return res.status(400).json({ error: 'Invalid priority value' });
+
+    // Sanitize and validate priority
+    if (priority) {
+      priority = priority.toLowerCase();
+      if (!['high', 'medium', 'low'].includes(priority)) {
+        return res.status(400).json({
+          error: `Invalid priority value: "${priority}". Must be "low", "medium", or "high"`
+        });
+      }
+      updateData.priority = priority;
     }
     if (deadline !==undefined){
       updateDate.deadline = deadline ? parseDateString(deadline) : null;

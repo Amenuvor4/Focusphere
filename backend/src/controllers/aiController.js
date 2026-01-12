@@ -94,6 +94,116 @@ exports.chat = async (req, res) => {
       imageData,
     });
 
+    console.log('=== AI RESPONSE ===');
+    console.log('Full response:', JSON.stringify(response, null, 2));
+    console.log('suggestedActions:', response.suggestedActions);
+    console.log('==================');
+
+    if (response.suggestedActions && response.suggestedActions.length > 0) {
+      response.suggestedActions = await Promise.all(
+        response.suggestedActions.map(async (action, index) => {
+          console.log(`\n Processing action ${index + 1}:`, action.type);
+          console.log('Action data before enrichment:', JSON.stringify(action.data, null, 2));
+
+          // Enrich delete_task actions with full task details
+          if (action.type === "delete_task") {
+            const taskId = action.data.taskId || action.data.id;
+            console.log('Delete task - taskId:', taskId);
+            console.log('Available task IDs:', tasks.map(t => t._id.toString()));
+
+            if (taskId) {
+              const task = tasks.find((t) => t._id.toString() === taskId);
+              console.log('Found task:', task ? task.title : 'NOT FOUND');
+
+              if (task) {
+                // Enrich with all task details
+                action.data = {
+                  ...action.data,
+                  taskId: taskId,
+                  title: task.title,
+                  category: task.category,
+                  priority: task.priority,
+                  status: task.status,
+                  due_date: task.due_date,
+                  description: task.description
+                };
+                console.log('Enriched delete task action.data:', action.data);
+              } else {
+                console.log('WARNING: Task not found for deletion!');
+              }
+            }
+          }
+
+          // Enrich update_task actions with current task details
+          if (action.type === "update_task" && action.data.taskId) {
+            const taskId = action.data.taskId;
+            console.log('Looking for task to update with ID:', taskId);
+            const task = tasks.find((t) => t._id.toString() === taskId);
+            console.log('Found task:', task ? task.title : 'NOT FOUND');
+            if (task) {
+              // Keep the current values if not being updated
+              action.data.title = action.data.updates?.title || task.title;
+              action.data.category = action.data.updates?.category || task.category;
+              action.data.priority = action.data.updates?.priority || task.priority;
+              action.data.status = action.data.updates?.status || task.status;
+              action.data.due_date = action.data.updates?.due_date || task.due_date;
+              console.log('Enriched update action:', action.data);
+            }
+          }
+
+          // Enrich delete_goal actions with full goal details
+          if (action.type === "delete_goal") {
+            const goalId = action.data.goalId || action.data.id;
+            console.log('Delete goal - goalId:', goalId);
+            console.log('Available goal IDs:', goals.map(g => g._id.toString()));
+
+            if (goalId) {
+              const goal = goals.find((g) => g._id.toString() === goalId);
+              console.log('Found goal:', goal ? goal.title : 'NOT FOUND');
+
+              if (goal) {
+                // Enrich with all goal details
+                action.data = {
+                  ...action.data,
+                  goalId: goalId,
+                  title: goal.title,
+                  description: goal.description,
+                  priority: goal.priority,
+                  deadline: goal.deadline
+                };
+                console.log('Enriched delete goal action.data:', action.data);
+              } else {
+                console.log('WARNING: Goal not found for deletion!');
+              }
+            }
+          }
+
+          // Enrich update_goal actions with current goal details
+          if (action.type === "update_goal" && action.data.goalId) {
+            const goalId = action.data.goalId;
+            console.log('Looking for goal to update with ID:', goalId);
+            const goal = goals.find((g) => g._id.toString() === goalId);
+            console.log('Found goal:', goal ? goal.title : 'NOT FOUND');
+            if (goal) {
+              // Keep the current values if not being updated
+              action.data.title = action.data.updates?.title || goal.title;
+              action.data.description = action.data.updates?.description || goal.description;
+              action.data.priority = action.data.updates?.priority || goal.priority;
+              action.data.deadline = action.data.updates?.deadline || goal.deadline;
+              console.log('Enriched update goal action:', action.data);
+            }
+          }
+
+          console.log('Action data after enrichment:', JSON.stringify(action.data, null, 2));
+          return action;
+        })
+      );
+
+      console.log('ENRICHMENT COMPLETE')
+    } else{
+      console.log("NO SUGGESTED ACTIONS FOUND IN RESPONSE")
+    }
+
     let suggestedTitle = null;
     if (isNewChat) {
       suggestedTitle = await aiService.generateChatTitle(message);

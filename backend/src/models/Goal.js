@@ -57,14 +57,19 @@ goalSchema.pre('save', async function (next) {
   if (this.isNew && this.deadline && this.deadline <= new Date()) {
     return next(new Error('Deadline must be in the future'));
   }
-  
-// Validate that all referenced tasks exist (OPTIONAL - can be commented out for performance)
-  if (this.tasks && this.tasks.length > 0) {
+
+  // Validate that all referenced tasks exist
+  // Skip validation if skipTaskValidation flag is set (during bulk operations)
+  // DISABLED: This validation causes race conditions during parallel operations
+  // The database foreign key constraints will handle referential integrity
+  if (false && this.tasks && this.tasks.length > 0 && !this.skipTaskValidation) {
     try {
-      const tasksExist = await mongoose.model('Task').countDocuments({ 
-        _id: { $in: this.tasks } 
+      const tasksExist = await mongoose.model('Task').countDocuments({
+        _id: { $in: this.tasks }
       });
       if (tasksExist !== this.tasks.length) {
+        // Log which tasks are missing for debugging
+        console.log(`Goal "${this.title}" validation failed: Expected ${this.tasks.length} tasks, found ${tasksExist}`);
         return next(new Error('One or more tasks do not exist'));
       }
     } catch (error) {

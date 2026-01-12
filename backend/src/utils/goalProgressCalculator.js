@@ -11,6 +11,8 @@ async function updateGoalProgress(goalId) {
 
     if (!goal.tasks || goal.tasks.length === 0) {
       goal.progress = 0;
+      // Skip validation when updating progress after task deletion
+      goal.skipTaskValidation = true;
       await goal.save();
       return;
     }
@@ -29,6 +31,8 @@ async function updateGoalProgress(goalId) {
 
 
     goal.progress = progress;
+    // Skip validation when updating progress (some tasks might be in the process of being deleted)
+    goal.skipTaskValidation = true;
     await goal.save();
 
     console.log(`Goal "${goal.title}" progress updated: ${progress}% (${completedTasks}/${totalTasks} tasks completed)`);

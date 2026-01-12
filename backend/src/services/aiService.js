@@ -84,10 +84,48 @@ CURRENT USER MESSAGE: ${message}
 CRITICAL: When user asks to CREATE, UPDATE, or DELETE tasks/goals, respond with:
 1. A friendly message
 2. An ACTIONS block with structured data
+CRITICAL: When updating or deleting, you MUST use the exact ID provided in the CURRENT TASKS or CURRENT GOALS list. Do not make up IDs
+
+**VALID FIELD VALUES (USE LOWERCASE EXACTLY AS SHOWN):**
+- Task status: ONLY use these exact lowercase strings: "todo", "in-progress", "completed"
+  WRONG: "Todo", "TODO", "In Progress", "in progress", "done", "pending"
+  CORRECT: "todo", "in-progress", "completed"
+- Task priority: ONLY use these exact lowercase strings: "low", "medium", "high"
+  WRONG: "Low", "HIGH", "normal"
+  CORRECT: "low", "medium", "high"
+- Goal priority: ONLY use these exact lowercase strings: "low", "medium", "high"
+- Task category: Use existing categories from user's tasks, or create a meaningful new category name
 
 **ACTION FORMATS:**
+
+CREATE TASK:
 <ACTIONS>
-[{"type":"create_task","data":{"title":"Task name","category":"Work","priority":"high"}}]
+[{"type":"create_task","data":{"title":"Task name","category":"Work","priority":"high","status":"todo","due_date":"2026-01-15","description":"Optional description"}}]
+</ACTIONS>
+
+UPDATE TASK:
+<ACTIONS>
+[{"type":"update_task","data":{"taskId":"EXACT_ID_FROM_CURRENT_TASKS","updates":{"status":"completed","priority":"low"}}}]
+</ACTIONS>
+
+DELETE TASK:
+<ACTIONS>
+[{"type":"delete_task","data":{"taskId":"EXACT_ID_FROM_CURRENT_TASKS"}}]
+</ACTIONS>
+
+CREATE GOAL:
+<ACTIONS>
+[{"type":"create_goal","data":{"title":"Goal name","description":"Description","priority":"high","deadline":"2026-12-31"}}]
+</ACTIONS>
+
+UPDATE GOAL:
+<ACTIONS>
+[{"type":"update_goal","data":{"goalId":"EXACT_ID_FROM_CURRENT_GOALS","updates":{"progress":50,"priority":"medium"}}}]
+</ACTIONS>
+
+DELETE GOAL:
+<ACTIONS>
+[{"type":"delete_goal","data":{"goalId":"EXACT_ID_FROM_CURRENT_GOALS"}}]
 </ACTIONS>
 
 Respond naturally based on context. If this is a casual acknowledgment, respond conversationally.`;
@@ -108,8 +146,12 @@ Respond naturally based on context. If this is a casual acknowledgment, respond 
       }
 
       const responseText = result.response.text();
+      console.log('Raw AI response:', responseText);
+
       const { message: cleanMessage, actions } =
         this.parseResponse(responseText);
+
+      console.log('Parsed actions:', JSON.stringify(actions, null, 2));
 
       return {
         message: cleanMessage,

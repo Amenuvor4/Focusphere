@@ -41,7 +41,7 @@ const getDefaultDueDate = () => {
 // Create a Task
 router.post('/', async (req, res) => {
   try {
-    const { title, description, priority, due_date, category, status } = req.body;
+    let { title, description, priority, due_date, category, status } = req.body;
 
     if (!title) {
       return res.status(400).json({ error: 'Title is required' });
@@ -50,11 +50,25 @@ router.post('/', async (req, res) => {
     if (!category) {
       return res.status(400).json({ error: 'Category is required' });
     }
-    if (priority && !['low', 'medium', 'high'].includes(priority)) {
-      return res.status(400).json({ error: 'Invalid priority value' });
+
+    // Sanitize and validate priority
+    if (priority) {
+      priority = priority.toLowerCase();
+      if (!['low', 'medium', 'high'].includes(priority)) {
+        return res.status(400).json({
+          error: `Invalid priority value: "${priority}". Must be "low", "medium", or "high"`
+        });
+      }
     }
-    if (status && !['todo', 'in-progress', 'completed'].includes(status)) {
-      return res.status(400).json({ error: 'Invalid status value' });
+
+    // Sanitize and validate status
+    if (status) {
+      status = status.toLowerCase();
+      if (!['todo', 'in-progress', 'completed'].includes(status)) {
+        return res.status(400).json({
+          error: `Invalid status value: "${status}". Must be "todo", "in-progress", or "completed"`
+        });
+      }
     }
     if (due_date && isNaN(new Date(due_date).getTime())) {
       return res.status(400).json({ error: 'Invalid due date' });
@@ -89,6 +103,8 @@ router.post('/', async (req, res) => {
 
     if(goal){
       goal.tasks.push(savedTask._id);
+      // Skip task validation when adding tasks to avoid race conditions during bulk creates
+      goal.skipTaskValidation = true;
       await goal.save();
       await updateGoalProgressForTask(savedTask._id);
     }
@@ -137,10 +153,34 @@ router.put('/:id', async (req, res) => {
     if (!oldTask) {
       return res.status(404).json({ error: 'Task not found' });
     }
+
+    // Sanitize and validate the update data
+    const updateData = { ...req.body };
+
+    // Sanitize priority
+    if (updateData.priority) {
+      updateData.priority = updateData.priority.toLowerCase();
+      if (!['low', 'medium', 'high'].includes(updateData.priority)) {
+        return res.status(400).json({
+          error: `Invalid priority value: "${updateData.priority}". Must be "low", "medium", or "high"`
+        });
+      }
+    }
+
+    // Sanitize status
+    if (updateData.status) {
+      updateData.status = updateData.status.toLowerCase();
+      if (!['todo', 'in-progress', 'completed'].includes(updateData.status)) {
+        return res.status(400).json({
+          error: `Invalid status value: "${updateData.status}". Must be "todo", "in-progress", or "completed"`
+        });
+      }
+    }
+
     const oldStatus = oldTask?.status;
     const updatedTask = await Task.findOneAndUpdate(
       { _id: req.params.id, user_id: req.user.id },
-      req.body,
+      updateData,
       { new: true, runValidators: false } // Disable validators for updates
     );
 
@@ -178,6 +218,8 @@ router.delete('/:id', async (req, res) => {
     const goal = await Goal.findOne({ title: deletedTask.category, userId: req.user.id });
     if (goal) {
       goal.tasks = goal.tasks.filter(taskId => taskId.toString() !== deletedTask._id.toString());
+      // Skip task validation when removing tasks to avoid race conditions during bulk deletes
+      goal.skipTaskValidation = true;
       await goal.save();
       await updateGoalProgressForTask(deletedTask._id);
     }
