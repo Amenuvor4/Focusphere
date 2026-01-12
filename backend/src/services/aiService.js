@@ -5,6 +5,11 @@ class AIService {
     this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     this.model = this.genAI.getGenerativeModel({
       model: "gemini-2.5-flash",
+      systemInstruction:`You are FocusSphere AI. 
+      Rules: Use exact IDs for updates/deletes. 
+      Status: todo, in-progress, completed. 
+      Priority: low, medium, high. 
+      Format: <ACTIONS>[{"type":"...","data":{}}]</ACTIONS>.`
     });
   }
 
@@ -21,117 +26,37 @@ class AIService {
     } = context;
 
     try {
-      // Build conversation context (last 10 messages)
-      const recentHistory = conversationHistory.slice(-10);
-      const contextText =
-        recentHistory.length > 0
-          ? recentHistory
-              .map(
-                (msg) =>
-                  `${msg.role === "user" ? "User" : "Assistant"}: ${msg.content}`
-              )
-              .join("\n")
-          : "";
+      //DATA COMPRESSION
+      const taskContext = tasks?.slice(0, 10).map(t =>
+        `ID:${t._id}|T:${t.title}|S:${t.status}|P:${t.priority}`
+      ).join('\n') || "None";
 
-      // Format tasks info
-      const tasksInfo =
-        tasks
-          ?.slice(0, 10)
-          .map(
-            (t) =>
-              `- "${t.title}" (ID: ${t._id}, Status: ${t.status}, Priority: ${t.priority}, Category: ${t.category})`
-          )
-          .join("\n") || "No tasks";
+      const goalContext = goals?.slice(0,5).map(g => 
+        `ID:${g._id}|T:${g.title}|P${g.progress}%`
+      ).join('\n') || "None";
 
-      // Format goals info
-      const goalsInfo =
-        goals
-          ?.slice(0, 10)
-          .map((g) => {
-            const taskCount = g.tasks?.length || 0;
-            const description = g.description || "No description";
-            return `- **"${g.title}"** (ID: ${g._id})\n  Description: ${description}\n  Progress: ${g.progress || 0}%\n  Tasks: ${taskCount}`;
-          })
-          .join("\n\n") || "No goals";
+      const analyticsContext = analytics ? 
+      `Done:${analytics.tasksCompleted}|Total:${analytics.tasksCreated}|Rate:${analytics.completionRate}%|AvgTime:${analytics.averageCompletionTime}` 
+      : "No data";
 
-      // Build system prompt
-      const systemPrompt = `You are FocusSphere AI, an intelligent productivity assistant.
+      const history = conversationHistory.slice(-6).map(msg => 
+      `${msg.role === "user" ? "U" : "A"}: ${msg.content}`
+    ).join("\n");
 
-CORE BEHAVIORS:
-1. **Context Awareness**: Always read the FULL conversation history before responding
-2. **Natural Conversation**: Respond like a human - acknowledge comments, ask follow-up questions
-3. **No Repetition**: Don't repeat information unless explicitly asked
-4. **Smart Responses**:
-   - If user says "cool", "thanks", "awesome" → Acknowledge and ask if they need help
-   - If user asks a question → Answer directly
-   - If user gives a command → Execute and confirm
 
-CURRENT USER CONTEXT:
-- User has ${tasks?.length || 0} tasks (${tasks?.filter((t) => t.status === "completed").length || 0} completed)
-- User has ${goals?.length || 0} active goals
+    const userContext = `
+  [STATS]: ${analyticsContext}
+  [TASKS]:
+  ${taskContext}
+  [GOALS]:
+  ${goalContext}
+  [HISTORY]:
+  ${history}
 
-CURRENT TASKS:
-${tasksInfo}
+  User Message: ${message}`;
 
-CURRENT GOALS:
-${goalsInfo}
-
-CONVERSATION HISTORY:
-${contextText}
-
-CURRENT USER MESSAGE: ${message}
-
-CRITICAL: When user asks to CREATE, UPDATE, or DELETE tasks/goals, respond with:
-1. A friendly message
-2. An ACTIONS block with structured data
-CRITICAL: When updating or deleting, you MUST use the exact ID provided in the CURRENT TASKS or CURRENT GOALS list. Do not make up IDs
-
-**VALID FIELD VALUES (USE LOWERCASE EXACTLY AS SHOWN):**
-- Task status: ONLY use these exact lowercase strings: "todo", "in-progress", "completed"
-  WRONG: "Todo", "TODO", "In Progress", "in progress", "done", "pending"
-  CORRECT: "todo", "in-progress", "completed"
-- Task priority: ONLY use these exact lowercase strings: "low", "medium", "high"
-  WRONG: "Low", "HIGH", "normal"
-  CORRECT: "low", "medium", "high"
-- Goal priority: ONLY use these exact lowercase strings: "low", "medium", "high"
-- Task category: Use existing categories from user's tasks, or create a meaningful new category name
-
-**ACTION FORMATS:**
-
-CREATE TASK:
-<ACTIONS>
-[{"type":"create_task","data":{"title":"Task name","category":"Work","priority":"high","status":"todo","due_date":"2026-01-15","description":"Optional description"}}]
-</ACTIONS>
-
-UPDATE TASK:
-<ACTIONS>
-[{"type":"update_task","data":{"taskId":"EXACT_ID_FROM_CURRENT_TASKS","updates":{"status":"completed","priority":"low"}}}]
-</ACTIONS>
-
-DELETE TASK:
-<ACTIONS>
-[{"type":"delete_task","data":{"taskId":"EXACT_ID_FROM_CURRENT_TASKS"}}]
-</ACTIONS>
-
-CREATE GOAL:
-<ACTIONS>
-[{"type":"create_goal","data":{"title":"Goal name","description":"Description","priority":"high","deadline":"2026-12-31"}}]
-</ACTIONS>
-
-UPDATE GOAL:
-<ACTIONS>
-[{"type":"update_goal","data":{"goalId":"EXACT_ID_FROM_CURRENT_GOALS","updates":{"progress":50,"priority":"medium"}}}]
-</ACTIONS>
-
-DELETE GOAL:
-<ACTIONS>
-[{"type":"delete_goal","data":{"goalId":"EXACT_ID_FROM_CURRENT_GOALS"}}]
-</ACTIONS>
-
-Respond naturally based on context. If this is a casual acknowledgment, respond conversationally.`;
 
       let result;
-
       // Handle image if provided
       if (imageData) {
         const imagePart = {
@@ -140,23 +65,13 @@ Respond naturally based on context. If this is a casual acknowledgment, respond 
             mimeType: imageData.match(/data:([^;]+);/)[1],
           },
         };
-        result = await this.model.generateContent([systemPrompt, imagePart]);
+        result = await this.model.generateContent([userContext, imagePart]);
       } else {
-        result = await this.model.generateContent(systemPrompt);
+        result = await this.model.generateContent(userContext);
       }
 
       const responseText = result.response.text();
-      console.log('Raw AI response:', responseText);
-
-      const { message: cleanMessage, actions } =
-        this.parseResponse(responseText);
-
-      console.log('Parsed actions:', JSON.stringify(actions, null, 2));
-
-      return {
-        message: cleanMessage,
-        suggestedActions: actions.length > 0 ? actions : [],
-      };
+     return this.parseResponse(responseText);
     } catch (error) {
       console.error("Gemini API error:", error);
       throw new Error("AI service unavailable");
