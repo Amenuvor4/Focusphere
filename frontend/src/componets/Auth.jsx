@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { FaGoogle, FaEnvelope, FaLock, FaUser, FaEye, FaEyeSlash } from "react-icons/fa";
 import { jwtDecode } from "jwt-decode";
 
-const API_BASE_URL = "http://localhost:5000/api/auth";
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 const Auth = () => {
   const location = useLocation();
@@ -28,9 +28,10 @@ const Auth = () => {
   // Handle tokens from URL (OAuth callback)
   useEffect(() => {
     if (accessToken && refreshToken && !processingRedirect) {
-      console.error("Tokens received from OAuth callback");
+      console.log("Tokens received from OAuth callback");
       setProcessingRedirect(true);
       
+      // THIS CAN LEAD TO XSS ATTACKS, When you caN move tokens to an httponly cookie
       // Store tokens
       localStorage.setItem("accessToken", accessToken);
       localStorage.setItem("refreshToken", refreshToken);
@@ -38,7 +39,7 @@ const Auth = () => {
       
       // Add a small delay to allow console logs to be visible
       setTimeout(() => {
-        console.error("Redirecting to dashboard from OAuth callback");
+        console.log("Redirecting to dashboard from OAuth callback");
         navigate("/dashboard");
       }, 500);
     }
@@ -56,14 +57,14 @@ const Auth = () => {
         const currentTime = Date.now() / 1000;
         
         if (decoded.exp > currentTime) {
-          console.error("Valid token found, user already authenticated");
-          console.error("Token expiration:", new Date(decoded.exp * 1000).toLocaleString());
-          console.error("Current time:", new Date(currentTime * 1000).toLocaleString());
-          console.error("Time remaining (seconds):", decoded.exp - currentTime);
+          console.log("Valid token found, user already authenticated");
+          console.log("Token expiration:", new Date(decoded.exp * 1000).toLocaleString());
+          console.log("Current time:", new Date(currentTime * 1000).toLocaleString());
+          console.log("Time remaining (seconds):", decoded.exp - currentTime);
           
           // Only redirect if we're on the auth page
           if (location.pathname === "/auth") {
-            console.error("Redirecting to dashboard from auth check");
+            console.log("Redirecting to dashboard from auth check");
             navigate("/dashboard");
           }
         } else {
