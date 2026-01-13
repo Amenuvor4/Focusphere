@@ -1,4 +1,5 @@
-import { jwtDecode } from 'jwt-decode';
+import { jwtDecode } from "jwt-decode";
+import { ENDPOINTS } from "./api.js";
 
 // Internal helper to Check if token is expiring
 const isTokenExpiring = (token) => {
@@ -15,15 +16,15 @@ const isTokenExpiring = (token) => {
 // Internal helper to refresh the access token using the refresh token
 const refreshToken = async () => {
   try {
-    const refreshToken = localStorage.getItem('refreshToken');
+    const refreshToken = localStorage.getItem("refreshToken");
     if (!refreshToken) {
-      throw new Error('No refresh token found');
+      throw new Error("No refresh token found");
     }
 
-    const response = await fetch('http://localhost:5000/api/auth/refresh-token', {
-      method: 'POST',
+    const response = await fetch(ENDPOINTS.AUTH.REFRESH_TOKEN, {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ refreshToken }),
     });
@@ -33,19 +34,19 @@ const refreshToken = async () => {
     }
 
     const data = await response.json();
-    localStorage.setItem('accessToken', data.accessToken);
-    localStorage.setItem('refreshToken', data.refreshToken);
+    localStorage.setItem("accessToken", data.accessToken);
+    localStorage.setItem("refreshToken", data.refreshToken);
     return data.accessToken;
   } catch (error) {
-    console.error('Token refresh failed:', error);
-    window.location.href = '/Auth'; // Redirect to login page
+    console.error("Token refresh failed:", error);
+    window.location.href = "/Auth"; // Redirect to login page
     return null;
   }
 };
 
 // Exported function to get a valid token (either the current one or a refreshed one)
 const getValidToken = async () => {
-  const token = localStorage.getItem('accessToken');
+  const token = localStorage.getItem("accessToken");
   if (!token || isTokenExpiring(token)) {
     console.log("Token is expiring or missing, refreshing...");
     return await refreshToken();
@@ -53,4 +54,4 @@ const getValidToken = async () => {
   return token;
 };
 
-export default getValidToken; 
+export default getValidToken;

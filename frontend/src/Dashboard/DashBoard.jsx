@@ -46,7 +46,7 @@ export function Dashboard() {
       updatedAt: new Date().toISOString(),
     };
     setConversations((prev) => [newConv, ...prev]);
-    setCurrentConversationId(newConv.div);
+    setCurrentConversationId(newConv.id);
   }
 
   function deleteConversation(id) {

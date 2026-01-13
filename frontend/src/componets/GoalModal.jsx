@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { X } from "lucide-react";
-import getValidToken from "./../Dashboard/tokenUtils";
+import getValidToken from "../config/tokenUtils.js";
+import { ENDPOINTS } from "../config/api.js";
 
 const GoalModal = ({ isOpen, onClose, onSave, goal = null }) => {
   const isEditing = !!goal;
@@ -27,8 +28,8 @@ const GoalModal = ({ isOpen, onClose, onSave, goal = null }) => {
       }
 
       const url = isEditing
-        ? `http://localhost:5000/api/goals/${goal._id}`
-        : "http://localhost:5000/api/goals";
+        ? ENDPOINTS.GOALS.BY_ID(goal._id)
+        : ENDPOINTS.GOALS.BASE;
 
       const method = isEditing ? "PUT" : "POST";
 

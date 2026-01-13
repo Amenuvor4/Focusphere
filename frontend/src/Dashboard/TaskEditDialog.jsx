@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
-import getValidToken from "./tokenUtils"
+import React, { useState, useEffect } from "react";
+import { X } from "lucide-react";
+import getValidToken from "../config/tokenUtils";
+import { ENDPOINTS } from "../config/api.js";
 
 export function TaskEditDialog({ isOpen, onClose, task, onSave }) {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [status, setStatus] = useState(task?.status || "todo");
-  const [priority, setPriority] = useState('medium');
-  const [dueDate, setDueDate] = useState('');
-  const [category, setCategory] = useState('');
+  const [priority, setPriority] = useState("medium");
+  const [dueDate, setDueDate] = useState("");
+  const [category, setCategory] = useState("");
   const [goals, setGoals] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -16,20 +17,20 @@ export function TaskEditDialog({ isOpen, onClose, task, onSave }) {
   // Populate form fields if editing an existing task
   useEffect(() => {
     if (task) {
-      setTitle(task.title || '');
-      setDescription(task.description || '');
-      setStatus(task.status || 'todo');
-      setPriority(task.priority || 'medium');
-      setDueDate(task.dueDate || '');
-      setCategory(task.category || '');
+      setTitle(task.title || "");
+      setDescription(task.description || "");
+      setStatus(task.status || "todo");
+      setPriority(task.priority || "medium");
+      setDueDate(task.dueDate || "");
+      setCategory(task.category || "");
     } else {
       // Reset form for new task
-      setTitle('');
-      setDescription('');
-      setStatus('todo');
-      setPriority('medium');
-      setDueDate('');
-      setCategory('');
+      setTitle("");
+      setDescription("");
+      setStatus("todo");
+      setPriority("medium");
+      setDueDate("");
+      setCategory("");
     }
   }, [task, isOpen]);
 
@@ -46,19 +47,19 @@ export function TaskEditDialog({ isOpen, onClose, task, onSave }) {
             return;
           }
 
-          const response = await fetch('http://localhost:5000/api/goals', {
+          const response = await fetch(ENDPOINTS.GOALS.BASE, {
             headers: { Authorization: `Bearer ${token}` },
           });
 
           if (!response.ok) {
-            throw new Error('Failed to fetch goals');
+            throw new Error("Failed to fetch goals");
           }
 
           const data = await response.json();
           setGoals(data);
         } catch (error) {
-          console.error('Error fetching goals:', error);
-          setError('Failed to fetch goals. Please try again.');
+          console.error("Error fetching goals:", error);
+          setError("Failed to fetch goals. Please try again.");
         } finally {
           setIsLoading(false);
         }
@@ -88,7 +89,9 @@ export function TaskEditDialog({ isOpen, onClose, task, onSave }) {
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold">{task ? "Edit Task" : "Create Task"}</h2>
+          <h2 className="text-xl font-bold">
+            {task ? "Edit Task" : "Create Task"}
+          </h2>
           <button
             className="p-1 rounded-full hover:bg-gray-200"
             onClick={onClose}
@@ -99,7 +102,9 @@ export function TaskEditDialog({ isOpen, onClose, task, onSave }) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Title
+            </label>
             <input
               type="text"
               value={title}
@@ -110,7 +115,9 @@ export function TaskEditDialog({ isOpen, onClose, task, onSave }) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Description
+            </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -121,7 +128,9 @@ export function TaskEditDialog({ isOpen, onClose, task, onSave }) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Status
+              </label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
@@ -134,7 +143,9 @@ export function TaskEditDialog({ isOpen, onClose, task, onSave }) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Priority
+              </label>
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value)}
@@ -149,7 +160,9 @@ export function TaskEditDialog({ isOpen, onClose, task, onSave }) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Due Date
+              </label>
               <input
                 type="date"
                 value={dueDate}
@@ -159,7 +172,9 @@ export function TaskEditDialog({ isOpen, onClose, task, onSave }) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Category
+              </label>
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
@@ -168,7 +183,9 @@ export function TaskEditDialog({ isOpen, onClose, task, onSave }) {
               >
                 <option value="">Select a category</option>
                 {isLoading ? (
-                  <option value="" disabled>Loading categories...</option>
+                  <option value="" disabled>
+                    Loading categories...
+                  </option>
                 ) : (
                   goals.map((goal) => (
                     <option key={goal._id} value={goal.title}>
@@ -180,11 +197,7 @@ export function TaskEditDialog({ isOpen, onClose, task, onSave }) {
             </div>
           </div>
 
-          {error && (
-            <div className="text-sm text-red-500">
-              {error}
-            </div>
-          )}
+          {error && <div className="text-sm text-red-500">{error}</div>}
 
           <div className="flex justify-end gap-2 pt-4">
             <button

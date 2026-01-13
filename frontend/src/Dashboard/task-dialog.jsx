@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { format } from "date-fns";
+import { ENDPOINTS } from "../config/api.js";
 
 export function TaskDialog({ isOpen, onClose, task }) {
   const [title, setTitle] = useState("");
@@ -26,7 +27,7 @@ export function TaskDialog({ isOpen, onClose, task }) {
           if(!token){
             return;
           }
-          const response = await fetch('http://localhost:5000/api/goals', {
+          const response = await fetch(ENDPOINTS.GOALS.BASE, {
             headers: { Authorization: `Bearer ${token}`},
           });
           setGoals(response.data);

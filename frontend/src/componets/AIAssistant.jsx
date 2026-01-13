@@ -18,6 +18,7 @@ import {
   ChevronUp,
   X,
 } from "lucide-react";
+import { ENDPOINTS } from "../config/api.js";
 
 const AIAssistant = ({
   conversations,
@@ -60,31 +61,31 @@ const AIAssistant = ({
 
       switch (action.type) {
         case "create_task":
-          endpoint = "http://localhost:5000/api/tasks";
+          endpoint = ENDPOINTS.TASKS.BASE;
           method = "POST";
           body = JSON.stringify(action.data);
           break;
         case "update_task":
-          endpoint = `http://localhost:5000/api/tasks/${action.data.taskId}`;
+          endpoint = ENDPOINTS.TASKS.BY_ID(action.data.taskId);
           method = "PUT";
           body = JSON.stringify(action.data.updates);
           break;
         case "delete_task":
-          endpoint = `http://localhost:5000/api/tasks/${action.data.taskId}`;
+          endpoint = ENDPOINTS.TASKS.BY_ID(action.data.taskId);
           method = "DELETE";
           break;
         case "create_goal":
-          endpoint = "http://localhost:5000/api/goals";
+          endpoint = ENDPOINTS.GOALS.BASE;
           method = "POST";
           body = JSON.stringify({ ...action.data, progress: 0, tasks: [] });
           break;
         case "update_goal":
-          endpoint = `http://localhost:5000/api/goals/${action.data.goalId}`;
+          endpoint = ENDPOINTS.GOALS.BY_ID(action.data.goalId);
           method = "PUT";
           body = JSON.stringify(action.data.updates);
           break;
         case "delete_goal":
-          endpoint = `http://localhost:5000/api/goals/${action.data.goalId}`;
+          endpoint = ENDPOINTS.GOALS.BY_ID(action.data.goalId);
           method = "DELETE";
           break;
         default:
@@ -227,7 +228,7 @@ const AIAssistant = ({
         content: m.content,
       }));
 
-      const response = await fetch("http://localhost:5000/api/ai/chat", {
+      const response = await fetch(ENDPOINTS.AI.CHAT, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

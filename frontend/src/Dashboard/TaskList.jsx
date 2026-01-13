@@ -1,64 +1,64 @@
-import { useState, useEffect } from "react"
-import { Plus, Search } from "lucide-react"
-import { TaskCard } from "./TaskCard"
-import { TaskDetail } from "./TaskDetail"
-import { TaskEditDialog } from "./TaskEditDialog"
-import { WelcomeBanner } from "./welcome-banner"
-import getValidToken from "./tokenUtils"
+import { useState, useEffect } from "react";
+import { Plus, Search } from "lucide-react";
+import { TaskCard } from "./TaskCard";
+import { TaskDetail } from "./TaskDetail";
+import { TaskEditDialog } from "./TaskEditDialog";
+import { WelcomeBanner } from "./welcome-banner";
+import getValidToken from "../config/tokenUtils.js";
 import axios from "axios";
+import { ENDPOINTS } from "../config/api.js";
 
-
-export function TaskList({ tasks: initialTasks = [], onTaskCreate, onTaskUpdate, onTaskDelete }) {
-  const [tasks, setTasks] = useState(initialTasks)
-  const [filteredTasks, setFilteredTasks] = useState([])
-  const [selectedTask, setSelectedTask] = useState(null)
-  const [isDetailOpen, setIsDetailOpen] = useState(false)
-  const [isEditOpen, setIsEditOpen] = useState(false)
-  const [taskToEdit, setTaskToEdit] = useState(null)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [filterStatus, setFilterStatus] = useState("all")
-  const [filterPriority, setFilterPriority] = useState("all")
-  const [filterTime, setFilterTime] = useState("all")
-  const [userName, setUserName] = useState("John Doe")
+export function TaskList({
+  tasks: initialTasks = [],
+  onTaskCreate,
+  onTaskUpdate,
+  onTaskDelete,
+}) {
+  const [tasks, setTasks] = useState(initialTasks);
+  const [filteredTasks, setFilteredTasks] = useState([]);
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterPriority, setFilterPriority] = useState("all");
+  const [filterTime, setFilterTime] = useState("all");
+  const [userName, setUserName] = useState("John Doe");
   const [taskStats, setTaskStats] = useState({
     totalTasks: 0,
     completedToday: 0,
     upcomingDeadlines: 0,
-  })
-
-
+  });
 
   // Get user data
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-
-
         const token = await getValidToken();
-        if(!token){
+        if (!token) {
           return;
         }
-        const response = await fetch('http://localhost:5000/api/auth/profile', {
+        const response = await fetch(ENDPOINTS.AUTH.PROFILE, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
         });
 
-        if (!response.ok){
+        if (!response.ok) {
           throw new Error(`Error: ${response.status}`);
         }
 
         const data = await response.json();
 
-        if(data.user && data.user.name){
+        if (data.user && data.user.name) {
           setUserName(data.user.name.split(" ")[0].trim());
-        }else{
-          console.log('You got an error when getting data @ 108');
+        } else {
+          console.log("You got an error when getting data @ 108");
         }
-    
-      } catch (error){
+      } catch (error) {
         console.log("This is where the error is at");
         console.error("Error fetching user data", error);
       }
@@ -74,13 +74,16 @@ export function TaskList({ tasks: initialTasks = [], onTaskCreate, onTaskUpdate,
         if (!token) {
           return;
         }
-  
+
         console.log("Fetching tasks...");
-        const response = await axios.get('http://localhost:5000/api/tasks', {
-          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        const response = await axios.get(ENDPOINTS.TASKS.BASE, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         });
-  
-        console.log("Fetched tasks:", response.data); 
+
+        console.log("Fetched tasks:", response.data);
         if (Array.isArray(response.data)) {
           setTasks(response.data);
         } else {
@@ -92,7 +95,6 @@ export function TaskList({ tasks: initialTasks = [], onTaskCreate, onTaskUpdate,
     };
     fetchTasks();
   }, []);
-  
 
   // Apply filters and search
   useEffect(() => {
@@ -100,36 +102,37 @@ export function TaskList({ tasks: initialTasks = [], onTaskCreate, onTaskUpdate,
 
     // Apply search
     if (searchQuery) {
-      const query = searchQuery.toLowerCase()
+      const query = searchQuery.toLowerCase();
       result = result.filter(
         (task) =>
           task.title.toLowerCase().includes(query) ||
-          (task.description && task.description.toLowerCase().includes(query)),
-      )
+          (task.description && task.description.toLowerCase().includes(query))
+      );
     }
 
     // Apply status filter
     if (filterStatus !== "all") {
-      result = result.filter((task) => task.status === filterStatus)
+      result = result.filter((task) => task.status === filterStatus);
     }
 
     // Apply time filter
-    if(filterTime !== "all"){
+    if (filterTime !== "all") {
       const currentDate = new Date();
       let startDate;
 
       switch (filterTime) {
         case "Today":
-          startDate = new Date(currentDate.setHours(0,0,0,0));
+          startDate = new Date(currentDate.setHours(0, 0, 0, 0));
           result = result.filter((task) => {
             const taskDate = new Date(task.dueDate);
-            return taskDate.setHours(0,0,0,0) === startDate.getTime();
+            return taskDate.setHours(0, 0, 0, 0) === startDate.getTime();
           });
           break;
-        
+
         case "Week":
           const dayOfWeek = currentDate.getDay();
-          const diffToMonday = currentDate.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+          const diffToMonday =
+            currentDate.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
           startDate = new Date(currentDate.setDate(diffToMonday));
           result = result.filter((task) => {
             const taskDate = new Date(task.dueDate);
@@ -137,7 +140,6 @@ export function TaskList({ tasks: initialTasks = [], onTaskCreate, onTaskUpdate,
           });
           break;
 
-        
         case "Month":
           startDate = new Date(currentDate.getFullYear(), 0, 1);
           result = result.filter((task) => {
@@ -153,43 +155,47 @@ export function TaskList({ tasks: initialTasks = [], onTaskCreate, onTaskUpdate,
 
     // Apply priority filter
     if (filterPriority !== "all") {
-      result = result.filter((task) => task.priority === filterPriority)
+      result = result.filter((task) => task.priority === filterPriority);
     }
 
-    setFilteredTasks(result)
-  }, [tasks, searchQuery, filterStatus, filterTime, filterPriority])
+    setFilteredTasks(result);
+  }, [tasks, searchQuery, filterStatus, filterTime, filterPriority]);
 
   // Calculate task statistics
   useEffect(() => {
     // Get today's date in YYYY-MM-DD format for comparison
-    const today = new Date().toISOString().split("T")[0]
+    const today = new Date().toISOString().split("T")[0];
 
     // Calculate stats
     const stats = {
       totalTasks: tasks.length,
-      completedToday: tasks.filter((task) => task.status === "completed" && task.dueDate === today).length,
-      upcomingDeadlines: tasks.filter((task) => task.status !== "completed" && task.dueDate && task.dueDate >= today)
-        .length,
-    }
+      completedToday: tasks.filter(
+        (task) => task.status === "completed" && task.dueDate === today
+      ).length,
+      upcomingDeadlines: tasks.filter(
+        (task) =>
+          task.status !== "completed" && task.dueDate && task.dueDate >= today
+      ).length,
+    };
 
-    setTaskStats(stats)
-  }, [tasks])
+    setTaskStats(stats);
+  }, [tasks]);
 
   const handleTaskClick = (task) => {
-    setSelectedTask(task)
-    setIsDetailOpen(true)
-  }
+    setSelectedTask(task);
+    setIsDetailOpen(true);
+  };
 
   const handleCreateTask = () => {
-    setTaskToEdit(null)
-    setIsEditOpen(true)
-  }
+    setTaskToEdit(null);
+    setIsEditOpen(true);
+  };
 
   const handleEditTask = (task) => {
-    setTaskToEdit(task)
-    setIsEditOpen(true)
-    setIsDetailOpen(false)
-  }
+    setTaskToEdit(task);
+    setIsEditOpen(true);
+    setIsDetailOpen(false);
+  };
 
   const handleSaveTask = async (taskData) => {
     try {
@@ -198,45 +204,47 @@ export function TaskList({ tasks: initialTasks = [], onTaskCreate, onTaskUpdate,
         return;
       }
 
-      
       const backendTaskData = {
         title: taskData.title,
         description: taskData.description,
         priority: taskData.priority,
         status: taskData.status,
         dueDate: taskData.dueDate,
-        category: taskData.category || 'general' // Default category if not provided
+        category: taskData.category || "general", // Default category if not provided
       };
 
       if (taskData.id) {
         // Update existing task
         const response = await axios.put(
-          `http://localhost:5000/api/tasks/${taskData.id}`, 
+          ENDPOINTS.TASKS.BY_ID(taskData.id),
           backendTaskData,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
-        
+
         // Get the updated task from the response
         const updatedTask = response.data.task;
-        
+
         // Update local state
         setTasks(tasks.map((t) => (t.id === updatedTask.id ? updatedTask : t)));
         onTaskUpdate?.(updatedTask);
       } else {
         // Create new task
         const response = await axios.post(
-          "http://localhost:5000/api/tasks", 
+          ENDPOINTS.TASKS.BASE,
           backendTaskData,
           {
-            headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
           }
         );
-        
+
         // Get the new task from the response
         const newTask = response.data.task;
-        
+
         // Update local state with the task from the server (including the real ID)
         setTasks([...tasks, newTask]);
         onTaskCreate?.(newTask);
@@ -246,39 +254,43 @@ export function TaskList({ tasks: initialTasks = [], onTaskCreate, onTaskUpdate,
       console.error("Full error object:", error);
       console.error("Response data:", error.response?.data);
       console.error("Response status:", error.response?.status);
-      console.error("Error saving task:", error.response?.data?.error || error.message);
+      console.error(
+        "Error saving task:",
+        error.response?.data?.error || error.message
+      );
     }
   };
-
 
   const handleDeleteTask = async (taskId) => {
     try {
       const token = await getValidToken();
-      if(!token){
+      if (!token) {
         return;
       }
 
       //API CALL TO DELETE TASK
-      await axios.delete(`http://localhost:5000/api/tasks/${taskId}`, {
-        headers: {Authorization: `Bearer ${token}`},
+      await axios.delete(ENDPOINTS.TASKS.BY_ID(taskId), {
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       setTasks(tasks.filter((task) => task.id !== taskId));
       setIsDetailOpen(false);
 
       onTaskDelete?.(taskId);
-    } catch(error){
+    } catch (error) {
       console.error("This is the errror:", taskId);
       console.error("Error deleting task:", error);
     }
   };
 
-
-  
   // Group tasks by status for Kanban view
-  const todoTasks = filteredTasks.filter((task) => task.status === "todo")
-  const inProgressTasks = filteredTasks.filter((task) => task.status === "in-progress")
-  const completedTasks = filteredTasks.filter((task) => task.status === "completed")
+  const todoTasks = filteredTasks.filter((task) => task.status === "todo");
+  const inProgressTasks = filteredTasks.filter(
+    (task) => task.status === "in-progress"
+  );
+  const completedTasks = filteredTasks.filter(
+    (task) => task.status === "completed"
+  );
 
   return (
     <div className="w-full">
@@ -335,17 +347,17 @@ export function TaskList({ tasks: initialTasks = [], onTaskCreate, onTaskUpdate,
             </select>
           </div>
           <div className="flex gap-2">
-            <select 
+            <select
               value={filterTime}
               onChange={(e) => setFilterTime(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="all">All Time</option>
-                <option value="Today">Today</option>
-                <option value="Week">This Week</option>
-                <option value="Month">This Month</option>
-                <option value="Year">This Year</option>
-              </select>
+            >
+              <option value="all">All Time</option>
+              <option value="Today">Today</option>
+              <option value="Week">This Week</option>
+              <option value="Month">This Month</option>
+              <option value="Year">This Year</option>
+            </select>
           </div>
         </div>
       </div>
@@ -363,7 +375,9 @@ export function TaskList({ tasks: initialTasks = [], onTaskCreate, onTaskUpdate,
 
           <div className="space-y-3">
             {todoTasks.length === 0 ? (
-              <div className="text-center py-6 text-gray-500 text-sm">No tasks to do</div>
+              <div className="text-center py-6 text-gray-500 text-sm">
+                No tasks to do
+              </div>
             ) : (
               todoTasks.map((task) => (
                 <TaskCard
@@ -389,7 +403,9 @@ export function TaskList({ tasks: initialTasks = [], onTaskCreate, onTaskUpdate,
 
           <div className="space-y-3">
             {inProgressTasks.length === 0 ? (
-              <div className="text-center py-6 text-gray-500 text-sm">No tasks in progress</div>
+              <div className="text-center py-6 text-gray-500 text-sm">
+                No tasks in progress
+              </div>
             ) : (
               inProgressTasks.map((task) => (
                 <TaskCard
@@ -415,7 +431,9 @@ export function TaskList({ tasks: initialTasks = [], onTaskCreate, onTaskUpdate,
 
           <div className="space-y-3">
             {completedTasks.length === 0 ? (
-              <div className="text-center py-6 text-gray-500 text-sm">No completed tasks</div>
+              <div className="text-center py-6 text-gray-500 text-sm">
+                No completed tasks
+              </div>
             ) : (
               completedTasks.map((task) => (
                 <TaskCard
@@ -448,5 +466,5 @@ export function TaskList({ tasks: initialTasks = [], onTaskCreate, onTaskUpdate,
         onSave={handleSaveTask}
       />
     </div>
-  )
+  );
 }

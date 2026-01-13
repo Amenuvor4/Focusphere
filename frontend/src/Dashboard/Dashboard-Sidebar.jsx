@@ -8,7 +8,8 @@ import {
 } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import getValidToken from "./tokenUtils";
+import getValidToken from "../config/tokenUtils.js";
+import { ENDPOINTS } from "../config/api.js";
 
 export function DashboardSidebar({ currentView, setCurrentView }) {
   const navigate = useNavigate();
@@ -26,7 +27,7 @@ export function DashboardSidebar({ currentView, setCurrentView }) {
         const token = await getValidToken();
         if (!token || !isMounted) return;
 
-        const response = await fetch("http://localhost:5000/api/auth/profile", {
+        const response = await fetch(ENDPOINTS.AUTH.PROFILE, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Plus, Target } from "lucide-react";
-import getValidToken from "./tokenUtils";
+import getValidToken from "../config/tokenUtils.js";
 import GoalCard from "./GoalCard";
 import GoalDetails from "./GoalDetails";
 import GoalModal from "../componets/GoalModal.jsx";
+import { ENDPOINTS } from "../config/api.js";
 
 const GoalList = () => {
   const [goals, setGoals] = useState([]);
@@ -24,7 +25,7 @@ const GoalList = () => {
       const token = await getValidToken();
       if (!token) return;
 
-      const response = await fetch("http://localhost:5000/api/goals", {
+      const response = await fetch(ENDPOINTS.GOALS.BASE, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -42,7 +43,7 @@ const GoalList = () => {
       const token = await getValidToken();
       if (!token) return;
 
-      const response = await fetch("http://localhost:5000/api/tasks", {
+      const response = await fetch(ENDPOINTS.TASKS.BASE, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -73,13 +74,10 @@ const GoalList = () => {
 
     try {
       const token = await getValidToken();
-      const response = await fetch(
-        `http://localhost:5000/api/goals/${goalId}`,
-        {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const response = await fetch(ENDPOINTS.GOALS.BY_ID(goalId), {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       if (response.ok) {
         setGoals(goals.filter((g) => g._id !== goalId));
