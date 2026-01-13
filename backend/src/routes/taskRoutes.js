@@ -38,6 +38,24 @@ const getDefaultDueDate = () => {
   return date;
 }
 
+// Helper function to sanitize error messages
+const sanitizeErrorMessage = (error) => {
+  let errorMessage = error.message || 'An error occurred';
+
+  // Remove MongoDB ObjectIDs from error messages (format: 24 hex characters)
+  errorMessage = errorMessage.replace(/\b[0-9a-f]{24}\b/gi, '[task]');
+
+  // Remove other technical details
+  errorMessage = errorMessage.replace(/version \d+/gi, '');
+  errorMessage = errorMessage.replace(/modifiedPaths "[^"]*"/gi, '');
+  errorMessage = errorMessage.replace(/for id "[^"]*"/gi, '');
+
+  // Clean up extra spaces
+  errorMessage = errorMessage.replace(/\s+/g, ' ').trim();
+
+  return errorMessage;
+};
+
 // Create a Task
 router.post('/', async (req, res) => {
   try {
@@ -87,7 +105,7 @@ router.post('/', async (req, res) => {
         userId: req.user.id,
       });
       await goal.save();
-    } 
+    }
 
     const task = new Task({
       user_id: req.user.id,
@@ -108,14 +126,14 @@ router.post('/', async (req, res) => {
       await goal.save();
       await updateGoalProgressForTask(savedTask._id);
     }
-    
-    res.status(201).json({ 
-      message: 'Task created successfully', 
+
+    res.status(201).json({
+      message: 'Task created successfully',
       task: transformTask(savedTask),
     });
   } catch (error) {
     console.error("Task creation error:", error);
-    res.status(400).json({ error: error.message });
+    res.status(400).json({ error: sanitizeErrorMessage(error) });
   }
 });
 
@@ -138,7 +156,7 @@ router.get('/', async (req, res) => {
     res.status(200).json(transformedTasks);
   } catch (error) {
     console.error("Task fetch error:", error);
-    res.status(400).json({ error: error.message });
+    res.status(400).json({ error: sanitizeErrorMessage(error) });
   }
 });
 
@@ -192,13 +210,13 @@ router.put('/:id', async (req, res) => {
       await updateGoalProgressForTask(updatedTask._id);
     }
 
-    res.status(200).json({ 
-      message: 'Task updated successfully', 
+    res.status(200).json({
+      message: 'Task updated successfully',
       task: transformTask(updatedTask),
     });
   } catch (error) {
     console.error("Task update error:", error);
-    res.status(400).json({ error: error.message });
+    res.status(400).json({ error: sanitizeErrorMessage(error) });
   }
 });
 
@@ -227,7 +245,15 @@ router.delete('/:id', async (req, res) => {
     res.status(200).json({ message: 'Task deleted successfully' });
   } catch (error) {
     console.error("Task deletion error:", error);
-    res.status(400).json({ error: error.message });
+
+    let errorMessage = sanitizeErrorMessage(error);
+
+    // If message is too technical, provide user-friendly alternative
+    if (errorMessage.includes('No matching document found')) {
+      errorMessage = 'Task could not be deleted. It may have already been removed.';
+    }
+
+    res.status(400).json({ error: errorMessage });
   }
 });
 
@@ -311,7 +337,7 @@ router.get('/analytics', async (req, res) => {
     });
   } catch (error) {
     console.error("Analytics error:", error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: sanitizeErrorMessage(error) });
   }
 });
 

@@ -27,6 +27,24 @@ const validateObjectId = (req, res, next) => {
   next();
 };
 
+// Helper function to sanitize error messages
+const sanitizeErrorMessage = (error) => {
+  let errorMessage = sanitizeErrorMessage(error) || 'An error occurred';
+
+  // Remove MongoDB ObjectIDs from error messages (format: 24 hex characters)
+  errorMessage = errorMessage.replace(/\b[0-9a-f]{24}\b/gi, '[goal]');
+
+  // Remove other technical details
+  errorMessage = errorMessage.replace(/version \d+/gi, '');
+  errorMessage = errorMessage.replace(/modifiedPaths "[^"]*"/gi, '');
+  errorMessage = errorMessage.replace(/for id "[^"]*"/gi, '');
+
+  // Clean up extra spaces
+  errorMessage = errorMessage.replace(/\s+/g, ' ').trim();
+
+  return errorMessage;
+};
+
 // Create a Goal
 router.post('/', async (req, res) => {
   try {
@@ -70,7 +88,7 @@ router.post('/', async (req, res) => {
     res.status(201).json({ message: 'Goal created successfully', goal: savedGoal });
   } catch (error) {
     console.error('Goal creation error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: sanitizeErrorMessage(error) });
   }
 });
 
@@ -90,7 +108,7 @@ router.get('/', async (req, res) => {
     res.status(200).json(formattedGoals);
   } catch (error) {
     console.error('Goal fetch error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: sanitizeErrorMessage(error) });
   }
 });
 
@@ -112,7 +130,7 @@ router.get('/:id', validateObjectId, async (req, res) => {
     res.status(200).json(goalObj);
   } catch (error) {
     console.error('Goal fetch error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: sanitizeErrorMessage(error) });
   }
 });
 
@@ -159,7 +177,7 @@ router.put('/:id', validateObjectId, async (req, res) => {
     res.status(200).json({ message: 'Goal updated successfully', goal: updatedGoal });
   } catch (error) {
     console.error('Goal update error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: sanitizeErrorMessage(error) });
   }
 });
 
@@ -179,7 +197,7 @@ router.delete('/:id', validateObjectId, async (req, res) => {
     res.json({ message: 'Goal and associated tasks deleted successfully' });
   } catch (error) {
     console.error('Goal deletion error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: sanitizeErrorMessage(error) });
   }
 });
 
