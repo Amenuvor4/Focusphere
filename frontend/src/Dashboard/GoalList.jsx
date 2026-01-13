@@ -13,7 +13,6 @@ const GoalList = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState(null);
   const [viewingGoal, setViewingGoal] = useState(null);
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     fetchGoals();

@@ -1,5 +1,5 @@
 import { useState } from "react"
-import AnimatedBackground from "./AnimatedBackground"
+import AnimatedBackground from "./landing/AnimatedBackground"
 import Header from "./landing/Header"
 import Hero from "./landing/Hero"
 import Features from "./landing/Features"

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { FaGoogle, FaEnvelope, FaLock, FaUser, FaEye, FaEyeSlash } from "react-icons/fa";
 import { jwtDecode } from "jwt-decode";
+import { ENDPOINTS } from "../config/api";
 
 
 const Auth = () => {
@@ -113,12 +114,12 @@ const Auth = () => {
       return;
     }
 
-    const endpoint = isLogin ? "/login" : "/register";
+    const endpoint = isLogin ? ENDPOINTS.AUTH.LOGIN : ENDPOINTS.AUTH.REGISTER;
     const payload = isLogin ? { email, password } : { name, email, password };
 
     try {
-      console.error(`Sending ${isLogin ? 'login' : 'signup'} request to ${BASE_URL}${endpoint}`);
-      const response = await fetch(`${BASE_URL}${endpoint}`, {
+      console.error(`Sending ${isLogin ? 'login' : 'signup'} request to ${endpoint}`);
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -171,7 +172,7 @@ const Auth = () => {
     setIsGoogleLoading(true);
     try {
       console.error("Redirecting to Google OAuth");
-      window.location.href = `${BASE_URL}/google`;
+      window.location.href = ENDPOINTS.AUTH.GOOGLE;
     } catch (err) {
       console.error("Google OAuth redirect error:", err);
       setError("Failed to redirect to Google OAuth. Please try again.");

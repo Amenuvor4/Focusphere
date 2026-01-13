@@ -12,7 +12,6 @@ import {
   Image,
   Download,
   Search,
-  MessageSquare,
   Trash,
   ChevronDown,
   ChevronUp,
@@ -534,7 +533,6 @@ const MultiActionCard = ({
   const allProcessing = actions.every((a) => a.status === "processing");
   const allApproved = actions.every((a) => a.status === "approved");
   const allDeclined = actions.every((a) => a.status === "declined");
-  const someFailed = actions.some((a) => a.status === "failed");
 
   // Determine how many to show
   const visibleActions = showAll ? actions : actions.slice(0, 3);
