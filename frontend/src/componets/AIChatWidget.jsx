@@ -147,16 +147,20 @@ const AIChatWidget = ({
       updateConversation({ messages: updatedMessages });
 
       if (result.success) {
-        const actionName = action.type.replace("_", " ");
+        const actionName = action.type.includes("create") ? "created" :
+                          action.type.includes("update") ? "updated" :
+                          action.type.includes("delete") ? "deleted" : "completed";
+        const itemType = action.type.includes("task") ? "task" : "goal";
+
         const confirmMessage = {
           role: "assistant",
-          content: `✅ Done! I've ${actionName}d successfully.`,
+          content: `✅ Perfect! I've ${actionName} the ${itemType} successfully. Check your dashboard!`,
         };
         updateConversation([...messages, confirmMessage]);
       } else {
         const errorMessage = {
           role: "assistant",
-          content: `❌ Sorry, I couldn't complete that: ${result.error}`,
+          content: `❌ Oops! I couldn't complete that action: ${result.error}. Please try again.`,
         };
         updateConversation([...messages, errorMessage]);
       }
@@ -164,7 +168,7 @@ const AIChatWidget = ({
       updateConversation({ messages: updatedMessages });
       const declineMessage = {
         role: "assistant",
-        content: "No problem! Let me know if you'd like something else.",
+        content: "No worries! I've cancelled that action. Ask me anything else! 😊",
       };
       updateConversation([...messages, declineMessage]);
     }
@@ -202,16 +206,20 @@ const AIChatWidget = ({
 
       // Add confirmation
       const successCount = results.filter((r) => r.success).length;
+      const failedCount = results.length - successCount;
+
       const confirmMessage = {
         role: "assistant",
-        content: `✅ Done! Successfully completed ${successCount} of ${results.length} actions.`,
+        content: failedCount === 0
+          ? `✅ Awesome! All ${successCount} actions completed successfully!`
+          : `⚠️ Completed ${successCount} of ${results.length} actions. ${failedCount} failed - check details above.`,
       };
       updateConversation({ messages: [...messages, confirmMessage] });
     } else {
       updateConversation({ messages: updatedMessages });
       const declineMessage = {
         role: "assistant",
-        content: "No problem! All actions declined.",
+        content: "No problem! All actions cancelled. I'm here if you need anything else! 😊",
       };
       updateConversation([...messages, declineMessage]);
     }
@@ -407,7 +415,7 @@ const AIChatWidget = ({
               </button>
             </div>
             <p className="text-xs text-gray-400 mt-2 text-center">
-              Try: "Create 5 tasks" or "Update task priority to high"
+              💡 Try: "Create 5 tasks for my project" • "Show my overdue tasks" • "Delete completed tasks"
             </p>
           </div>
         </div>

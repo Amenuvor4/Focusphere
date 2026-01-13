@@ -135,14 +135,19 @@ const AIAssistant = ({
         result.error;
       updateConversation({ messages: updatedMessages });
 
+      const actionName = action.type.includes("create") ? "created" :
+                          action.type.includes("update") ? "updated" :
+                          action.type.includes("delete") ? "deleted" : "completed";
+      const itemType = action.type.includes("task") ? "task" : "goal";
+
       const confirmMessage = result.success
         ? {
             role: "assistant",
-            content: `✅ Done! I've ${action.type.replace("_", " ")}d successfully.`,
+            content: `✅ Perfect! I've ${actionName} the ${itemType} successfully. Your dashboard has been updated!`,
           }
         : {
             role: "assistant",
-            content: `❌ Sorry, I couldn't complete that: ${result.error}`,
+            content: `❌ Oops! I couldn't complete that action: ${result.error}. Please try again or let me know if you need help.`,
           };
 
       updateConversation({ messages: [...updatedMessages, confirmMessage] });
@@ -150,7 +155,7 @@ const AIAssistant = ({
       updateConversation({ messages: updatedMessages });
       const declineMessage = {
         role: "assistant",
-        content: "No problem! Let me know if you'd like something else.",
+        content: "No worries! I've cancelled that action. Feel free to ask me anything else - I'm here to help! 😊",
       };
       updateConversation({ messages: [...updatedMessages, declineMessage] });
     }
@@ -183,9 +188,13 @@ const AIAssistant = ({
       updateConversation({ messages: updatedMessages });
 
       const successCount = results.filter((r) => r.success).length;
+      const failedCount = results.length - successCount;
+
       const confirmMessage = {
         role: "assistant",
-        content: `✅ Done! Successfully completed ${successCount} of ${results.length} actions.`,
+        content: failedCount === 0
+          ? `✅ Awesome! All ${successCount} actions completed successfully! Your tasks and goals are up to date.`
+          : `⚠️ Completed ${successCount} of ${results.length} actions. ${failedCount} action${failedCount > 1 ? 's' : ''} failed. Check the details above or let me know if you need help.`,
       };
       updateConversation({ messages: [...updatedMessages, confirmMessage] });
     } else {
@@ -376,6 +385,51 @@ const AIAssistant = ({
 
         {/* Messages - Gemini Style (No boxes for AI) */}
         <div className="flex-1 overflow-y-auto p-6 space-y-8">
+          {!conversation?.messages.length && (
+            <div className="flex flex-col items-center justify-center h-full text-center space-y-6 px-8">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <Sparkles className="h-8 w-8 text-white" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                  Welcome to FocusSphere AI
+                </h2>
+                <p className="text-gray-600 max-w-md">
+                  I'm here to help you manage your tasks and goals efficiently. Just tell me what you need!
+                </p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-2xl">
+                <button
+                  onClick={() => setInputMessage("Create 5 tasks for my web development project")}
+                  className="bg-blue-50 hover:bg-blue-100 border-2 border-blue-200 rounded-lg p-4 text-left transition-colors"
+                >
+                  <div className="font-semibold text-blue-900 mb-1">📝 Create Tasks</div>
+                  <div className="text-sm text-blue-700">Generate tasks for your project</div>
+                </button>
+                <button
+                  onClick={() => setInputMessage("Show me all my high priority tasks")}
+                  className="bg-purple-50 hover:bg-purple-100 border-2 border-purple-200 rounded-lg p-4 text-left transition-colors"
+                >
+                  <div className="font-semibold text-purple-900 mb-1">🎯 View Tasks</div>
+                  <div className="text-sm text-purple-700">See your priority tasks</div>
+                </button>
+                <button
+                  onClick={() => setInputMessage("Update my task status to in-progress")}
+                  className="bg-green-50 hover:bg-green-100 border-2 border-green-200 rounded-lg p-4 text-left transition-colors"
+                >
+                  <div className="font-semibold text-green-900 mb-1">✏️ Update Tasks</div>
+                  <div className="text-sm text-green-700">Modify task details</div>
+                </button>
+                <button
+                  onClick={() => setInputMessage("Create a goal for learning React")}
+                  className="bg-yellow-50 hover:bg-yellow-100 border-2 border-yellow-200 rounded-lg p-4 text-left transition-colors"
+                >
+                  <div className="font-semibold text-yellow-900 mb-1">🏆 Set Goals</div>
+                  <div className="text-sm text-yellow-700">Define new objectives</div>
+                </button>
+              </div>
+            </div>
+          )}
           {conversation?.messages.map((message, messageIndex) => (
             <div key={messageIndex} className="space-y-4">
               {message.role === "user" ? (

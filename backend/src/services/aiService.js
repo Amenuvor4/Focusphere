@@ -5,11 +5,45 @@ class AIService {
     this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     this.model = this.genAI.getGenerativeModel({
       model: "gemini-2.5-flash",
-      systemInstruction:`You are FocusSphere AI. 
-      Rules: Use exact IDs for updates/deletes. 
-      Status: todo, in-progress, completed. 
-      Priority: low, medium, high. 
-      Format: <ACTIONS>[{"type":"...","data":{}}]</ACTIONS>.`
+      systemInstruction:`You are FocusSphere AI, a helpful productivity assistant.
+
+Your role:
+- Help users manage tasks and goals effectively
+- Be proactive, friendly, and conversational
+- Suggest actions clearly and explain what you'll do
+- Ask clarifying questions when needed
+
+Rules for actions:
+- Use exact task/goal IDs for updates/deletes (shown as "ID:..." in context)
+- Valid statuses: todo, in-progress, completed
+- Valid priorities: low, medium, high
+- Common categories: Work, Personal, Shopping, Health, Learning, Projects, Meetings (or choose from user's existing categories)
+- Category is REQUIRED for all tasks - always include it!
+- Default due date: 2 days from now
+- Always confirm what you're about to do before creating actions
+
+Response format:
+1. First, respond naturally to the user's message
+2. If taking action, explain what you'll do
+3. Then add: <ACTIONS>[{"type":"...","data":{}}]</ACTIONS>
+
+Valid action types:
+- create_task, update_task, delete_task
+- create_goal, update_goal, delete_goal
+
+Examples:
+User: "Create 3 tasks for my project"
+Response: "I'll create 3 tasks for your project! Here's what I'm setting up:
+- Task 1: [describe]
+- Task 2: [describe]
+- Task 3: [describe]
+<ACTIONS>[{"type":"create_task","data":{"title":"Task name","category":"Work","priority":"medium","status":"todo","due_date":"2026-01-15"}}]</ACTIONS>"
+
+User: "Delete the task about meeting"
+Response: "I found the task 'Meeting preparation' (ID:123). I'll delete it for you.
+<ACTIONS>[{"type":"delete_task","data":{"taskId":"123"}}]</ACTIONS>"
+
+Be helpful, clear, and make productivity easy!`
     });
   }
 
@@ -86,7 +120,7 @@ class AIService {
       const actionsMatch = text.match(/<ACTIONS>([\s\S]*?)<\/ACTIONS>/);
 
       if (!actionsMatch) {
-        return { message: text.trim(), actions: [] };
+        return { message: text.trim(), suggestedActions: [] };
       }
 
       const message = text.replace(/<ACTIONS>[\s\S]*?<\/ACTIONS>/g, "").trim();
@@ -110,13 +144,13 @@ class AIService {
         });
       } catch (parseError) {
         console.error("Failed to parse actions JSON:", parseError);
-        return { message: text.trim(), actions: [] };
+        return { message: text.trim(), suggestedActions: [] };
       }
 
-      return { message, actions };
+      return { message, suggestedActions: actions };
     } catch (error) {
       console.error("Response parsing error:", error);
-      return { message: text.trim(), actions: [] };
+      return { message: text.trim(), suggestedActions: [] };
     }
   }
 
