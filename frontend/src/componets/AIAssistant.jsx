@@ -10,14 +10,15 @@ import {
   AlertCircle,
   Edit,
   Image,
-  Download,
   Search,
   Trash,
   ChevronDown,
   ChevronUp,
   X,
+  MoreHorizontal,
 } from "lucide-react";
 import { ENDPOINTS } from "../config/api.js";
+import { TaskEditDialog } from "../Dashboard/TaskEditDialog.jsx";
 
 const AIAssistant = ({
   conversations,
@@ -227,6 +228,7 @@ const AIAssistant = ({
     if ((!inputMessage.trim() && !selectedImage) || isLoading) return;
 
     const userMessage = inputMessage.trim();
+    const isFirstMessage = messages.length === 0;
     setInputMessage("");
 
     const newMessages = [...messages, { role: "user", content: userMessage }];
@@ -251,6 +253,7 @@ const AIAssistant = ({
         body: JSON.stringify({
           message: userMessage,
           conversationHistory: recentHistory,
+          isNewChat: isFirstMessage,
         }),
       });
 
@@ -264,7 +267,12 @@ const AIAssistant = ({
         suggestedActions: data.response.suggestedActions || [],
       };
 
-      updateConversation({ messages: [...newMessages, aiMessage] });
+      const updatePayload = {messages: [...newMessages, aiMessage]};
+
+      if (isFirstMessage && data.suggestedTitle){
+        updatePayload.title = data.suggestedTitle;
+      }
+      updateConversation(updatePayload);
     } catch (error) {
       console.error("AI chat error:", error);
       const errorMessage = {
@@ -282,20 +290,6 @@ const AIAssistant = ({
       e.preventDefault();
       handleSendMessage();
     }
-  };
-
-  const exportConversation = () => {
-    const conversation = getCurrentConversation();
-    const text = conversation.messages
-      .map((m) => `${m.role.toUpperCase()}: ${m.content}`)
-      .join("\n\n");
-
-    const blob = new Blob([text], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `conversation-${conversation.id}.txt`;
-    a.click();
   };
 
   const filteredConversations = conversations.filter(
@@ -380,13 +374,6 @@ const AIAssistant = ({
               Focusphere AI
             </h1>
           </div>
-          <button
-            onClick={exportConversation}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            title="Export conversation"
-          >
-            <Download className="h-5 w-5 text-gray-600" />
-          </button>
         </div>
 
         {/* Messages - Gemini Style (No boxes for AI) */}
@@ -614,6 +601,7 @@ const MultiActionCard = ({
   onDecline,
   onIndividualApprove,
   onIndividualDecline,
+  onIndividualEdit,
 }) => {
   const [showAll, setShowAll] = useState(false);
 
@@ -704,6 +692,7 @@ const MultiActionCard = ({
             actionNumber={idx + 1}
             onApprove={() => onIndividualApprove(idx)}
             onDecline={() => onIndividualDecline(idx)}
+            onEdit={() => onIndividualEdit(idx)}
           />
         ))}
       </div>
@@ -754,7 +743,7 @@ const MultiActionCard = ({
 };
 
 // Individual Action Card Component (Compact)
-const ActionDetailCard = ({ action, actionNumber, onApprove, onDecline }) => {
+const ActionDetailCard = ({ action, actionNumber, onApprove, onDecline, onEdit }) => {
   const getActionIcon = () => {
     if (action.type.includes("create"))
       return <Plus className="h-5 w-5 text-green-600" />;
@@ -853,6 +842,15 @@ const ActionDetailCard = ({ action, actionNumber, onApprove, onDecline }) => {
             <p className="text-xs text-gray-500">Action #{actionNumber}</p>
           </div>
         </div>
+        {!action.status && (
+          <button 
+            onClick={onEdit}
+            className="p-2 hover:bg-white/50 rounded-full transition-all group"
+            title="Edit AI Proposal"
+          >
+            <MoreHorizontal className="h-5 w-5 text-gray-400 group-hover:text-gray-700" />
+          </button>
+        )}
       </div>
 
       {/* Delete Warning Banner */}
@@ -1014,13 +1012,31 @@ const ActionDetailCard = ({ action, actionNumber, onApprove, onDecline }) => {
   );
 };
 const ActionCard = ({ action, onApprove, onDecline }) => {
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [localActionData, setLocalActionData] = useState(action.data);
+
+  const handleEditSave = (updateFields) => {
+    setLocalActionData(updateFields);
+    setIsEditDialogOpen(false);
+  };
+
   return (
-    <ActionDetailCard
-      action={action}
-      actionNumber={1}
-      onApprove={onApprove}
-      onDecline={onDecline}
-    />
+    <>
+      <ActionDetailCard
+        action={{ ...action, data: localActionData }}
+        actionNumber={1}
+        onApprove={() => onApprove({ ...action, data: localActionData })}
+        onDecline={onDecline}
+        onEdit={() => setIsEditDialogOpen(true)}
+      />
+
+      <TaskEditDialog
+        isOpen={isEditDialogOpen}
+        onClose={() => setIsEditDialogOpen}
+        task={localActionData}
+        onSave={handleEditSave}
+      />
+    </>
   );
 };
 

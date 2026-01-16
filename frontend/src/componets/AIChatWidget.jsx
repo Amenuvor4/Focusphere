@@ -14,6 +14,7 @@ import {
   Edit,
 } from "lucide-react";
 import { ENDPOINTS } from "../config/api.js";
+import { TaskEditDialog } from "../Dashboard/TaskEditDialog.jsx";
 
 const AIChatWidget = ({
   conversations,
@@ -29,6 +30,8 @@ const AIChatWidget = ({
   const messages = useMemo(() => conversation?.messages || [], [conversation]);
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [editingInfo, setEditingInfo] = useState({ messageIndex: null, actionIndex: null});
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -297,6 +300,19 @@ const AIChatWidget = ({
     }
   };
 
+  const openEditModal = (msgIdx, actIdx) => {
+    setEditingInfo({messageIndex: msgIdx, actionIndex:actIdx});
+    setIsEditModalOpen(true);
+  }
+
+  const handleEditSave = (updateData) => {
+    const { messageIndex, actionIndex } = editingInfo;
+    const updatedMessages = [...messages];
+
+    updatedMessages[messageIndex].suggestedActions[actionIndex].data = updateData;
+    setIsEditModalOpen(false);
+  }
+
   return (
     <>
       {!isOpen && (
@@ -362,6 +378,7 @@ const AIChatWidget = ({
                     </div>
                   ) : (
                     // Multiple actions - show collapsible
+
                     <div className="mt-3">
                       <MultiActionCard
                         actions={message.suggestedActions}
@@ -375,6 +392,7 @@ const AIChatWidget = ({
                         onIndividualDecline={(idx) =>
                           handleActionApproval(messageIndex, idx, false)
                         }
+                        onIndividualEdit={(aIdx) => openEditModal(messageIndex, aIdx)}
                       />
                     </div>
                   ))}
@@ -425,6 +443,17 @@ const AIChatWidget = ({
           </div>
         </div>
       )}
+
+      <TaskEditDialog 
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        task={
+          editingInfo.messageIndex !== null 
+            ? messages[editingInfo.messageIndex].suggestedActions[editingInfo.actionIndex].data 
+            : null
+        }
+        onSave={handleEditSave}
+      />
     </>
   );
 };
