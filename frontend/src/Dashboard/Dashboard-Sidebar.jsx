@@ -5,6 +5,7 @@ import {
   Sparkles,
   LogOut,
   ChevronDown,
+  Settings,
 } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -67,6 +68,11 @@ export function DashboardSidebar({ currentView, setCurrentView }) {
     localStorage.removeItem("refreshToken");
     navigate("/login");
   };
+
+  const handleSettingsClick = () => {
+    setCurrentView("settings");
+    setIsProfileMenuOpen(false);
+  }
 
   const navItems = [
     { id: "tasks", label: "Tasks", icon: CheckSquare },
@@ -141,6 +147,11 @@ export function DashboardSidebar({ currentView, setCurrentView }) {
             {/* Dropdown Menu */}
             {isProfileMenuOpen && (
               <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-xl shadow-xl border border-blue-100 py-1">
+                <buttom onClick={handleSettingsClick} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-blue=50 transition-colors">
+                  <Settings className="h-4 w-4 text-gray-500"/>
+                  <span>Settings</span>
+                </buttom>
+                <div className="h-px bg-blue-50 my-1" />
                 <button
                   onClick={handleLogout}
                   className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors rounded-lg"

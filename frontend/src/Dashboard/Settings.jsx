@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Bell, Loader2, Lock, Moon, Save, User } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Loader2, Save,  } from "lucide-react";
 import getValidToken from "../config/tokenUtils";
 import { ENDPOINTS } from "../config/api";
 
@@ -37,13 +37,6 @@ export function Settings() {
     fetchProfile();
   }, []);
 
-  const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData({
-      ...formData,
-      [name]: type === "checkbox" ? checked : value,
-    });
-  };
 
   const handleUpdate = async (e) => {
     e.preventDefault();
@@ -63,7 +56,7 @@ export function Settings() {
         setMessage({ type: "success", text: "Settings updated successfully" });
       }
     } catch (err) {
-      etMessage({ type: "error", text: "Update failed." });
+      setMessage({ type: "error", text: "Update failed." });
     } finally {
       setIsSaving(false);
     }
