@@ -1,31 +1,41 @@
 import React, { useState } from "react";
-import { Bell, Lock, Moon, Save, User } from "lucide-react";
+import { Bell, Loader2, Lock, Moon, Save, User } from "lucide-react";
+import getValidToken from "../config/tokenUtils";
+import { ENDPOINTS } from "../config/api";
 
 export function Settings() {
   const [activeTab, setActiveTab] = useState("account");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [message, setMessage] = useState({ type: "", text: "" });
   const [formData, setFormData] = useState({
-    // Account settings
-    name: "John Doe",
-    email: "john.doe@example.com",
-    profilePicture: "/api/placeholder/80/80",
-    bio: "",
-
-    // Notification settings
-    emailNotifications: true,
-    taskReminders: true,
-    goalUpdates: true,
-    weeklyDigest: false,
-
-    // Appearance settings
-    theme: "light",
-    compactView: false,
-    highContrast: false,
-
-    // Security settings
-    twoFactorAuth: false,
-    sessionTimeout: "30",
-    passwordLastChanged: "2025-01-15",
+    // SETTINGS TO MATCH BACKEND USER MODEL
+    name: "",
+    email: "",
+    preference: {
+      notifications: true,
+      theme: "light",
+    },
   });
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      setIsLoading(true);
+      try {
+        const token = await getValidToken();
+        const response = await fetch(ENDPOINTS.AUTH.PROFILE, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await response.json();
+        if (data.user) setFormData(data.user);
+      } catch (err) {
+        setMessage({ type: "error", text: "Failed to load settings." });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProfile();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -35,372 +45,141 @@ export function Settings() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleUpdate = async (e) => {
     e.preventDefault();
-    // In a real app, you would send this data to your backend
-    console.log("Settings updated:", formData);
+    setIsSaving(true);
+    try {
+      const token = await getValidToken();
+      const response = await fetch(ENDPOINTS.AUTH.PROFILE, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(formData),
+      });
 
-    // Show success message
-    alert("Settings saved successfully!");
+      if (response.ok) {
+        setMessage({ type: "success", text: "Settings updated successfully" });
+      }
+    } catch (err) {
+      etMessage({ type: "error", text: "Update failed." });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const tabs = [
-    { id: "account", label: "Account", icon: <User className="h-5 w-5" /> },
-    { id: "notifications", label: "Notifications", icon: <Bell className="h-5 w-5" /> },
-    { id: "appearance", label: "Appearance", icon: <Moon className="h-5 w-5" /> },
-    { id: "security", label: "Security", icon: <Lock className="h-5 w-5" /> },
-  ];
+  if (isLoading)
+    return (
+      <div className="flex justify-center p-12">
+        <Loader2 className="animate-spin" />
+      </div>
+    );
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Settings</h1>
-        <p className="text-gray-500">Manage your account preferences and application settings</p>
+    <div className="max-w-4xl mx-auto p-6 bg-white rounded-2xl shadow-sm border border-blue-100">
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">Settings</h1>
+
+      {/* Tab Navigation */}
+      <div className="flex gap-4 border-b border-gray-200 mb-8">
+        {["profile", "appearance", "notifications"].map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`pb-4 px-2 capitalize text-sm font-medium transition-colors ${
+              activeTab === tab
+                ? "border-b-2 border-blue-600 text-blue-600"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            {tab}
+          </button>
+        ))}
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm">
-        {/* Tabs */}
-        <div className="flex border-b">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              className={`flex items-center gap-2 px-4 py-3 font-medium text-sm ${
-                activeTab === tab.id
-                  ? "border-b-2 border-blue-600 text-blue-600"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-              onClick={() => setActiveTab(tab.id)}
+      <form onSubmit={handleUpdate} className="space-y-6">
+        {activeTab === "profile" && (
+          <div className="space-y-4 animate-in fade-in duration-300">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Display Name
+              </label>
+              <input
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Email Address
+              </label>
+              <input
+                disabled
+                value={formData.email}
+                className="w-full p-2.5 border border-gray-100 bg-gray-50 text-gray-500 rounded-lg cursor-not-allowed"
+              />
+            </div>
+          </div>
+        )}
+
+        {activeTab === "appearance" && (
+          <div className="space-y-4 animate-in fade-in duration-300">
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+              <div>
+                <p className="font-medium">Dark Mode</p>
+                <p className="text-xs text-gray-500">
+                  Toggle the application theme
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  setFormData({
+                    ...formData,
+                    preferences: {
+                      ...formData.preferences,
+                      theme:
+                        formData.preferences.theme === "dark"
+                          ? "light"
+                          : "dark",
+                    },
+                  })
+                }
+                className={`w-12 h-6 rounded-full transition-colors relative ${formData.preferences.theme === "dark" ? "bg-blue-600" : "bg-gray-300"}`}
+              >
+                <div
+                  className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${formData.preferences.theme === "dark" ? "left-7" : "left-1"}`}
+                />
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="pt-6 border-t flex items-center justify-between">
+          {message.text && (
+            <span
+              className={`text-sm ${message.type === "success" ? "text-green-600" : "text-red-600"}`}
             >
-              {tab.icon}
-              {tab.label}
-            </button>
-          ))}
+              {message.text}
+            </span>
+          )}
+          <button
+            type="submit"
+            disabled={isSaving}
+            className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50"
+          >
+            {isSaving ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4" />
+            )}
+            Save Changes
+          </button>
         </div>
-
-        {/* Tab Content */}
-        <form onSubmit={handleSubmit}>
-          <div className="p-6">
-            {/* Account Settings */}
-            {activeTab === "account" && (
-              <div className="space-y-6">
-                <h2 className="text-lg font-medium">Account Information</h2>
-
-                <div className="flex items-center gap-4">
-                  <img
-                    src={formData.profilePicture}
-                    alt="Profile"
-                    className="h-20 w-20 rounded-full bg-gray-200"
-                  />
-                  <button
-                    type="button"
-                    className="text-sm text-blue-600 hover:text-blue-800"
-                  >
-                    Change Avatar
-                  </button>
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Full Name
-                    </label>
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Email Address
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
-                  <textarea
-                    name="bio"
-                    rows="3"
-                    value={formData.bio}
-                    onChange={handleInputChange}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    placeholder="Tell us a little about yourself"
-                  ></textarea>
-                </div>
-              </div>
-            )}
-
-            {/* Notification Settings */}
-            {activeTab === "notifications" && (
-              <div className="space-y-6">
-                <h2 className="text-lg font-medium">Notification Preferences</h2>
-
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-medium">Email Notifications</h3>
-                      <p className="text-sm text-gray-500">
-                        Receive email notifications for important updates
-                      </p>
-                    </div>
-                    <label className="relative inline-flex cursor-pointer items-center">
-                      <input
-                        type="checkbox"
-                        name="emailNotifications"
-                        checked={formData.emailNotifications}
-                        onChange={handleInputChange}
-                        className="peer sr-only"
-                      />
-                      <div className="peer h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-blue-600 peer-checked:after:translate-x-full peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300"></div>
-                    </label>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-medium">Task Reminders</h3>
-                      <p className="text-sm text-gray-500">
-                        Receive reminders for upcoming task deadlines
-                      </p>
-                    </div>
-                    <label className="relative inline-flex cursor-pointer items-center">
-                      <input
-                        type="checkbox"
-                        name="taskReminders"
-                        checked={formData.taskReminders}
-                        onChange={handleInputChange}
-                        className="peer sr-only"
-                      />
-                      <div className="peer h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-blue-600 peer-checked:after:translate-x-full peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300"></div>
-                    </label>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-medium">Goal Updates</h3>
-                      <p className="text-sm text-gray-500">
-                        Receive notifications when goal progress changes
-                      </p>
-                    </div>
-                    <label className="relative inline-flex cursor-pointer items-center">
-                      <input
-                        type="checkbox"
-                        name="goalUpdates"
-                        checked={formData.goalUpdates}
-                        onChange={handleInputChange}
-                        className="peer sr-only"
-                      />
-                      <div className="peer h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-blue-600 peer-checked:after:translate-x-full peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300"></div>
-                    </label>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-medium">Weekly Digest</h3>
-                      <p className="text-sm text-gray-500">
-                        Receive a weekly summary of your tasks and goals
-                      </p>
-                    </div>
-                    <label className="relative inline-flex cursor-pointer items-center">
-                      <input
-                        type="checkbox"
-                        name="weeklyDigest"
-                        checked={formData.weeklyDigest}
-                        onChange={handleInputChange}
-                        className="peer sr-only"
-                      />
-                      <div className="peer h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-blue-600 peer-checked:after:translate-x-full peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300"></div>
-                    </label>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Appearance Settings */}
-            {activeTab === "appearance" && (
-              <div className="space-y-6">
-                <h2 className="text-lg font-medium">Display Preferences</h2>
-
-                <div>
-                  <h3 className="text-sm font-medium text-gray-700 mb-2">Theme</h3>
-                  <div className="grid grid-cols-3 gap-4">
-                    <label
-                      className={`flex cursor-pointer flex-col items-center rounded-lg border p-4 ${
-                        formData.theme === "light" ? "border-blue-500 bg-blue-50" : "border-gray-200"
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="theme"
-                        value="light"
-                        checked={formData.theme === "light"}
-                        onChange={handleInputChange}
-                        className="sr-only"
-                      />
-                      <div className="mb-2 h-10 w-10 rounded-full bg-gray-100"></div>
-                      <span className="text-sm font-medium">Light</span>
-                    </label>
-                    <label
-                      className={`flex cursor-pointer flex-col items-center rounded-lg border p-4 ${
-                        formData.theme === "dark" ? "border-blue-500 bg-blue-50" : "border-gray-200"
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="theme"
-                        value="dark"
-                        checked={formData.theme === "dark"}
-                        onChange={handleInputChange}
-                        className="sr-only"
-                      />
-                      <div className="mb-2 h-10 w-10 rounded-full bg-gray-800"></div>
-                      <span className="text-sm font-medium">Dark</span>
-                    </label>
-                    <label
-                      className={`flex cursor-pointer flex-col items-center rounded-lg border p-4 ${
-                        formData.theme === "system" ? "border-blue-500 bg-blue-50" : "border-gray-200"
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="theme"
-                        value="system"
-                        checked={formData.theme === "system"}
-                        onChange={handleInputChange}
-                        className="sr-only"
-                      />
-                      <div className="mb-2 h-10 w-10 rounded-full bg-gradient-to-r from-gray-100 to-gray-800"></div>
-                      <span className="text-sm font-medium">System</span>
-                    </label>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-medium">Compact View</h3>
-                      <p className="text-sm text-gray-500">Display more items with less spacing</p>
-                    </div>
-                    <label className="relative inline-flex cursor-pointer items-center">
-                      <input
-                        type="checkbox"
-                        name="compactView"
-                        checked={formData.compactView}
-                        onChange={handleInputChange}
-                        className="peer sr-only"
-                      />
-                      <div className="peer h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-blue-600 peer-checked:after:translate-x-full peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300"></div>
-                    </label>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-medium">High Contrast</h3>
-                      <p className="text-sm text-gray-500">Increase contrast for better visibility</p>
-                    </div>
-                    <label className="relative inline-flex cursor-pointer items-center">
-                      <input
-                        type="checkbox"
-                        name="highContrast"
-                        checked={formData.highContrast}
-                        onChange={handleInputChange}
-                        className="peer sr-only"
-                      />
-                      <div className="peer h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-blue-600 peer-checked:after:translate-x-full peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300"></div>
-                    </label>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Security Settings */}
-            {activeTab === "security" && (
-              <div className="space-y-6">
-                <h2 className="text-lg font-medium">Security Settings</h2>
-
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-medium">Two-Factor Authentication</h3>
-                      <p className="text-sm text-gray-500">
-                        Add an extra layer of security to your account
-                      </p>
-                    </div>
-                    <label className="relative inline-flex cursor-pointer items-center">
-                      <input
-                        type="checkbox"
-                        name="twoFactorAuth"
-                        checked={formData.twoFactorAuth}
-                        onChange={handleInputChange}
-                        className="peer sr-only"
-                      />
-                      <div className="peer h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-blue-600 peer-checked:after:translate-x-full peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300"></div>
-                    </label>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-medium">Session Timeout</h3>
-                      <p className="text-sm text-gray-500">
-                        Set the duration of inactivity before logging out
-                      </p>
-                    </div>
-                    <select
-                      name="sessionTimeout"
-                      value={formData.sessionTimeout}
-                      onChange={handleInputChange}
-                      className="rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    >
-                      <option value="15">15 minutes</option>
-                      <option value="30">30 minutes</option>
-                      <option value="60">1 hour</option>
-                      <option value="120">2 hours</option>
-                    </select>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-medium">Password Last Changed</h3>
-                      <p className="text-sm text-gray-500">
-                        {formData.passwordLastChanged
-                          ? `Last changed on ${new Date(formData.passwordLastChanged).toLocaleDateString()}`
-                          : "Never changed"}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      className="text-sm text-blue-600 hover:text-blue-800"
-                      onClick={() => alert("Redirect to password change page")}
-                    >
-                      Change Password
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Save Button */}
-          <div className="border-t p-6">
-            <button
-              type="submit"
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <Save className="h-5 w-5" />
-              Save Changes
-            </button>
-          </div>
-        </form>
-      </div>
+      </form>
     </div>
   );
 }
