@@ -7,7 +7,7 @@ import {
   ChevronDown,
   Settings,
 } from "lucide-react";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import getValidToken from "../config/tokenUtils.js";
 import { ENDPOINTS } from "../config/api.js";
@@ -18,6 +18,21 @@ export function DashboardSidebar({ currentView, setCurrentView }) {
   const [userEmail, setUserEmail] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if(isProfileMenuOpen && menuRef.current && !menuRef.current.contains(event.target)){
+        setIsProfileMenuOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [isProfileMenuOpen])
 
   useEffect(() => {
     let isMounted = true;
@@ -72,7 +87,7 @@ export function DashboardSidebar({ currentView, setCurrentView }) {
   const handleSettingsClick = () => {
     setCurrentView("settings");
     setIsProfileMenuOpen(false);
-  }
+  };
 
   const navItems = [
     { id: "tasks", label: "Tasks", icon: CheckSquare },
@@ -120,7 +135,7 @@ export function DashboardSidebar({ currentView, setCurrentView }) {
         </nav>
 
         {/* User Profile Section */}
-        <div className="border-t border-blue-100 bg-white p-3">
+        <div className="border-t border-blue-100 bg-white p-3" ref={menuRef}>
           <div className="relative">
             <button
               onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
@@ -147,8 +162,11 @@ export function DashboardSidebar({ currentView, setCurrentView }) {
             {/* Dropdown Menu */}
             {isProfileMenuOpen && (
               <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-xl shadow-xl border border-blue-100 py-1">
-                <buttom onClick={handleSettingsClick} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-blue=50 transition-colors">
-                  <Settings className="h-4 w-4 text-gray-500"/>
+                <buttom
+                  onClick={handleSettingsClick}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 transition-colors rounded-lg"
+                >
+                  <Settings className="h-4 w-4 text-gray-500" />
                   <span>Settings</span>
                 </buttom>
                 <div className="h-px bg-blue-50 my-1" />

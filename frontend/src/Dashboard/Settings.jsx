@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Loader2, Save,  } from "lucide-react";
+import { Loader2} from "lucide-react";
 import getValidToken from "../config/tokenUtils";
 import { ENDPOINTS } from "../config/api";
 
@@ -164,10 +164,8 @@ export function Settings() {
             disabled={isSaving}
             className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50"
           >
-            {isSaving ? (
+            {isSaving && (
               <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="h-4 w-4" />
             )}
             Save Changes
           </button>
