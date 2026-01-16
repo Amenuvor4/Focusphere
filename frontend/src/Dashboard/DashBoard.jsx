@@ -21,7 +21,7 @@ export function Dashboard() {
         {
           role: "assistant",
           content:
-            "Hi! I'm your FocusSphere AI assistant. Try: 'Create 5 tasks for my project' or 'Update my report task to high priority'!",
+            "Hi! I'm your Focusphere AI assistant. Try: 'Create 5 tasks for my project' or 'Update my report task to high priority'!",
         },
       ],
       createdAt: new Date().toISOString(),
@@ -39,7 +39,7 @@ export function Dashboard() {
         {
           role: "assistant",
           content:
-            "Hi! I'm your FocusSphere AI assistant. Try: 'Create 5 tasks for my project' or 'Update my report task to high priority'!",
+            "Hi! I'm your Focusphere AI assistant. Try: 'Create 5 tasks for my project' or 'Update my report task to high priority'!",
         },
       ],
       createdAt: new Date().toISOString(),

@@ -239,7 +239,7 @@ const AIChatWidget = ({
       const token = await getValidToken();
       if (!token) throw new Error("Not authenticated");
 
-      // Token oberload prevention
+      // Token overload prevention
       const recentHistory = newMessages.slice(-10).map((m) => ({
         role: m.role,
         content: m.content,
@@ -267,6 +267,11 @@ const AIChatWidget = ({
         content: data.response.message,
         suggestedActions: data.response.suggestedActions || [],
       };
+
+      const updates = { messages: [...newMessages, aiMessage] };
+      if (messages.length === 0 && data.suggestedTitle){
+        updates.title = data.suggestedTitle; // aiService generates title
+      }
 
       updateConversation({ messages: [...newMessages, aiMessage] });
     } catch (error) {
@@ -309,7 +314,7 @@ const AIChatWidget = ({
           <div className="flex items-center justify-between rounded-t-lg bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-3 text-white">
             <div className="flex items-center gap-2">
               <Sparkles className="h-5 w-5" />
-              <span className="font-semibold">FocusSphere AI</span>
+              <span className="font-semibold">Focusphere AI</span>
             </div>
             <button
               onClick={() => setIsOpen(false)}

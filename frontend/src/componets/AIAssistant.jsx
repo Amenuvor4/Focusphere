@@ -135,9 +135,13 @@ const AIAssistant = ({
         result.error;
       updateConversation({ messages: updatedMessages });
 
-      const actionName = action.type.includes("create") ? "created" :
-                          action.type.includes("update") ? "updated" :
-                          action.type.includes("delete") ? "deleted" : "completed";
+      const actionName = action.type.includes("create")
+        ? "created"
+        : action.type.includes("update")
+          ? "updated"
+          : action.type.includes("delete")
+            ? "deleted"
+            : "completed";
       const itemType = action.type.includes("task") ? "task" : "goal";
 
       const confirmMessage = result.success
@@ -155,7 +159,8 @@ const AIAssistant = ({
       updateConversation({ messages: updatedMessages });
       const declineMessage = {
         role: "assistant",
-        content: "No worries! I've cancelled that action. Feel free to ask me anything else - I'm here to help! 😊",
+        content:
+          "No worries! I've cancelled that action. Feel free to ask me anything else - I'm here to help! 😊",
       };
       updateConversation({ messages: [...updatedMessages, declineMessage] });
     }
@@ -192,9 +197,10 @@ const AIAssistant = ({
 
       const confirmMessage = {
         role: "assistant",
-        content: failedCount === 0
-          ? `✅ Awesome! All ${successCount} actions completed successfully! Your tasks and goals are up to date.`
-          : `⚠️ Completed ${successCount} of ${results.length} actions. ${failedCount} action${failedCount > 1 ? 's' : ''} failed. Check the details above or let me know if you need help.`,
+        content:
+          failedCount === 0
+            ? `✅ Awesome! All ${successCount} actions completed successfully! Your tasks and goals are up to date.`
+            : `⚠️ Completed ${successCount} of ${results.length} actions. ${failedCount} action${failedCount > 1 ? "s" : ""} failed. Check the details above or let me know if you need help.`,
       };
       updateConversation({ messages: [...updatedMessages, confirmMessage] });
     } else {
@@ -371,7 +377,7 @@ const AIAssistant = ({
           <div className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-blue-600" />
             <h1 className="font-semibold text-lg text-gray-900">
-              FocusSphere AI
+              Focusphere AI
             </h1>
           </div>
           <button
@@ -392,40 +398,67 @@ const AIAssistant = ({
               </div>
               <div>
                 <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                  Welcome to FocusSphere AI
+                  Welcome to Focusphere AI
                 </h2>
                 <p className="text-gray-600 max-w-md">
-                  I'm here to help you manage your tasks and goals efficiently. Just tell me what you need!
+                  I'm here to help you manage your tasks and goals efficiently.
+                  Just tell me what you need!
                 </p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-2xl">
                 <button
-                  onClick={() => setInputMessage("Create 5 tasks for my web development project")}
+                  onClick={() =>
+                    setInputMessage(
+                      "Create 5 tasks for my web development project"
+                    )
+                  }
                   className="bg-blue-50 hover:bg-blue-100 border-2 border-blue-200 rounded-lg p-4 text-left transition-colors"
                 >
-                  <div className="font-semibold text-blue-900 mb-1">📝 Create Tasks</div>
-                  <div className="text-sm text-blue-700">Generate tasks for your project</div>
+                  <div className="font-semibold text-blue-900 mb-1">
+                    📝 Create Tasks
+                  </div>
+                  <div className="text-sm text-blue-700">
+                    Generate tasks for your project
+                  </div>
                 </button>
                 <button
-                  onClick={() => setInputMessage("Show me all my high priority tasks")}
+                  onClick={() =>
+                    setInputMessage("Show me all my high priority tasks")
+                  }
                   className="bg-purple-50 hover:bg-purple-100 border-2 border-purple-200 rounded-lg p-4 text-left transition-colors"
                 >
-                  <div className="font-semibold text-purple-900 mb-1">🎯 View Tasks</div>
-                  <div className="text-sm text-purple-700">See your priority tasks</div>
+                  <div className="font-semibold text-purple-900 mb-1">
+                    🎯 View Tasks
+                  </div>
+                  <div className="text-sm text-purple-700">
+                    See your priority tasks
+                  </div>
                 </button>
                 <button
-                  onClick={() => setInputMessage("Update my task status to in-progress")}
+                  onClick={() =>
+                    setInputMessage("Update my task status to in-progress")
+                  }
                   className="bg-green-50 hover:bg-green-100 border-2 border-green-200 rounded-lg p-4 text-left transition-colors"
                 >
-                  <div className="font-semibold text-green-900 mb-1">✏️ Update Tasks</div>
-                  <div className="text-sm text-green-700">Modify task details</div>
+                  <div className="font-semibold text-green-900 mb-1">
+                    ✏️ Update Tasks
+                  </div>
+                  <div className="text-sm text-green-700">
+                    Modify task details
+                  </div>
                 </button>
                 <button
-                  onClick={() => setInputMessage("Create a goal for learning React")}
+                  onClick={() =>
+                    setInputMessage("Create a goal for learning React")
+                  }
                   className="bg-yellow-50 hover:bg-yellow-100 border-2 border-yellow-200 rounded-lg p-4 text-left transition-colors"
                 >
-                  <div className="font-semibold text-yellow-900 mb-1">🏆 Set Goals</div>
-                  <div className="text-sm text-yellow-700">Define new objectives</div>
+                  <div className="font-semibold text-yellow-900 mb-1">
+                    🏆 Set Goals
+                  </div>
+                  <div className="text-sm text-yellow-700">
+                    Define new objectives
+                  </div>
                 </button>
               </div>
             </div>
@@ -553,7 +586,7 @@ const AIAssistant = ({
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Ask FocusSphere AI..."
+              placeholder="Ask Focusphere AI..."
               disabled={isLoading}
               className="flex-1 rounded-full border border-gray-300 bg-white px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
             />
@@ -592,6 +625,7 @@ const MultiActionCard = ({
   const visibleActions = showAll ? actions : actions.slice(0, 3);
   const hasMore = actions.length > 3;
   const hiddenCount = actions.length - 3;
+  const hasPendingActions = actions.some((action) => !action.status);
 
   // Final states
   if (allApproved) {
@@ -697,22 +731,24 @@ const MultiActionCard = ({
       )}
 
       {/* Bulk Actions Footer */}
-      <div className="flex gap-3 pt-4 border-t border-blue-200">
-        <button
-          onClick={onApprove}
-          className="flex-1 bg-green-500 hover:bg-green-600 text-white rounded-xl px-6 py-4 font-bold transition-colors flex items-center justify-center gap-2 shadow-lg"
-        >
-          <Check className="h-5 w-5" />
-          Approve All ({actions.length})
-        </button>
-        <button
-          onClick={onDecline}
-          className="flex-1 bg-gray-400 hover:bg-gray-500 text-white rounded-xl px-6 py-4 font-bold transition-colors flex items-center justify-center gap-2 shadow-lg"
-        >
-          <XIcon className="h-5 w-5" />
-          Decline All
-        </button>
-      </div>
+      {hasPendingActions && !showAll && (
+        <div className="flex gap-3 pt-4 border-t border-blue-200">
+          <button
+            onClick={onApprove}
+            className="flex-1 bg-green-500 hover:bg-green-600 text-white rounded-xl px-6 py-4 font-bold transition-colors flex items-center justify-center gap-2 shadow-lg"
+          >
+            <Check className="h-5 w-5" />
+            Approve All ({actions.length})
+          </button>
+          <button
+            onClick={onDecline}
+            className="flex-1 bg-gray-400 hover:bg-gray-500 text-white rounded-xl px-6 py-4 font-bold transition-colors flex items-center justify-center gap-2 shadow-lg"
+          >
+            <XIcon className="h-5 w-5" />
+            Decline All
+          </button>
+        </div>
+      )}
     </div>
   );
 };
@@ -987,6 +1023,5 @@ const ActionCard = ({ action, onApprove, onDecline }) => {
     />
   );
 };
-
 
 export default AIAssistant;

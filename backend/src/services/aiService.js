@@ -5,7 +5,7 @@ class AIService {
     this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     this.model = this.genAI.getGenerativeModel({
       model: "gemini-2.5-flash",
-      systemInstruction:`You are FocusSphere AI, a helpful productivity assistant.
+      systemInstruction:`You are Focusphere AI, a helpful productivity assistant.
 
 Your role:
 - Help users manage tasks and goals effectively
