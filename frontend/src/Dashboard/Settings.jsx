@@ -2,8 +2,10 @@ import React, { useState, useEffect } from "react";
 import { Loader2} from "lucide-react";
 import getValidToken from "../config/tokenUtils";
 import { ENDPOINTS } from "../config/api";
+import { useTheme } from "../context/ThemeContext";
 
 export function Settings() {
+  const {theme, toggleTheme} = useTheme();
   const [activeTab, setActiveTab] = useState("account");
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -70,8 +72,8 @@ export function Settings() {
     );
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white rounded-2xl shadow-sm border border-blue-100">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Settings</h1>
+    <div className="max-w-4xl mx-auto p-6 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-blue-100 dark:border-slate-800 transition-colors">
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Settings</h1>
 
       {/* Tab Navigation */}
       <div className="flex gap-4 border-b border-gray-200 mb-8">
@@ -120,31 +122,20 @@ export function Settings() {
 
         {activeTab === "appearance" && (
           <div className="space-y-4 animate-in fade-in duration-300">
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800 rounded-xl">
               <div>
-                <p className="font-medium">Dark Mode</p>
+                <p className="font-medium dark:text-white">Dark Mode</p>
                 <p className="text-xs text-gray-500">
                   Toggle the application theme
                 </p>
               </div>
               <button
                 type="button"
-                onClick={() =>
-                  setFormData({
-                    ...formData,
-                    preferences: {
-                      ...formData.preferences,
-                      theme:
-                        formData.preferences.theme === "dark"
-                          ? "light"
-                          : "dark",
-                    },
-                  })
-                }
-                className={`w-12 h-6 rounded-full transition-colors relative ${formData.preferences.theme === "dark" ? "bg-blue-600" : "bg-gray-300"}`}
+                onClick={toggleTheme}
+                className={`w-12 h-6 rounded-full transition-colors relative ${theme === "dark" ? "bg-blue-600" : "bg-gray-300"}`}
               >
                 <div
-                  className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${formData.preferences.theme === "dark" ? "left-7" : "left-1"}`}
+                  className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${theme === "dark" ? "left-7" : "left-1"}`}
                 />
               </button>
             </div>

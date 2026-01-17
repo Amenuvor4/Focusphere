@@ -97,10 +97,10 @@ export function DashboardSidebar({ currentView, setCurrentView }) {
   ];
 
   return (
-    <div className="hidden border-r border-blue-100 bg-white md:flex md:w-64 md:flex-col">
+    <div className="hidden border-r border-blue-100 dark:border-slate-800 bg-white dark:bg-slae-900 md:flex md:w-64 md:flex-col transition-colors">
       <div className="flex h-full flex-col">
         {/* Logo Section */}
-        <div className="border-b border-blue-100 px-6 py-5">
+        <div className="border-b border-blue-100 dark:border-slate-800 px-6 py-5">
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold text-blue-600">Focusphere</h1>
           </div>
@@ -135,7 +135,7 @@ export function DashboardSidebar({ currentView, setCurrentView }) {
         </nav>
 
         {/* User Profile Section */}
-        <div className="border-t border-blue-100 bg-white p-3" ref={menuRef}>
+        <div className="border-t border-blue-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-3" ref={menuRef}>
           <div className="relative">
             <button
               onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
