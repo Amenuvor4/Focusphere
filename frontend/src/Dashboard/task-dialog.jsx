@@ -15,25 +15,22 @@ export function TaskDialog({ isOpen, onClose, task }) {
   const [goals, setGoals] = useState([]);
   const isEditing = !!task;
 
-
   useEffect(() => {
-    if(isOpen){
-
+    if (isOpen) {
       const fetchGoals = async () => {
         setIsLoading(true);
         try {
-
-          const token = await localStorage('accessToken');
-          if(!token){
+          const token = await localStorage("accessToken");
+          if (!token) {
             return;
           }
           const response = await fetch(ENDPOINTS.GOALS.BASE, {
-            headers: { Authorization: `Bearer ${token}`},
+            headers: { Authorization: `Bearer ${token}` },
           });
           setGoals(response.data);
 
           setLoading(false);
-        } catch (error){
+        } catch (error) {
           console.error("Error fetching data:", error);
           setLoading(false);
         }
@@ -42,14 +39,15 @@ export function TaskDialog({ isOpen, onClose, task }) {
     }
   }, [isOpen]);
 
-
   useEffect(() => {
     if (task) {
       setTitle(task.title || "");
       setDescription(task.description || "");
-      setStatus(task.status || "Incomplete"); 
+      setStatus(task.status || "Incomplete");
       setPriority(task.priority || "medium");
-      setDueDate(task.due_date ? format(new Date(task.due_date), "yyyy-MM-dd") : "");
+      setDueDate(
+        task.due_date ? format(new Date(task.due_date), "yyyy-MM-dd") : "",
+      );
       setCategory(task.category || "");
     }
   }, [task]);
@@ -63,7 +61,7 @@ export function TaskDialog({ isOpen, onClose, task }) {
       setIsLoading(false);
       return;
     }
-    if(!description.trim()){
+    if (!description.trim()) {
       setError("Description is required");
       setIsLoading(false);
       return;
@@ -100,9 +98,15 @@ export function TaskDialog({ isOpen, onClose, task }) {
       console.error("Full error object:", error);
       console.error("Response data:", error.response?.data);
       console.error("Response status:", error.response?.status);
-      setError(error.response?.data?.message || "An error occurred while saving the task.");
-      console.error("Error saving task:", error.response?.data || error.message);
-    } finally{
+      setError(
+        error.response?.data?.message ||
+          "An error occurred while saving the task.",
+      );
+      console.error(
+        "Error saving task:",
+        error.response?.data || error.message,
+      );
+    } finally {
       setIsLoading(false);
     }
   };
@@ -110,16 +114,18 @@ export function TaskDialog({ isOpen, onClose, task }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-md rounded-lg bg-white shadow-lg">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-lg bg-white dark:bg-slate-900 shadow-xl border dark:border-slate-800">
         <form onSubmit={handleSubmit}>
           {/* Dialog Header */}
-          <div className="border-b p-4">
-            <h2 className="text-lg font-semibold">
+          <div className="border-b dark:border-slate-800 p-4">
+            <h2 className="text-lg font-semibold dark:text-white">
               {isEditing ? "Edit Task" : "Create New Task"}
             </h2>
-            <p className="text-sm text-gray-500">
-              {isEditing ? "Make changes to the task here." : "Add the details for your new task."}
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {isEditing
+                ? "Make changes to the task here."
+                : "Add the details for your new task."}
             </p>
           </div>
 
@@ -208,7 +214,11 @@ export function TaskDialog({ isOpen, onClose, task }) {
               disabled={isLoading}
               className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              {isLoading ? "Processing..." : isEditing ? "Save Changes" : "Create Task"}
+              {isLoading
+                ? "Processing..."
+                : isEditing
+                  ? "Save Changes"
+                  : "Create Task"}
             </button>
           </div>
         </form>
@@ -217,10 +227,20 @@ export function TaskDialog({ isOpen, onClose, task }) {
   );
 }
 
-// Reusable InputField Component
-const InputField = ({ label, id, value, onChange, type = "text", required = false }) => (
+// Reusable input and selcet field components updated for dark mode
+const InputField = ({
+  label,
+  id,
+  value,
+  onChange,
+  type = "text",
+  required = false,
+}) => (
   <div className="space-y-1">
-    <label htmlFor={id} className="block text-sm font-medium text-gray-700">
+    <label
+      htmlFor={id}
+      className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+    >
       {label}
     </label>
     {type === "textarea" ? (
@@ -228,8 +248,7 @@ const InputField = ({ label, id, value, onChange, type = "text", required = fals
         id={id}
         value={value}
         onChange={onChange}
-        rows={3}
-        className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full px-3 py-2 border dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white rounded-md outline-none focus:ring-2 focus:ring-blue-500"
       />
     ) : (
       <input
@@ -238,27 +257,29 @@ const InputField = ({ label, id, value, onChange, type = "text", required = fals
         value={value}
         onChange={onChange}
         required={required}
-        className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full px-3 py-2 border dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white rounded-md outline-none focus:ring-2 focus:ring-blue-500"
       />
     )}
   </div>
 );
 
-// Reusable SelectField Component
 const SelectField = ({ label, id, value, onChange, options }) => (
   <div className="space-y-1">
-    <label htmlFor={id} className="block text-sm font-medium text-gray-700">
+    <label
+      htmlFor={id}
+      className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+    >
       {label}
     </label>
     <select
       id={id}
       value={value}
       onChange={onChange}
-      className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+      className="w-full px-3 py-2 border dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white rounded-md outline-none focus:ring-2 focus:ring-blue-500"
     >
-      {options.map((option) => (
-        <option key={option.value} value={option.value}>
-          {option.label}
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>
+          {o.label}
         </option>
       ))}
     </select>

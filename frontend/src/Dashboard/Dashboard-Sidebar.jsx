@@ -23,16 +23,20 @@ export function DashboardSidebar({ currentView, setCurrentView }) {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if(isProfileMenuOpen && menuRef.current && !menuRef.current.contains(event.target)){
+      if (
+        isProfileMenuOpen &&
+        menuRef.current &&
+        !menuRef.current.contains(event.target)
+      ) {
         setIsProfileMenuOpen(false);
       }
-    }
+    };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
-    }
-  }, [isProfileMenuOpen])
+    };
+  }, [isProfileMenuOpen]);
 
   useEffect(() => {
     let isMounted = true;
@@ -97,12 +101,14 @@ export function DashboardSidebar({ currentView, setCurrentView }) {
   ];
 
   return (
-    <div className="hidden border-r border-blue-100 dark:border-slate-800 bg-white dark:bg-slae-900 md:flex md:w-64 md:flex-col transition-colors">
+    <div className="hidden border-r border-blue-100 dark:border-slate-700 bg-white dark:bg-slate-900 md:flex md:w-64 md:flex-col transition-colors">
       <div className="flex h-full flex-col">
         {/* Logo Section */}
-        <div className="border-b border-blue-100 dark:border-slate-800 px-6 py-5">
+        <div className="border-b border-blue-100 dark:border-slate-700 px-6 py-5">
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-blue-600">Focusphere</h1>
+            <h1 className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+              Focusphere
+            </h1>
           </div>
         </div>
 
@@ -119,12 +125,12 @@ export function DashboardSidebar({ currentView, setCurrentView }) {
                     onClick={() => setCurrentView(item.id)}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                       isActive
-                        ? "bg-blue-600 text-white shadow-lg shadow-blue-500/25"
-                        : "text-blue-700 hover:bg-blue-50 hover:text-blue-900"
+                        ? "bg-blue-600 dark:bg-blue-500 text-white shadow-lg shadow-blue-500/25 dark:shadow-blue-500/20"
+                        : "text-blue-700 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-slate-800 hover:text-blue-900 dark:hover:text-white"
                     }`}
                   >
                     <Icon
-                      className={`h-5 w-5 ${isActive ? "text-white" : "text-blue-600"}`}
+                      className={`h-5 w-5 ${isActive ? "text-white" : "text-blue-600 dark:text-blue-400"}`}
                     />
                     <span className="font-medium">{item.label}</span>
                   </button>
@@ -135,25 +141,28 @@ export function DashboardSidebar({ currentView, setCurrentView }) {
         </nav>
 
         {/* User Profile Section */}
-        <div className="border-t border-blue-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-3" ref={menuRef}>
+        <div
+          className="border-t border-blue-100 dark:border-slate-700 bg-white dark:bg-slate-900 p-3"
+          ref={menuRef}
+        >
           <div className="relative">
             <button
               onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-              className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-blue-50 transition-colors"
+              className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors"
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-white font-semibold shadow-md">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 dark:bg-blue-500 text-white font-semibold shadow-md">
                 {isLoading ? "..." : userName.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 text-left">
-                <p className="text-sm font-medium text-gray-900 truncate">
+                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                   {isLoading ? "Loading..." : userName}
                 </p>
-                <p className="text-xs text-blue-600 truncate">
+                <p className="text-xs text-blue-600 dark:text-blue-400 truncate">
                   {isLoading ? "" : userEmail}
                 </p>
               </div>
               <ChevronDown
-                className={`h-4 w-4 text-blue-400 transition-transform ${
+                className={`h-4 w-4 text-blue-400 dark:text-slate-400 transition-transform ${
                   isProfileMenuOpen ? "rotate-180" : ""
                 }`}
               />
@@ -161,18 +170,18 @@ export function DashboardSidebar({ currentView, setCurrentView }) {
 
             {/* Dropdown Menu */}
             {isProfileMenuOpen && (
-              <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-xl shadow-xl border border-blue-100 py-1">
-                <buttom
+              <div className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-blue-100 dark:border-slate-700 py-1">
+                <button
                   onClick={handleSettingsClick}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 transition-colors rounded-lg"
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors rounded-lg"
                 >
-                  <Settings className="h-4 w-4 text-gray-500" />
+                  <Settings className="h-4 w-4 text-gray-500 dark:text-slate-400" />
                   <span>Settings</span>
-                </buttom>
-                <div className="h-px bg-blue-50 my-1" />
+                </button>
+                <div className="h-px bg-blue-50 dark:bg-slate-700 my-1" />
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors rounded-lg"
+                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-slate-700 transition-colors rounded-lg"
                 >
                   <LogOut className="h-4 w-4" />
                   <span>Logout</span>

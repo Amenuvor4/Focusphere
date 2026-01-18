@@ -27,7 +27,7 @@ ChartJS.register(
   Legend,
   CategoryScale,
   LinearScale,
-  BarElement
+  BarElement,
 );
 
 export function Analytics() {
@@ -64,7 +64,7 @@ export function Analytics() {
             headers: {
               Authorization: `Bearer ${token}`,
             },
-          }
+          },
         );
         const currentData = await currentResponse.json();
         setStats(currentData);
@@ -78,7 +78,7 @@ export function Analytics() {
             headers: {
               Authorization: `Bearer ${token}`,
             },
-          }
+          },
         );
         const previousData = await previousResponse.json();
         if (!previousData) {
@@ -130,15 +130,17 @@ export function Analytics() {
       {/* Header */}
       <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Analytics</h1>
-          <p className="text-gray-500">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Analytics
+          </h1>
+          <p className="text-gray-500 dark:text-slate-400">
             Track your productivity and task management metrics
           </p>
         </div>
         <select
           value={timeRange}
           onChange={(e) => setTimeRange(e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="px-3 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
         >
           <option value="Week">This Week</option>
           <option value="Month">This Month</option>
@@ -154,40 +156,46 @@ export function Analytics() {
           value={stats.tasksCompleted}
           change={calculateChange(
             stats.tasksCompleted,
-            previousStats.tasksCompleted
+            previousStats.tasksCompleted,
           )}
           timeRange={timeRange}
-          icon={<CheckCircle2 className="h-5 w-5 text-green-500" />}
+          icon={
+            <CheckCircle2 className="h-5 w-5 text-green-500 dark:text-green-400" />
+          }
         />
         <StatCard
           title="Tasks Created"
           value={stats.tasksCreated}
           change={calculateChange(
             stats.tasksCreated,
-            previousStats.tasksCreated
+            previousStats.tasksCreated,
           )}
           timeRange={timeRange}
-          icon={<Plus className="h-5 w-5 text-blue-500" />}
+          icon={<Plus className="h-5 w-5 text-blue-500 dark:text-blue-400" />}
         />
         <StatCard
           title="Completion Rate"
           value={`${stats.completionRate.toFixed(2)}%`}
           change={calculateChange(
             stats.completionRate,
-            previousStats.completionRate
+            previousStats.completionRate,
           )}
           timeRange={timeRange}
-          icon={<BarChart3 className="h-5 w-5 text-purple-500" />}
+          icon={
+            <BarChart3 className="h-5 w-5 text-purple-500 dark:text-purple-400" />
+          }
         />
         <StatCard
           title="Avg. Completion Time"
           value={stats.averageCompletionTime}
           change={calculateChange(
             stats.averageCompletionTime,
-            previousStats.averageCompletionTime
+            previousStats.averageCompletionTime,
           )}
           timeRange={timeRange}
-          icon={<Clock className="h-5 w-5 text-orange-500" />}
+          icon={
+            <Clock className="h-5 w-5 text-orange-500 dark:text-orange-400" />
+          }
         />
       </div>
 
@@ -208,42 +216,46 @@ export function Analytics() {
       </div>
 
       {/* Recent Activity */}
-      <div className="bg-white border rounded-lg shadow-sm overflow-hidden">
-        <div className="p-4 border-b">
+      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-gray-200 dark:border-slate-700">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold">Recent Activity</h2>
-            <button className="text-sm text-blue-600 hover:text-blue-800">
+            <h2 className="font-semibold text-gray-900 dark:text-white">
+              Recent Activity
+            </h2>
+            <button className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">
               View All
             </button>
           </div>
         </div>
-        <div className="divide-y">
+        <div className="divide-y divide-gray-200 dark:divide-slate-700">
           {stats.recentActivity.map((activity, index) => (
             <div key={index} className="p-4 flex items-start gap-3">
               <div
                 className={`mt-0.5 flex h-8 w-8 items-center justify-center rounded-full ${
                   activity.type === "completed"
-                    ? "bg-green-100"
+                    ? "bg-green-100 dark:bg-green-900/30"
                     : activity.type === "created"
-                      ? "bg-blue-100"
-                      : "bg-yellow-100"
+                      ? "bg-blue-100 dark:bg-blue-900/30"
+                      : "bg-yellow-100 dark:bg-yellow-900/30"
                 }`}
               >
                 {activity.type === "completed" ? (
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
                 ) : activity.type === "created" ? (
-                  <Plus className="h-4 w-4 text-blue-600" />
+                  <Plus className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                 ) : (
-                  <Calendar className="h-4 w-4 text-yellow-600" />
+                  <Calendar className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
                 )}
               </div>
               <div className="flex-1">
                 <div className="flex items-center justify-between">
-                  <p className="font-medium">
+                  <p className="font-medium text-gray-900 dark:text-white">
                     <span className="capitalize">{activity.type}</span> task:{" "}
                     {activity.task}
                   </p>
-                  <span className="text-sm text-gray-500">{activity.date}</span>
+                  <span className="text-sm text-gray-500 dark:text-slate-400">
+                    {activity.date}
+                  </span>
                 </div>
               </div>
             </div>
@@ -259,16 +271,20 @@ function StatCard({ title, value, change, icon, timeRange }) {
   const isPositive = change >= 0;
 
   return (
-    <div className="bg-white border rounded-lg shadow-sm p-4">
+    <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-sm p-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium text-gray-500">{title}</h3>
+        <h3 className="text-sm font-medium text-gray-500 dark:text-slate-400">
+          {title}
+        </h3>
         {icon}
       </div>
       <div className="mt-2">
-        <p className="text-2xl font-bold">{value}</p>
+        <p className="text-2xl font-bold text-gray-900 dark:text-white">
+          {value}
+        </p>
         <div className="mt-1 flex items-center text-sm">
           <span
-            className={`flex items-center ${isPositive ? "text-green-600" : "text-red-600"}`}
+            className={`flex items-center ${isPositive ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
           >
             {isPositive ? (
               <ArrowUp className="h-3 w-3 mr-1" />
@@ -277,7 +293,9 @@ function StatCard({ title, value, change, icon, timeRange }) {
             )}
             {Math.abs(change.toFixed(2))}%
           </span>
-          <span className="text-gray-500 ml-1">vs previous {timeRange}</span>
+          <span className="text-gray-500 dark:text-slate-400 ml-1">
+            vs previous {timeRange}
+          </span>
         </div>
       </div>
     </div>
@@ -307,15 +325,49 @@ function ChartCard({ title, icon, data, type }) {
     plugins: {
       legend: {
         position: "bottom",
+        labels: {
+          color: document.documentElement.classList.contains("dark")
+            ? "#e2e8f0"
+            : "#374151",
+        },
       },
     },
+    scales:
+      type === "bar"
+        ? {
+            y: {
+              ticks: {
+                color: document.documentElement.classList.contains("dark")
+                  ? "#94a3b8"
+                  : "#6b7280",
+              },
+              grid: {
+                color: document.documentElement.classList.contains("dark")
+                  ? "#334155"
+                  : "#e5e7eb",
+              },
+            },
+            x: {
+              ticks: {
+                color: document.documentElement.classList.contains("dark")
+                  ? "#94a3b8"
+                  : "#6b7280",
+              },
+              grid: {
+                color: document.documentElement.classList.contains("dark")
+                  ? "#334155"
+                  : "#e5e7eb",
+              },
+            },
+          }
+        : undefined,
   };
 
   return (
-    <div className="bg-white border rounded-lg shadow-sm overflow-hidden">
-      <div className="p-4 border-b">
+    <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-sm overflow-hidden">
+      <div className="p-4 border-b border-gray-200 dark:border-slate-700">
         <div className="flex items-center justify-between">
-          <h2 className="font-semibold flex items-center gap-2">
+          <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
             {icon}
             <span>{title}</span>
           </h2>

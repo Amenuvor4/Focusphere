@@ -170,7 +170,7 @@ export function TaskList({
     const stats = {
       totalTasks: tasks.length,
       completedToday: tasks.filter(
-        (task) => task.status === "completed" && task.dueDate === today
+        (task) => task.status === "completed" && task.dueDate === today,
       ).length,
       upcomingDeadlines: tasks.filter(
         (task) =>
@@ -210,7 +210,7 @@ export function TaskList({
         priority: taskData.priority,
         status: taskData.status,
         dueDate: taskData.dueDate,
-        category: taskData.category || "general", // Default category if not provided
+        category: taskData.category || "general"
       };
 
       if (taskData.id) {
@@ -223,10 +223,7 @@ export function TaskList({
           }
         );
 
-        // Get the updated task from the response
         const updatedTask = response.data.task;
-
-        // Update local state
         setTasks(tasks.map((t) => (t.id === updatedTask.id ? updatedTask : t)));
         onTaskUpdate?.(updatedTask);
       } else {
@@ -242,10 +239,7 @@ export function TaskList({
           }
         );
 
-        // Get the new task from the response
         const newTask = response.data.task;
-
-        // Update local state with the task from the server (including the real ID)
         setTasks([...tasks, newTask]);
         onTaskCreate?.(newTask);
       }
@@ -302,7 +296,7 @@ export function TaskList({
         <div className="flex gap-2 items-center">
           <button
             onClick={handleCreateTask}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
           >
             <Plus className="h-4 w-4" />
             <span>New Task</span>
@@ -312,13 +306,13 @@ export function TaskList({
         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400 dark:text-slate-400" />
             <input
               type="text"
               placeholder="Search tasks..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-64"
+              className="pl-9 pr-4 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-400 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 w-full sm:w-64"
             />
           </div>
 
@@ -327,7 +321,7 @@ export function TaskList({
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
             >
               <option value="all">All Status</option>
               <option value="todo">To Do</option>
@@ -338,7 +332,7 @@ export function TaskList({
             <select
               value={filterPriority}
               onChange={(e) => setFilterPriority(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
             >
               <option value="all">All Priorities</option>
               <option value="high">High</option>
@@ -350,7 +344,7 @@ export function TaskList({
             <select
               value={filterTime}
               onChange={(e) => setFilterTime(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
             >
               <option value="all">All Time</option>
               <option value="Today">Today</option>
@@ -365,17 +359,19 @@ export function TaskList({
       {/* Kanban Layout */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* To Do Column */}
-        <div className="bg-gray-50 rounded-lg p-4">
+        <div className="bg-gray-50 dark:bg-slate-800/50 rounded-lg p-4">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="font-medium text-gray-700">To Do</h3>
-            <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+            <h3 className="font-medium text-gray-700 dark:text-slate-300">
+              To Do
+            </h3>
+            <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs font-medium px-2.5 py-0.5 rounded-full">
               {todoTasks.length}
             </span>
           </div>
 
           <div className="space-y-3">
             {todoTasks.length === 0 ? (
-              <div className="text-center py-6 text-gray-500 text-sm">
+              <div className="text-center py-6 text-gray-500 dark:text-slate-400 text-sm">
                 No tasks to do
               </div>
             ) : (
@@ -393,17 +389,19 @@ export function TaskList({
         </div>
 
         {/* In Progress Column */}
-        <div className="bg-gray-50 rounded-lg p-4">
+        <div className="bg-gray-50 dark:bg-slate-800/50 rounded-lg p-4">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="font-medium text-gray-700">In Progress</h3>
-            <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+            <h3 className="font-medium text-gray-700 dark:text-slate-300">
+              In Progress
+            </h3>
+            <span className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 text-xs font-medium px-2.5 py-0.5 rounded-full">
               {inProgressTasks.length}
             </span>
           </div>
 
           <div className="space-y-3">
             {inProgressTasks.length === 0 ? (
-              <div className="text-center py-6 text-gray-500 text-sm">
+              <div className="text-center py-6 text-gray-500 dark:text-slate-400 text-sm">
                 No tasks in progress
               </div>
             ) : (
@@ -421,17 +419,19 @@ export function TaskList({
         </div>
 
         {/* Completed Column */}
-        <div className="bg-gray-50 rounded-lg p-4">
+        <div className="bg-gray-50 dark:bg-slate-800/50 rounded-lg p-4">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="font-medium text-gray-700">Completed</h3>
-            <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+            <h3 className="font-medium text-gray-700 dark:text-slate-300">
+              Completed
+            </h3>
+            <span className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs font-medium px-2.5 py-0.5 rounded-full">
               {completedTasks.length}
             </span>
           </div>
 
           <div className="space-y-3">
             {completedTasks.length === 0 ? (
-              <div className="text-center py-6 text-gray-500 text-sm">
+              <div className="text-center py-6 text-gray-500 dark:text-slate-400 text-sm">
                 No completed tasks
               </div>
             ) : (

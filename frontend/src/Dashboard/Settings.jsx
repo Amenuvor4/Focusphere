@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Loader2} from "lucide-react";
+import { Loader2 } from "lucide-react";
 import getValidToken from "../config/tokenUtils";
 import { ENDPOINTS } from "../config/api";
 import { useTheme } from "../context/ThemeContext";
 
 export function Settings() {
-  const {theme, toggleTheme} = useTheme();
+  const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState("account");
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -38,7 +38,6 @@ export function Settings() {
     };
     fetchProfile();
   }, []);
-
 
   const handleUpdate = async (e) => {
     e.preventDefault();
@@ -73,7 +72,9 @@ export function Settings() {
 
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-blue-100 dark:border-slate-800 transition-colors">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Settings</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+        Settings
+      </h1>
 
       {/* Tab Navigation */}
       <div className="flex gap-4 border-b border-gray-200 mb-8">
@@ -96,7 +97,7 @@ export function Settings() {
         {activeTab === "profile" && (
           <div className="space-y-4 animate-in fade-in duration-300">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-blue-700 mb-1">
                 Display Name
               </label>
               <input
@@ -104,17 +105,17 @@ export function Settings() {
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
-                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full p-2.5 border border-gray-300 bg-gray-50 text-gray-500 dark:text-white dark:bg-slate-800 rounded-lg focus:ring-2 focus:ring-blue-500  outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-blue-700 mb-1">
                 Email Address
               </label>
               <input
                 disabled
                 value={formData.email}
-                className="w-full p-2.5 border border-gray-100 bg-gray-50 text-gray-500 rounded-lg cursor-not-allowed"
+                className="w-full p-2.5 border border-gray-100 bg-gray-50 text-gray-500 dark:text-white dark:bg-slate-800 rounded-lg cursor-not-allowed"
               />
             </div>
           </div>
@@ -155,9 +156,7 @@ export function Settings() {
             disabled={isSaving}
             className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50"
           >
-            {isSaving && (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            )}
+            {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
             Save Changes
           </button>
         </div>
