@@ -20,6 +20,7 @@ import {
 } from "chart.js";
 import getValidToken from "../config/tokenUtils";
 import { ENDPOINTS } from "../config/api.js";
+import { AnalyticsSkeleton } from "../componets/AnalyticsSkeleton.jsx";
 
 ChartJS.register(
   ArcElement,
@@ -46,10 +47,12 @@ export function Analytics() {
     tasksCreated: 0,
     completionRate: 0,
   });
+  const [isFetching, setIsFetching] = useState(true);
 
   // Fetch data for the current and previous time range
   useEffect(() => {
     const fetchAnalytics = async () => {
+      setIsFetching(true);
       try {
         const token = await getValidToken();
         if (!token) {
@@ -87,6 +90,8 @@ export function Analytics() {
         setPreviousStats(previousData);
       } catch (error) {
         console.error("Failed to fetch analytics data:", error);
+      } finally {
+        setTimeout(() => setIsFetching(false), 300);
       }
     };
 
@@ -125,6 +130,9 @@ export function Analytics() {
     return ((currentNumeric - previousNumeric) / previousNumeric) * 100;
   };
 
+  if(isFetching){
+    return <AnalyticsSkeleton/>
+  }
   return (
     <div className="w-full">
       {/* Header */}

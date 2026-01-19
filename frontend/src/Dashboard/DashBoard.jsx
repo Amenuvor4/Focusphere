@@ -7,6 +7,7 @@ import { Settings } from "./Settings";
 import AIChatWidget from "../componets/AIChatWidget.jsx";
 import AIAssistant from "../componets/AIAssistant.jsx";
 
+
 export function Dashboard() {
   const [currentView, setCurrentView] = useState("tasks");
   const [conversations, setConversations] = useState([]);
@@ -78,7 +79,7 @@ export function Dashboard() {
 
   function updateConversation(updates) {
     setConversations((prev) => 
-      conversations.map((c) =>
+      prev.map((c) =>
         c.id === currentConversationId
           ? { ...c, ...updates, updatedAt: new Date().toISOString() }
           : c

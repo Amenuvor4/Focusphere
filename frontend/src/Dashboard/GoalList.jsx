@@ -5,53 +5,50 @@ import GoalCard from "./GoalCard";
 import GoalDetails from "./GoalDetails";
 import GoalModal from "../componets/GoalModal.jsx";
 import { ENDPOINTS } from "../config/api.js";
+import { GoalsListSkeleton } from "../componets/GoalsListSkeletion.jsx";
 
 const GoalList = () => {
   const [goals, setGoals] = useState([]);
   const [tasks, setTasks] = useState([]);
+  const [isFetching, setIsFetching] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState(null);
   const [viewingGoal, setViewingGoal] = useState(null);
-
+  // FETCH DATA AT CONCURRENTLY
   useEffect(() => {
-    fetchGoals();
-    fetchTasks();
+    fetchData();
   }, []);
 
-  const fetchGoals = async () => {
+  const fetchData = async () => {
+    setIsFetching(true);
     try {
       const token = await getValidToken();
       if (!token) return;
 
-      const response = await fetch(ENDPOINTS.GOALS.BASE, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      // Fetch both goals and tasks in parallel
+      const [goalsResponse, tasksResponse] = await Promise.all([
+        fetch(ENDPOINTS.GOALS.BASE, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(ENDPOINTS.TASKS.BASE, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
 
-      if (response.ok) {
-        const data = await response.json();
-        setGoals(data);
+      if (goalsResponse.ok) {
+        const goalsData = await goalsResponse.json();
+        setGoals(goalsData);
+      }
+
+      if (tasksResponse.ok) {
+        const tasksData = await tasksResponse.json();
+        setTasks(tasksData);
       }
     } catch (error) {
-      console.error("Error fetching goals:", error);
-    }
-  };
-
-  const fetchTasks = async () => {
-    try {
-      const token = await getValidToken();
-      if (!token) return;
-
-      const response = await fetch(ENDPOINTS.TASKS.BASE, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setTasks(data);
-      }
-    } catch (error) {
-      console.error("Error fetching tasks:", error);
+      console.error("Error fetching data:", error);
+    } finally {
+      setTimeout(() => setIsFetching(false), 300);
     }
   };
 
@@ -97,7 +94,7 @@ const GoalList = () => {
   // If viewing goal details, show that instead
   if (viewingGoal) {
     const goalTasks = tasks.filter((task) =>
-      viewingGoal.tasks?.includes(task.id)
+      viewingGoal.tasks?.includes(task.id),
     );
 
     return (
@@ -109,13 +106,21 @@ const GoalList = () => {
     );
   }
 
+  if (isFetching) {
+    return <GoalsListSkeleton />;
+  }
+
   return (
     <div className="w-full">
       {/* Header */}
       <div className="mb-6 flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Goals</h1>
-          <p className="text-gray-500 dark:text-slate-400">Track your long-term objectives</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Goals
+          </h1>
+          <p className="text-gray-500 dark:text-slate-400">
+            Track your long-term objectives
+          </p>
         </div>
         <button
           onClick={handleAddGoal}
@@ -163,7 +168,7 @@ const GoalList = () => {
         <GoalModal
           isOpen={isAddModalOpen}
           onClose={() => setIsAddModalOpen(false)}
-          onSave={fetchGoals}
+          onSave={fetchData}
         />
       )}
 
@@ -174,7 +179,7 @@ const GoalList = () => {
             setIsEditModalOpen(false);
             setSelectedGoal(null);
           }}
-          onSave={fetchGoals}
+          onSave={fetchData}
           goal={selectedGoal}
         />
       )}

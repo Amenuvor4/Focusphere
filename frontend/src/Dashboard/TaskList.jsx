@@ -7,6 +7,7 @@ import { WelcomeBanner } from "./welcome-banner";
 import getValidToken from "../config/tokenUtils.js";
 import axios from "axios";
 import { ENDPOINTS } from "../config/api.js";
+import { TaskListSkeleton } from "../componets/TaskListSkeleton.jsx";
 
 export function TaskList({
   tasks: initialTasks = [],
@@ -14,6 +15,7 @@ export function TaskList({
   onTaskUpdate,
   onTaskDelete,
 }) {
+  const [isFetching, setIsFetching] = useState(true);
   const [tasks, setTasks] = useState(initialTasks);
   const [filteredTasks, setFilteredTasks] = useState([]);
   const [selectedTask, setSelectedTask] = useState(null);
@@ -31,15 +33,16 @@ export function TaskList({
     upcomingDeadlines: 0,
   });
 
-  // Get user data
+  //FETCH DATA CONCURRENTLY
   useEffect(() => {
-    const fetchUserProfile = async () => {
+    const fetchData = async () => {
+      setIsFetching(true);
       try {
+        // Fetch user profile
         const token = await getValidToken();
-        if (!token) {
-          return;
-        }
-        const response = await fetch(ENDPOINTS.AUTH.PROFILE, {
+        if (!token) return;
+
+        const profileResponse = await fetch(ENDPOINTS.AUTH.PROFILE, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -47,53 +50,33 @@ export function TaskList({
           },
         });
 
-        if (!response.ok) {
-          throw new Error(`Error: ${response.status}`);
+        if (profileResponse.ok) {
+          const data = await profileResponse.json();
+          if (data.user && data.user.name) {
+            setUserName(data.user.name.split(" ")[0].trim());
+          }
         }
 
-        const data = await response.json();
-
-        if (data.user && data.user.name) {
-          setUserName(data.user.name.split(" ")[0].trim());
-        } else {
-          console.log("You got an error when getting data @ 108");
-        }
-      } catch (error) {
-        console.log("This is where the error is at");
-        console.error("Error fetching user data", error);
-      }
-    };
-
-    fetchUserProfile();
-  }, []);
-
-  useEffect(() => {
-    const fetchTasks = async () => {
-      try {
-        const token = await getValidToken();
-        if (!token) {
-          return;
-        }
-
-        console.log("Fetching tasks...");
-        const response = await axios.get(ENDPOINTS.TASKS.BASE, {
+        // Fetch tasks
+        const tasksResponse = await axios.get(ENDPOINTS.TASKS.BASE, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
         });
 
-        console.log("Fetched tasks:", response.data);
-        if (Array.isArray(response.data)) {
-          setTasks(response.data);
-        } else {
-          console.error("Unexpected response format:", response.data);
+        if (Array.isArray(tasksResponse.data)) {
+          setTasks(tasksResponse.data);
         }
       } catch (error) {
-        console.error("Error fetching tasks:", error);
+        console.error("Error fetching data:", error);
+      } finally {
+        // Small delay for smooth transition
+        setTimeout(() => setIsFetching(false), 300);
       }
     };
-    fetchTasks();
+
+    fetchData();
   }, []);
 
   // Apply filters and search
@@ -106,7 +89,7 @@ export function TaskList({
       result = result.filter(
         (task) =>
           task.title.toLowerCase().includes(query) ||
-          (task.description && task.description.toLowerCase().includes(query))
+          (task.description && task.description.toLowerCase().includes(query)),
       );
     }
 
@@ -174,7 +157,7 @@ export function TaskList({
       ).length,
       upcomingDeadlines: tasks.filter(
         (task) =>
-          task.status !== "completed" && task.dueDate && task.dueDate >= today
+          task.status !== "completed" && task.dueDate && task.dueDate >= today,
       ).length,
     };
 
@@ -210,7 +193,7 @@ export function TaskList({
         priority: taskData.priority,
         status: taskData.status,
         dueDate: taskData.dueDate,
-        category: taskData.category || "general"
+        category: taskData.category || "general",
       };
 
       if (taskData.id) {
@@ -220,7 +203,7 @@ export function TaskList({
           backendTaskData,
           {
             headers: { Authorization: `Bearer ${token}` },
-          }
+          },
         );
 
         const updatedTask = response.data.task;
@@ -236,7 +219,7 @@ export function TaskList({
               Authorization: `Bearer ${token}`,
               "Content-Type": "application/json",
             },
-          }
+          },
         );
 
         const newTask = response.data.task;
@@ -250,7 +233,7 @@ export function TaskList({
       console.error("Response status:", error.response?.status);
       console.error(
         "Error saving task:",
-        error.response?.data?.error || error.message
+        error.response?.data?.error || error.message,
       );
     }
   };
@@ -280,12 +263,13 @@ export function TaskList({
   // Group tasks by status for Kanban view
   const todoTasks = filteredTasks.filter((task) => task.status === "todo");
   const inProgressTasks = filteredTasks.filter(
-    (task) => task.status === "in-progress"
+    (task) => task.status === "in-progress",
   );
   const completedTasks = filteredTasks.filter(
-    (task) => task.status === "completed"
+    (task) => task.status === "completed",
   );
 
+  if (isFetching) return <TaskListSkeleton />;
   return (
     <div className="w-full">
       {/* Welcome Banner */}
