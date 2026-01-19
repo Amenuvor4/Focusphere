@@ -53,7 +53,20 @@ export function Dashboard() {
     const filtered = conversations.filter((c) => c.id !== id);
 
     if (currentConversationId === id) {
-      setCurrentConversationId(filtered[0]?.id || null);
+
+      const deletingIndex = conversations.findIndex((c) => c.id === id);
+
+      if(filtered.length > 0){
+        if(deletingIndex < conversations.length - 1){
+          setCurrentConversationId(conversations[deletingIndex + 1].id);
+        }
+        else if (deletingIndex > 0){
+          setCurrentConversationId(conversations[deletingIndex - 1].id);
+        }
+        else {
+          setCurrentConversationId(filtered[0].id);
+        }
+      }
     }
 
     if (filtered.length === 0) {
@@ -64,7 +77,7 @@ export function Dashboard() {
   }
 
   function updateConversation(updates) {
-    setConversations(
+    setConversations((prev) => 
       conversations.map((c) =>
         c.id === currentConversationId
           ? { ...c, ...updates, updatedAt: new Date().toISOString() }

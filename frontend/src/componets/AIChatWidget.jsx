@@ -30,7 +30,10 @@ const AIChatWidget = ({
   const messages = useMemo(() => conversation?.messages || [], [conversation]);
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [editingInfo, setEditingInfo] = useState({ messageIndex: null, actionIndex: null});
+  const [editingInfo, setEditingInfo] = useState({
+    messageIndex: null,
+    actionIndex: null,
+  });
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const messagesEndRef = useRef(null);
 
@@ -150,9 +153,13 @@ const AIChatWidget = ({
       updateConversation({ messages: updatedMessages });
 
       if (result.success) {
-        const actionName = action.type.includes("create") ? "created" :
-                          action.type.includes("update") ? "updated" :
-                          action.type.includes("delete") ? "deleted" : "completed";
+        const actionName = action.type.includes("create")
+          ? "created"
+          : action.type.includes("update")
+            ? "updated"
+            : action.type.includes("delete")
+              ? "deleted"
+              : "completed";
         const itemType = action.type.includes("task") ? "task" : "goal";
 
         const confirmMessage = {
@@ -171,7 +178,8 @@ const AIChatWidget = ({
       updateConversation({ messages: updatedMessages });
       const declineMessage = {
         role: "assistant",
-        content: "No worries! I've cancelled that action. Ask me anything else! 😊",
+        content:
+          "No worries! I've cancelled that action. Ask me anything else! 😊",
       };
       updateConversation([...messages, declineMessage]);
     }
@@ -195,7 +203,7 @@ const AIChatWidget = ({
     if (approved) {
       // Execute all actions
       const results = await Promise.all(
-        message.suggestedActions.map((action) => executeAction(action))
+        message.suggestedActions.map((action) => executeAction(action)),
       );
 
       // Update statuses
@@ -213,16 +221,18 @@ const AIChatWidget = ({
 
       const confirmMessage = {
         role: "assistant",
-        content: failedCount === 0
-          ? `✅ Awesome! All ${successCount} actions completed successfully!`
-          : `⚠️ Completed ${successCount} of ${results.length} actions. ${failedCount} failed - check details above.`,
+        content:
+          failedCount === 0
+            ? `✅ Awesome! All ${successCount} actions completed successfully!`
+            : `⚠️ Completed ${successCount} of ${results.length} actions. ${failedCount} failed - check details above.`,
       };
       updateConversation({ messages: [...messages, confirmMessage] });
     } else {
       updateConversation({ messages: updatedMessages });
       const declineMessage = {
         role: "assistant",
-        content: "No problem! All actions cancelled. I'm here if you need anything else! 😊",
+        content:
+          "No problem! All actions cancelled. I'm here if you need anything else! 😊",
       };
       updateConversation([...messages, declineMessage]);
     }
@@ -272,7 +282,7 @@ const AIChatWidget = ({
       };
 
       const updates = { messages: [...newMessages, aiMessage] };
-      if (messages.length === 0 && data.suggestedTitle){
+      if (messages.length === 0 && data.suggestedTitle) {
         updates.title = data.suggestedTitle; // aiService generates title
       }
 
@@ -301,17 +311,18 @@ const AIChatWidget = ({
   };
 
   const openEditModal = (msgIdx, actIdx) => {
-    setEditingInfo({messageIndex: msgIdx, actionIndex:actIdx});
+    setEditingInfo({ messageIndex: msgIdx, actionIndex: actIdx });
     setIsEditModalOpen(true);
-  }
+  };
 
   const handleEditSave = (updateData) => {
     const { messageIndex, actionIndex } = editingInfo;
     const updatedMessages = [...messages];
 
-    updatedMessages[messageIndex].suggestedActions[actionIndex].data = updateData;
+    updatedMessages[messageIndex].suggestedActions[actionIndex].data =
+      updateData;
     setIsEditModalOpen(false);
-  }
+  };
 
   return (
     <>
@@ -319,14 +330,13 @@ const AIChatWidget = ({
         <button
           onClick={() => setIsOpen(true)}
           className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg hover:shadow-xl transition-all hover:scale-110"
-          aria-label="Open AI Assistant"
         >
           <Sparkles className="h-6 w-6" />
         </button>
       )}
 
       {isOpen && (
-        <div className="fixed bottom-6 right-6 z-50 flex h-[500px] w-[420px] flex-col rounded-lg bg-white shadow-2xl border border-gray-200">
+        <div className="fixed bottom-6 right-6 z-50 flex h-[500px] w-[420px] flex-col rounded-lg bg-white dark:bg-slate-800 shadow-2xl border border-gray-200 dark:border-slate-700">
           <div className="flex items-center justify-between rounded-t-lg bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-3 text-white">
             <div className="flex items-center gap-2">
               <Sparkles className="h-5 w-5" />
@@ -334,7 +344,7 @@ const AIChatWidget = ({
             </div>
             <button
               onClick={() => setIsOpen(false)}
-              className="rounded-full p-1 hover:bg-white/20 transition-colors"
+              className="rounded-full p-1 hover:bg-white dark:bg-slate-800/20 transition-colors"
               aria-label="Close chat"
             >
               <X className="h-5 w-5" />
@@ -392,7 +402,9 @@ const AIChatWidget = ({
                         onIndividualDecline={(idx) =>
                           handleActionApproval(messageIndex, idx, false)
                         }
-                        onIndividualEdit={(aIdx) => openEditModal(messageIndex, aIdx)}
+                        onIndividualEdit={(aIdx) =>
+                          openEditModal(messageIndex, aIdx)
+                        }
                       />
                     </div>
                   ))}
@@ -404,7 +416,9 @@ const AIChatWidget = ({
                 <div className="bg-gray-100 rounded-lg px-4 py-3 max-w-[85%]">
                   <div className="flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
-                    <span className="text-sm text-gray-600">Thinking...</span>
+                    <span className="text-sm text-gray-600 dark:text-slate-400">
+                      Thinking...
+                    </span>
                   </div>
                 </div>
               </div>
@@ -413,7 +427,7 @@ const AIChatWidget = ({
             <div ref={messagesEndRef} />
           </div>
 
-          <div className="border-t border-gray-200 p-4">
+          <div className="border-t border-gray-200 dark:border-slate-700 p-4">
             <div className="flex gap-2">
               <input
                 type="text"
@@ -422,12 +436,12 @@ const AIChatWidget = ({
                 onKeyPress={handleKeyPress}
                 placeholder="Ask me anything..."
                 disabled={isLoading}
-                className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:cursor-not-allowed"
+                className="flex-1 rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-400 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:bg-gray-50 dark:disabled:bg-slate-800 disabled:cursor-not-allowed"
               />
               <button
                 onClick={handleSendMessage}
                 disabled={!inputMessage.trim() || isLoading}
-                className="rounded-md bg-blue-500 px-4 py-2 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                className="rounded-md bg-blue-500 dark:bg-blue-600 px-4 py-2 text-white hover:bg-blue-600 dark:hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
                 aria-label="Send message"
               >
                 {isLoading ? (
@@ -438,18 +452,21 @@ const AIChatWidget = ({
               </button>
             </div>
             <p className="text-xs text-gray-400 mt-2 text-center">
-              💡 Try: "Create 5 tasks for my project" • "Show my overdue tasks" • "Delete completed tasks"
+              💡 Try: "Create 5 tasks for my project" • "Show my overdue tasks"
+              • "Delete completed tasks"
             </p>
           </div>
         </div>
       )}
 
-      <TaskEditDialog 
+      <TaskEditDialog
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         task={
-          editingInfo.messageIndex !== null 
-            ? messages[editingInfo.messageIndex].suggestedActions[editingInfo.actionIndex].data 
+          editingInfo.messageIndex !== null
+            ? messages[editingInfo.messageIndex].suggestedActions[
+                editingInfo.actionIndex
+              ].data
             : null
         }
         onSave={handleEditSave}
@@ -490,7 +507,7 @@ const MultiActionCard = ({
   if (allDeclined) {
     return (
       <div className="border-2 border-gray-300 bg-gray-50 rounded-lg p-3 opacity-60">
-        <div className="flex items-center gap-2 text-gray-600">
+        <div className="flex items-center gap-2 text-gray-600 dark:text-slate-400">
           <XIcon className="h-5 w-5" />
           <span className="font-medium">All actions declined</span>
         </div>
@@ -514,7 +531,7 @@ const MultiActionCard = ({
   if (someFailed) {
     return (
       <div className="border-2 border-gray-300 bg-gray-50 rounded-lg p-3 opacity-60">
-        <div className="flex items-center gap-2 text-gray-600">
+        <div className="flex items-center gap-2 text-gray-600 dark:text-slate-400">
           <XIcon className="h-5 w-5" />
           <span className="font-medium">Some actions failed</span>
         </div>
@@ -530,14 +547,14 @@ const MultiActionCard = ({
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center gap-2">
-          <div className="p-1.5 bg-white rounded-md">
+          <div className="p-1.5 bg-white dark:bg-slate-800 rounded-md">
             <Plus className="h-4 w-4 text-blue-600" />
           </div>
           <span className="font-semibold text-sm">
             {actions.length} Actions Ready
           </span>
         </div>
-        <button className="p-1 hover:bg-white/50 rounded transition-colors">
+        <button className="p-1 hover:bg-white dark:bg-slate-800/50 rounded transition-colors">
           {isExpanded ? (
             <ChevronUp className="h-5 w-5" />
           ) : (
@@ -547,10 +564,13 @@ const MultiActionCard = ({
       </div>
 
       {/* Summary (Always Visible) */}
-      <div className="bg-white rounded-lg p-3 text-sm">
+      <div className="bg-white dark:bg-slate-800 rounded-lg p-3 text-sm">
         <div className="space-y-1">
           {actions.slice(0, 3).map((action, idx) => (
-            <div key={idx} className="flex items-center gap-2 text-gray-700">
+            <div
+              key={idx}
+              className="flex items-center gap-2 text-gray-700 dark:text-slate-300"
+            >
               <span className="text-gray-400">•</span>
               <span className="truncate">
                 {action.type.includes("create") && "🆕"}
@@ -574,7 +594,7 @@ const MultiActionCard = ({
           {actions.map((action, idx) => (
             <div
               key={idx}
-              className="bg-white rounded-lg p-3 border border-gray-200"
+              className="bg-white dark:bg-slate-800 rounded-lg p-3 border border-gray-200 dark:border-slate-700"
             >
               <ActionPreview action={action} />
               {!action.status && (
@@ -587,7 +607,7 @@ const MultiActionCard = ({
                   </button>
                   <button
                     onClick={() => onIndividualDecline(idx)}
-                    className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded px-3 py-1.5 text-xs font-medium"
+                    className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 dark:text-slate-300 rounded px-3 py-1.5 text-xs font-medium"
                   >
                     Decline
                   </button>
@@ -620,7 +640,7 @@ const MultiActionCard = ({
           </button>
           <button
             onClick={onDecline}
-            className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-md px-4 py-2.5 text-sm font-medium transition-colors flex items-center justify-center gap-2"
+            className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 dark:text-slate-300 rounded-md px-4 py-2.5 text-sm font-medium transition-colors flex items-center justify-center gap-2"
           >
             <XIcon className="h-4 w-4" />
             Decline All
@@ -673,7 +693,7 @@ const ActionCard = ({ action, onApprove, onDecline }) => {
   if (action.status === "declined") {
     return (
       <div className="border-2 border-gray-300 bg-gray-50 rounded-lg p-3 opacity-60">
-        <div className="flex items-center gap-2 text-gray-600">
+        <div className="flex items-center gap-2 text-gray-600 dark:text-slate-400">
           <XIcon className="h-5 w-5" />
           <span className="font-medium">Declined</span>
         </div>
@@ -711,11 +731,13 @@ const ActionCard = ({ action, onApprove, onDecline }) => {
       className={`border-2 ${getActionColor()} rounded-lg p-4 space-y-3 shadow-sm`}
     >
       <div className="flex items-center gap-2">
-        <div className="p-1.5 bg-white rounded-md">{getActionIcon()}</div>
+        <div className="p-1.5 bg-white dark:bg-slate-800 rounded-md">
+          {getActionIcon()}
+        </div>
         <span className="font-semibold text-sm">{getActionTitle()}</span>
       </div>
 
-      <div className="bg-white rounded-lg p-3 border border-gray-200">
+      <div className="bg-white dark:bg-slate-800 rounded-lg p-3 border border-gray-200 dark:border-slate-700">
         <ActionPreview action={action} />
       </div>
 
@@ -729,7 +751,7 @@ const ActionCard = ({ action, onApprove, onDecline }) => {
         </button>
         <button
           onClick={onDecline}
-          className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-md px-4 py-2.5 text-sm font-medium flex items-center justify-center gap-2"
+          className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 dark:text-slate-300 rounded-md px-4 py-2.5 text-sm font-medium flex items-center justify-center gap-2"
         >
           <XIcon className="h-4 w-4" />
           Decline
@@ -748,19 +770,23 @@ const ActionPreview = ({ action }) => {
           {action.data.title && (
             <div className="flex">
               <span className="font-medium w-24">Title:</span>
-              <span className="text-gray-700">{action.data.title}</span>
+              <span className="text-gray-700 dark:text-slate-300">
+                {action.data.title}
+              </span>
             </div>
           )}
           {action.data.updates?.title && (
             <div className="flex">
               <span className="font-medium w-24">New Title:</span>
-              <span className="text-gray-700">{action.data.updates.title}</span>
+              <span className="text-gray-700 dark:text-slate-300">
+                {action.data.updates.title}
+              </span>
             </div>
           )}
           {(action.data.category || action.data.updates?.category) && (
             <div className="flex">
               <span className="font-medium w-24">Category:</span>
-              <span className="text-gray-700">
+              <span className="text-gray-700 dark:text-slate-300">
                 {action.data.category || action.data.updates.category}
               </span>
             </div>
@@ -786,7 +812,7 @@ const ActionPreview = ({ action }) => {
           {(action.data.status || action.data.updates?.status) && (
             <div className="flex">
               <span className="font-medium w-24">Status:</span>
-              <span className="text-gray-700 capitalize">
+              <span className="text-gray-700 dark:text-slate-300 capitalize">
                 {action.data.status || action.data.updates.status}
               </span>
             </div>
@@ -799,19 +825,23 @@ const ActionPreview = ({ action }) => {
           {action.data.title && (
             <div className="flex">
               <span className="font-medium w-24">Title:</span>
-              <span className="text-gray-700">{action.data.title}</span>
+              <span className="text-gray-700 dark:text-slate-300">
+                {action.data.title}
+              </span>
             </div>
           )}
           {action.data.updates?.title && (
             <div className="flex">
               <span className="font-medium w-24">New Title:</span>
-              <span className="text-gray-700">{action.data.updates.title}</span>
+              <span className="text-gray-700 dark:text-slate-300">
+                {action.data.updates.title}
+              </span>
             </div>
           )}
           {action.data.updates?.progress !== undefined && (
             <div className="flex">
               <span className="font-medium w-24">Progress:</span>
-              <span className="text-gray-700">
+              <span className="text-gray-700 dark:text-slate-300">
                 {action.data.updates.progress}%
               </span>
             </div>
