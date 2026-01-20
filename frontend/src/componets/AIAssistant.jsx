@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { ENDPOINTS } from "../config/api.js";
 import { TaskEditDialog } from "../Dashboard/TaskEditDialog.jsx";
+import { AIAssistantSkeleton } from "./AIAssistantSkeleton.jsx";
 
 const AIAssistant = ({
   conversations,
@@ -29,6 +30,7 @@ const AIAssistant = ({
   updateConversation,
   getCurrentConversation,
 }) => {
+  const [isInitializing, setIsInitializing] = useState(true);
   const conversation = getCurrentConversation();
   const messages = useMemo(() => conversation?.messages || [], [conversation]);
   const [inputMessage, setInputMessage] = useState("");
@@ -51,6 +53,14 @@ const AIAssistant = ({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [conversations, currentConversationId]);
+
+  useEffect(() => {
+    // Simulate initial load time for AI assistant
+    const timer = setTimeout(() => {
+      setIsInitializing(false);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const executeAction = async (action) => {
     try {
@@ -299,6 +309,10 @@ const AIAssistant = ({
         m.content.toLowerCase().includes(searchQuery.toLowerCase()),
       ),
   );
+
+  if (isInitializing) {
+    return <AIAssistantSkeleton />;
+  }
 
   return (
     <div className="flex h-[calc(100vh-4rem)] gap-4">

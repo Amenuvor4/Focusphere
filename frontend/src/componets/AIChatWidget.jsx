@@ -12,9 +12,11 @@ import {
   ChevronDown,
   ChevronUp,
   Edit,
+  User,
 } from "lucide-react";
 import { ENDPOINTS } from "../config/api.js";
 import { TaskEditDialog } from "../Dashboard/TaskEditDialog.jsx";
+import { AIChatWidgetSkeleton } from "./AIChatWidgetSkeleton.jsx";
 
 const AIChatWidget = ({
   conversations,
@@ -26,6 +28,7 @@ const AIChatWidget = ({
   getCurrentConversation,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
   const conversation = getCurrentConversation();
   const messages = useMemo(() => conversation?.messages || [], [conversation]);
   const [inputMessage, setInputMessage] = useState("");
@@ -44,6 +47,14 @@ const AIChatWidget = ({
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    // Simulate initial load time for widget
+    const timer = setTimeout(() => {
+      setIsInitializing(false);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, []);
 
   const getValidToken = async () => {
     try {
@@ -335,7 +346,9 @@ const AIChatWidget = ({
         </button>
       )}
 
-      {isOpen && (
+      {isOpen && isInitializing && <AIChatWidgetSkeleton />}
+      
+      {isOpen && !isInitializing && (
         <div className="fixed bottom-6 right-6 z-50 flex h-[500px] w-[420px] flex-col rounded-lg bg-white dark:bg-slate-800 shadow-2xl border border-gray-200 dark:border-slate-700">
           <div className="flex items-center justify-between rounded-t-lg bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-3 text-white">
             <div className="flex items-center gap-2">
@@ -353,18 +366,26 @@ const AIChatWidget = ({
 
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {messages.map((message, messageIndex) => (
-              <div key={messageIndex}>
-                <div
-                  className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
-                >
-                  <div
-                    className={`max-w-[85%] rounded-lg px-4 py-2 ${
-                      message.role === "user"
-                        ? "bg-blue-500 text-white"
-                        : "bg-gray-100 text-gray-800"
-                    }`}
-                  >
-                    <p className="text-sm whitespace-pre-wrap">
+              <div key={messageIndex} className="space-y-3">
+                <div className="flex gap-3">
+                  <div className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center ${
+                    message.role === "user"
+                      ? "bg-blue-600 dark:bg-blue-500"
+                      : "bg-gradient-to-br from-blue-500 to-purple-600"
+                  }`}>
+                    {message.role === "user" ? (
+                      <User className="h-4 w-4 text-white" />
+                    ) : (
+                      <Sparkles className="h-3.5 w-3.5 text-white" />
+                    )}
+                  </div>
+
+                  {/* Message Content */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">
+                      {message.role === "user" ? "You" : "Focusphere AI"}
+                    </p>
+                    <p className="text-sm text-gray-800 dark:text-slate-200 whitespace-pre-wrap leading-relaxed">
                       {message.content}
                     </p>
                   </div>
@@ -375,7 +396,7 @@ const AIChatWidget = ({
                   message.suggestedActions.length > 0 &&
                   (message.suggestedActions.length === 1 ? (
                     // Single action - show normally
-                    <div className="mt-3">
+                    <div className="ml-10">
                       <ActionCard
                         action={message.suggestedActions[0]}
                         onApprove={() =>
@@ -388,8 +409,7 @@ const AIChatWidget = ({
                     </div>
                   ) : (
                     // Multiple actions - show collapsible
-
-                    <div className="mt-3">
+                    <div className="ml-10">
                       <MultiActionCard
                         actions={message.suggestedActions}
                         onApprove={() => handleBulkApproval(messageIndex, true)}
@@ -412,10 +432,16 @@ const AIChatWidget = ({
             ))}
 
             {isLoading && (
-              <div className="flex justify-start">
-                <div className="bg-gray-100 rounded-lg px-4 py-3 max-w-[85%]">
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                  <Sparkles className="h-3.5 w-3.5 text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">
+                    Focusphere AI
+                  </p>
                   <div className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                    <Loader2 className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" />
                     <span className="text-sm text-gray-600 dark:text-slate-400">
                       Thinking...
                     </span>
@@ -427,21 +453,21 @@ const AIChatWidget = ({
             <div ref={messagesEndRef} />
           </div>
 
-          <div className="border-t border-gray-200 dark:border-slate-700 p-4">
-            <div className="flex gap-2">
+          <div className="border-t border-gray-200 dark:border-slate-700 p-4 bg-gray-50 dark:bg-slate-900/50">
+            <div className="flex gap-2 items-center">
               <input
                 type="text"
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Ask me anything..."
+                placeholder="Message Focusphere AI..."
                 disabled={isLoading}
-                className="flex-1 rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-400 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:bg-gray-50 dark:disabled:bg-slate-800 disabled:cursor-not-allowed"
+                className="flex-1 rounded-full border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-400 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:bg-gray-100 dark:disabled:bg-slate-800 disabled:cursor-not-allowed"
               />
               <button
                 onClick={handleSendMessage}
                 disabled={!inputMessage.trim() || isLoading}
-                className="rounded-md bg-blue-500 dark:bg-blue-600 px-4 py-2 text-white hover:bg-blue-600 dark:hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                className="p-2.5 rounded-full bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-gray-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors"
                 aria-label="Send message"
               >
                 {isLoading ? (
@@ -451,9 +477,8 @@ const AIChatWidget = ({
                 )}
               </button>
             </div>
-            <p className="text-xs text-gray-400 mt-2 text-center">
-              💡 Try: "Create 5 tasks for my project" • "Show my overdue tasks"
-              • "Delete completed tasks"
+            <p className="text-xs text-gray-400 dark:text-slate-500 mt-2 text-center">
+              💡 Try: "Create 5 tasks" • "Show overdue tasks" • "Delete completed"
             </p>
           </div>
         </div>
@@ -493,8 +518,8 @@ const MultiActionCard = ({
 
   if (allApproved) {
     return (
-      <div className="border-2 border-green-500 bg-green-50 rounded-lg p-3">
-        <div className="flex items-center gap-2 text-green-700">
+      <div className="border-2 border-green-500 dark:border-green-700 bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
+        <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
           <Check className="h-5 w-5" />
           <span className="font-medium">
             All {actions.length} actions completed!
@@ -506,7 +531,7 @@ const MultiActionCard = ({
 
   if (allDeclined) {
     return (
-      <div className="border-2 border-gray-300 bg-gray-50 rounded-lg p-3 opacity-60">
+      <div className="border-2 border-gray-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-800/50 rounded-lg p-3 opacity-60">
         <div className="flex items-center gap-2 text-gray-600 dark:text-slate-400">
           <XIcon className="h-5 w-5" />
           <span className="font-medium">All actions declined</span>
@@ -517,8 +542,8 @@ const MultiActionCard = ({
 
   if (allProcessing) {
     return (
-      <div className="border-2 border-blue-500 bg-blue-50 rounded-lg p-3 animate-pulse">
-        <div className="flex items-center gap-2 text-blue-700">
+      <div className="border-2 border-blue-500 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 animate-pulse">
+        <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
           <Loader2 className="h-5 w-5 animate-spin" />
           <span className="font-medium">
             Processing {actions.length} actions...
@@ -530,7 +555,7 @@ const MultiActionCard = ({
 
   if (someFailed) {
     return (
-      <div className="border-2 border-gray-300 bg-gray-50 rounded-lg p-3 opacity-60">
+      <div className="border-2 border-gray-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-800/50 rounded-lg p-3 opacity-60">
         <div className="flex items-center gap-2 text-gray-600 dark:text-slate-400">
           <XIcon className="h-5 w-5" />
           <span className="font-medium">Some actions failed</span>
@@ -540,38 +565,38 @@ const MultiActionCard = ({
   }
 
   return (
-    <div className="border-2 border-blue-200 bg-blue-50 rounded-lg p-4 space-y-3">
+    <div className="border-2 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 space-y-3">
       {/* Header */}
       <div
         className="flex items-center justify-between cursor-pointer"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center gap-2">
-          <div className="p-1.5 bg-white dark:bg-slate-800 rounded-md">
-            <Plus className="h-4 w-4 text-blue-600" />
+          <div className="p-1.5 bg-white dark:bg-slate-700 rounded-md">
+            <Plus className="h-4 w-4 text-blue-600 dark:text-blue-400" />
           </div>
-          <span className="font-semibold text-sm">
+          <span className="font-semibold text-sm text-gray-900 dark:text-white">
             {actions.length} Actions Ready
           </span>
         </div>
-        <button className="p-1 hover:bg-white dark:bg-slate-800/50 rounded transition-colors">
+        <button className="p-1 hover:bg-white dark:hover:bg-slate-700 rounded transition-colors">
           {isExpanded ? (
-            <ChevronUp className="h-5 w-5" />
+            <ChevronUp className="h-5 w-5 text-gray-600 dark:text-slate-400" />
           ) : (
-            <ChevronDown className="h-5 w-5" />
+            <ChevronDown className="h-5 w-5 text-gray-600 dark:text-slate-400" />
           )}
         </button>
       </div>
 
       {/* Summary (Always Visible) */}
-      <div className="bg-white dark:bg-slate-800 rounded-lg p-3 text-sm">
+      <div className="bg-white dark:bg-slate-700 rounded-lg p-3 text-sm">
         <div className="space-y-1">
           {actions.slice(0, 3).map((action, idx) => (
             <div
               key={idx}
               className="flex items-center gap-2 text-gray-700 dark:text-slate-300"
             >
-              <span className="text-gray-400">•</span>
+              <span className="text-gray-400 dark:text-slate-500">•</span>
               <span className="truncate">
                 {action.type.includes("create") && "🆕"}
                 {action.type.includes("update") && "✏️"}
@@ -581,7 +606,7 @@ const MultiActionCard = ({
             </div>
           ))}
           {actions.length > 3 && (
-            <div className="text-gray-500 text-xs">
+            <div className="text-gray-500 dark:text-slate-400 text-xs">
               +{actions.length - 3} more...
             </div>
           )}
@@ -594,32 +619,32 @@ const MultiActionCard = ({
           {actions.map((action, idx) => (
             <div
               key={idx}
-              className="bg-white dark:bg-slate-800 rounded-lg p-3 border border-gray-200 dark:border-slate-700"
+              className="bg-white dark:bg-slate-700 rounded-lg p-3 border border-gray-200 dark:border-slate-600"
             >
               <ActionPreview action={action} />
               {!action.status && (
                 <div className="flex gap-2 mt-2">
                   <button
                     onClick={() => onIndividualApprove(idx)}
-                    className="flex-1 bg-green-500 hover:bg-green-600 text-white rounded px-3 py-1.5 text-xs font-medium"
+                    className="flex-1 bg-green-500 dark:bg-green-600 hover:bg-green-600 dark:hover:bg-green-700 text-white rounded px-3 py-1.5 text-xs font-medium transition-colors"
                   >
                     Accept
                   </button>
                   <button
                     onClick={() => onIndividualDecline(idx)}
-                    className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 dark:text-slate-300 rounded px-3 py-1.5 text-xs font-medium"
+                    className="flex-1 bg-gray-300 dark:bg-slate-600 hover:bg-gray-400 dark:hover:bg-slate-500 text-gray-700 dark:text-slate-200 rounded px-3 py-1.5 text-xs font-medium transition-colors"
                   >
                     Decline
                   </button>
                 </div>
               )}
               {action.status === "approved" && (
-                <div className="text-green-600 text-xs mt-2 flex items-center gap-1">
+                <div className="text-green-600 dark:text-green-400 text-xs mt-2 flex items-center gap-1">
                   <Check className="h-3 w-3" /> Completed
                 </div>
               )}
               {action.status === "failed" && (
-                <div className="text-red-600 text-xs mt-2">
+                <div className="text-red-600 dark:text-red-400 text-xs mt-2">
                   Failed: {action.error}
                 </div>
               )}
@@ -633,14 +658,14 @@ const MultiActionCard = ({
         <div className="flex gap-2 pt-2">
           <button
             onClick={onApprove}
-            className="flex-1 bg-green-500 hover:bg-green-600 text-white rounded-md px-4 py-2.5 text-sm font-medium transition-colors flex items-center justify-center gap-2"
+            className="flex-1 bg-green-500 dark:bg-green-600 hover:bg-green-600 dark:hover:bg-green-700 text-white rounded-md px-4 py-2.5 text-sm font-medium transition-colors flex items-center justify-center gap-2"
           >
             <Check className="h-4 w-4" />
             Accept All
           </button>
           <button
             onClick={onDecline}
-            className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 dark:text-slate-300 rounded-md px-4 py-2.5 text-sm font-medium transition-colors flex items-center justify-center gap-2"
+            className="flex-1 bg-gray-300 dark:bg-slate-600 hover:bg-gray-400 dark:hover:bg-slate-500 text-gray-700 dark:text-slate-200 rounded-md px-4 py-2.5 text-sm font-medium transition-colors flex items-center justify-center gap-2"
           >
             <XIcon className="h-4 w-4" />
             Decline All
@@ -654,17 +679,17 @@ const MultiActionCard = ({
 // Single Action Card
 const ActionCard = ({ action, onApprove, onDecline }) => {
   const getActionIcon = () => {
-    if (action.type.includes("create")) return <Plus className="h-4 w-4" />;
-    if (action.type.includes("update")) return <Edit className="h-4 w-4" />;
-    if (action.type.includes("delete")) return <Trash2 className="h-4 w-4" />;
+    if (action.type.includes("create")) return <Plus className="h-4 w-4 text-green-600 dark:text-green-400" />;
+    if (action.type.includes("update")) return <Edit className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />;
+    if (action.type.includes("delete")) return <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />;
     return null;
   };
 
   const getActionColor = () => {
-    if (action.type.includes("create")) return "border-green-200 bg-green-50";
-    if (action.type.includes("update")) return "border-yellow-200 bg-yellow-50";
-    if (action.type.includes("delete")) return "border-red-200 bg-red-50";
-    return "border-blue-200 bg-blue-50";
+    if (action.type.includes("create")) return "border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20";
+    if (action.type.includes("update")) return "border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20";
+    if (action.type.includes("delete")) return "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20";
+    return "border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20";
   };
 
   const getActionTitle = () => {
@@ -681,8 +706,8 @@ const ActionCard = ({ action, onApprove, onDecline }) => {
 
   if (action.status === "approved") {
     return (
-      <div className="border-2 border-green-500 bg-green-50 rounded-lg p-3">
-        <div className="flex items-center gap-2 text-green-700">
+      <div className="border-2 border-green-500 dark:border-green-700 bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
+        <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
           <Check className="h-5 w-5" />
           <span className="font-medium">✅ Completed!</span>
         </div>
@@ -692,7 +717,7 @@ const ActionCard = ({ action, onApprove, onDecline }) => {
 
   if (action.status === "declined") {
     return (
-      <div className="border-2 border-gray-300 bg-gray-50 rounded-lg p-3 opacity-60">
+      <div className="border-2 border-gray-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-800/50 rounded-lg p-3 opacity-60">
         <div className="flex items-center gap-2 text-gray-600 dark:text-slate-400">
           <XIcon className="h-5 w-5" />
           <span className="font-medium">Declined</span>
@@ -703,8 +728,8 @@ const ActionCard = ({ action, onApprove, onDecline }) => {
 
   if (action.status === "processing") {
     return (
-      <div className="border-2 border-blue-500 bg-blue-50 rounded-lg p-3 animate-pulse">
-        <div className="flex items-center gap-2 text-blue-700">
+      <div className="border-2 border-blue-500 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 animate-pulse">
+        <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
           <Loader2 className="h-5 w-5 animate-spin" />
           <span className="font-medium">Processing...</span>
         </div>
@@ -714,8 +739,8 @@ const ActionCard = ({ action, onApprove, onDecline }) => {
 
   if (action.status === "failed") {
     return (
-      <div className="border-2 border-red-500 bg-red-50 rounded-lg p-3">
-        <div className="flex items-center gap-2 text-red-700">
+      <div className="border-2 border-red-500 dark:border-red-700 bg-red-50 dark:bg-red-900/20 rounded-lg p-3">
+        <div className="flex items-center gap-2 text-red-700 dark:text-red-300">
           <AlertCircle className="h-5 w-5" />
           <div>
             <div className="font-medium">Failed</div>
@@ -731,27 +756,27 @@ const ActionCard = ({ action, onApprove, onDecline }) => {
       className={`border-2 ${getActionColor()} rounded-lg p-4 space-y-3 shadow-sm`}
     >
       <div className="flex items-center gap-2">
-        <div className="p-1.5 bg-white dark:bg-slate-800 rounded-md">
+        <div className="p-1.5 bg-white dark:bg-slate-700 rounded-md shadow-sm">
           {getActionIcon()}
         </div>
-        <span className="font-semibold text-sm">{getActionTitle()}</span>
+        <span className="font-semibold text-sm text-gray-900 dark:text-white">{getActionTitle()}</span>
       </div>
 
-      <div className="bg-white dark:bg-slate-800 rounded-lg p-3 border border-gray-200 dark:border-slate-700">
+      <div className="bg-white dark:bg-slate-700 rounded-lg p-3 border border-gray-200 dark:border-slate-600">
         <ActionPreview action={action} />
       </div>
 
       <div className="flex gap-2 pt-2">
         <button
           onClick={onApprove}
-          className="flex-1 bg-green-500 hover:bg-green-600 text-white rounded-md px-4 py-2.5 text-sm font-medium flex items-center justify-center gap-2"
+          className="flex-1 bg-green-500 dark:bg-green-600 hover:bg-green-600 dark:hover:bg-green-700 text-white rounded-md px-4 py-2.5 text-sm font-medium flex items-center justify-center gap-2 transition-colors"
         >
           <Check className="h-4 w-4" />
           Accept
         </button>
         <button
           onClick={onDecline}
-          className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 dark:text-slate-300 rounded-md px-4 py-2.5 text-sm font-medium flex items-center justify-center gap-2"
+          className="flex-1 bg-gray-300 dark:bg-slate-600 hover:bg-gray-400 dark:hover:bg-slate-500 text-gray-700 dark:text-slate-200 rounded-md px-4 py-2.5 text-sm font-medium flex items-center justify-center gap-2 transition-colors"
         >
           <XIcon className="h-4 w-4" />
           Decline
@@ -769,7 +794,7 @@ const ActionPreview = ({ action }) => {
         <>
           {action.data.title && (
             <div className="flex">
-              <span className="font-medium w-24">Title:</span>
+              <span className="font-medium w-24 text-gray-600 dark:text-slate-400">Title:</span>
               <span className="text-gray-700 dark:text-slate-300">
                 {action.data.title}
               </span>
@@ -777,7 +802,7 @@ const ActionPreview = ({ action }) => {
           )}
           {action.data.updates?.title && (
             <div className="flex">
-              <span className="font-medium w-24">New Title:</span>
+              <span className="font-medium w-24 text-gray-600 dark:text-slate-400">New Title:</span>
               <span className="text-gray-700 dark:text-slate-300">
                 {action.data.updates.title}
               </span>
@@ -785,7 +810,7 @@ const ActionPreview = ({ action }) => {
           )}
           {(action.data.category || action.data.updates?.category) && (
             <div className="flex">
-              <span className="font-medium w-24">Category:</span>
+              <span className="font-medium w-24 text-gray-600 dark:text-slate-400">Category:</span>
               <span className="text-gray-700 dark:text-slate-300">
                 {action.data.category || action.data.updates.category}
               </span>
@@ -793,16 +818,16 @@ const ActionPreview = ({ action }) => {
           )}
           {(action.data.priority || action.data.updates?.priority) && (
             <div className="flex">
-              <span className="font-medium w-24">Priority:</span>
+              <span className="font-medium w-24 text-gray-600 dark:text-slate-400">Priority:</span>
               <span
                 className={`capitalize ${
                   (action.data.priority || action.data.updates?.priority) ===
                   "high"
-                    ? "text-red-600 font-semibold"
+                    ? "text-red-600 dark:text-red-400 font-semibold"
                     : (action.data.priority ||
                           action.data.updates?.priority) === "medium"
-                      ? "text-yellow-600"
-                      : "text-green-600"
+                      ? "text-yellow-600 dark:text-yellow-400"
+                      : "text-green-600 dark:text-green-400"
                 }`}
               >
                 {action.data.priority || action.data.updates.priority}
@@ -811,7 +836,7 @@ const ActionPreview = ({ action }) => {
           )}
           {(action.data.status || action.data.updates?.status) && (
             <div className="flex">
-              <span className="font-medium w-24">Status:</span>
+              <span className="font-medium w-24 text-gray-600 dark:text-slate-400">Status:</span>
               <span className="text-gray-700 dark:text-slate-300 capitalize">
                 {action.data.status || action.data.updates.status}
               </span>
@@ -824,7 +849,7 @@ const ActionPreview = ({ action }) => {
         <>
           {action.data.title && (
             <div className="flex">
-              <span className="font-medium w-24">Title:</span>
+              <span className="font-medium w-24 text-gray-600 dark:text-slate-400">Title:</span>
               <span className="text-gray-700 dark:text-slate-300">
                 {action.data.title}
               </span>
@@ -832,7 +857,7 @@ const ActionPreview = ({ action }) => {
           )}
           {action.data.updates?.title && (
             <div className="flex">
-              <span className="font-medium w-24">New Title:</span>
+              <span className="font-medium w-24 text-gray-600 dark:text-slate-400">New Title:</span>
               <span className="text-gray-700 dark:text-slate-300">
                 {action.data.updates.title}
               </span>
@@ -840,7 +865,7 @@ const ActionPreview = ({ action }) => {
           )}
           {action.data.updates?.progress !== undefined && (
             <div className="flex">
-              <span className="font-medium w-24">Progress:</span>
+              <span className="font-medium w-24 text-gray-600 dark:text-slate-400">Progress:</span>
               <span className="text-gray-700 dark:text-slate-300">
                 {action.data.updates.progress}%
               </span>
