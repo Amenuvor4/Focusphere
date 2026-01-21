@@ -13,12 +13,17 @@
   :root {
     --background: 255 255 255; /* White */
     --foreground: 31 41 55; /* Gray 800 */
+    --scrollbar-track: transparent;
+    --scrollbar-thumb: rgba(156, 163, 175, 0.5); /* Gray 400 */
+    --scrollbar-thumb-hover: rgba(107, 114, 128, 0.7); /* Gray 500 */
   }
 
   /* Target the .dark class applied to <html> */
   .dark {
     --background: 15 23 42; /* Slate 950 */
     --foreground: 248 250 252; /* Slate 50 */
+    --scrollbar-thumb: rgba(100, 116, 139, 0.4); /* Slate 500 */
+    --scrollbar-thumb-hover: rgba(148, 163, 184, 0.6); /* Slate 400 */
   }
 
   body {
@@ -28,5 +33,36 @@
     margin: 0;
     padding: 0;
     overflow-x: hidden;
+  }
+
+  /* Custom Scrollbar Styles */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  }
+
+  /* Webkit browsers (Chrome, Safari, Edge) */
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+    border-radius: 3px;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 3px;
+    transition: background 0.2s ease;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+  }
+
+  *::-webkit-scrollbar-corner {
+    background: transparent;
   }
 }

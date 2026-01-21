@@ -22,11 +22,42 @@ import {
   ChevronUp,
   X,
   MoreHorizontal,
+  RotateCcw,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { ENDPOINTS } from "../config/api.js";
 import { TaskEditDialog } from "../Dashboard/TaskEditDialog.jsx";
 import { AIAssistantSkeleton } from "./AIAssistantSkeleton.jsx";
+
+const TypeWriter = ({ content, speed = 15, onComplete }) => {
+  const [displayedContent, setDisplayedContent] = useState("");
+  const [isComplete, setIsComplete] = useState(false);
+
+  useEffect(() => {
+    if (isComplete) return;
+
+    let currentIndex = 0;
+    const timer = setInterval(() => {
+      if (currentIndex < content.length) {
+        setDisplayedContent(content.slice(0, currentIndex + 1));
+        currentIndex++;
+      } else {
+        clearInterval(timer);
+        setIsComplete(true);
+        onComplete?.();
+      }
+    }, speed);
+
+    return () => clearInterval(timer);
+  }, [content, speed, onComplete, isComplete]);
+
+  return (
+    <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 prose-headings:my-2 prose-strong:text-gray-900 dark:prose-strong:text-white">
+      <ReactMarkdown>{displayedContent}</ReactMarkdown>
+      {!isComplete && <span className="inline-block w-0.5 h-4 bg-blue-600 dark:bg-blue-400 ml-0.5 animate-pulse" />}
+    </div>
+  );
+};
 
 const AIAssistant = ({
   conversations,
@@ -46,7 +77,10 @@ const AIAssistant = ({
   const [selectedImage, setSelectedImage] = useState(null);
   const [smartSuggestions, setSmartSuggestions] = useState([]);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+  const [typingMessageId, setTypingMessageId] = useState(null);
   const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
   const fileInputRef = useRef(null);
 
   const getValidToken = async () => {
@@ -83,9 +117,24 @@ const AIAssistant = ({
     }
   }, []);
 
+  const handleScroll = useCallback(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const { scrollTop, scrollHeight, clientHeight } = container;
+    const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+    setShouldAutoScroll(isNearBottom);
+  }, []);
+
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [conversations, currentConversationId]);
+    if (shouldAutoScroll) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, shouldAutoScroll]);
+
+  useEffect(() => {
+    setShouldAutoScroll(true);
+  }, [currentConversationId]);
 
   useEffect(() => {
     // Simulate initial load time for AI assistant
@@ -317,12 +366,16 @@ const AIAssistant = ({
 
       const data = await response.json();
 
+      const messageId = Date.now();
       const aiMessage = {
+        id: messageId,
         role: "assistant",
         content: data.response.message,
         suggestedActions: data.response.suggestedActions || [],
+        isNew: true,
       };
 
+      setTypingMessageId(messageId);
       const updatePayload = { messages: [...newMessages, aiMessage] };
 
       if (isFirstMessage && data.suggestedTitle) {
@@ -334,8 +387,66 @@ const AIAssistant = ({
       const errorMessage = {
         role: "assistant",
         content: "Sorry, I'm having trouble right now. Please try again.",
+        isError: true,
       };
       updateConversation({ messages: [...newMessages, errorMessage] });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRetry = async (messageIndex) => {
+    const conversation = getCurrentConversation();
+    const userMessageIndex = messageIndex - 1;
+    if (userMessageIndex < 0) return;
+
+    const userMessage = conversation.messages[userMessageIndex];
+    if (userMessage?.role !== "user") return;
+
+    const messagesBeforeError = conversation.messages.slice(0, messageIndex);
+    updateConversation({ messages: messagesBeforeError });
+    setIsLoading(true);
+
+    try {
+      const token = await getValidToken();
+      if (!token) throw new Error("Not authenticated");
+
+      const recentHistory = messagesBeforeError.slice(-10).map((m) => ({
+        role: m.role,
+        content: m.content,
+      }));
+
+      const response = await fetch(ENDPOINTS.AI.CHAT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          message: userMessage.content,
+          conversationHistory: recentHistory,
+          isNewChat: messagesBeforeError.length === 1,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to get AI response");
+
+      const data = await response.json();
+      const aiMessage = {
+        role: "assistant",
+        content: data.response.message,
+        suggestedActions: data.response.suggestedActions || [],
+      };
+
+      updateConversation({ messages: [...messagesBeforeError, aiMessage] });
+    } catch (error) {
+      console.error("Retry failed:", error);
+      const errorMessage = {
+        role: "assistant",
+        content: "Sorry, I'm still having trouble. Please try again later.",
+        isError: true,
+      };
+      updateConversation({ messages: [...messagesBeforeError, errorMessage] });
     } finally {
       setIsLoading(false);
     }
@@ -381,12 +492,16 @@ const AIAssistant = ({
 
       const data = await response.json();
 
+      const messageId = Date.now();
       const aiMessage = {
+        id: messageId,
         role: "assistant",
         content: data.response.message,
         suggestedActions: data.response.suggestedActions || [],
+        isNew: true,
       };
 
+      setTypingMessageId(messageId);
       const updatePayload = { messages: [...newMessages, aiMessage] };
       if (isFirstMessage && data.suggestedTitle) {
         updatePayload.title = data.suggestedTitle;
@@ -397,6 +512,7 @@ const AIAssistant = ({
       const errorMessage = {
         role: "assistant",
         content: "Sorry, I'm having trouble right now. Please try again.",
+        isError: true,
       };
       updateConversation({ messages: [...newMessages, errorMessage] });
     } finally {
@@ -493,7 +609,11 @@ const AIAssistant = ({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6">
+        <div
+          ref={messagesContainerRef}
+          onScroll={handleScroll}
+          className="flex-1 overflow-y-auto p-6"
+        >
           {!conversation?.messages.length ? (
             /* Welcome Section - Matches Skeleton Layout */
             <div className="flex flex-col items-center justify-center space-y-6">
@@ -599,11 +719,35 @@ const AIAssistant = ({
                     </div>
                   ) : (
                     <div className="flex gap-4">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                        <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${message.isError ? "bg-red-100 dark:bg-red-900/30" : "bg-blue-100 dark:bg-blue-900/30"}`}>
+                        {message.isError ? (
+                          <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                        ) : (
+                          <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        )}
                       </div>
-                      <div className="flex-1 pt-1 prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 prose-headings:my-2 prose-strong:text-gray-900 dark:prose-strong:text-white">
-                        <ReactMarkdown>{message.content}</ReactMarkdown>
+                      <div className="flex-1 pt-1">
+                        {message.isNew && message.id === typingMessageId ? (
+                          <TypeWriter
+                            content={message.content}
+                            speed={12}
+                            onComplete={() => setTypingMessageId(null)}
+                          />
+                        ) : (
+                          <div className={`prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 prose-headings:my-2 prose-strong:text-gray-900 dark:prose-strong:text-white ${message.isError ? "text-red-600 dark:text-red-400" : ""}`}>
+                            <ReactMarkdown>{message.content}</ReactMarkdown>
+                          </div>
+                        )}
+                        {message.isError && (
+                          <button
+                            onClick={() => handleRetry(messageIndex)}
+                            disabled={isLoading}
+                            className="mt-2 flex items-center gap-1.5 text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 disabled:opacity-50"
+                          >
+                            <RotateCcw className="h-3.5 w-3.5" />
+                            Retry
+                          </button>
+                        )}
                       </div>
                     </div>
                   )}
