@@ -6,7 +6,7 @@ import { useTheme } from "../context/ThemeContext";
 
 export function Settings() {
   const { theme, toggleTheme } = useTheme();
-  const [activeTab, setActiveTab] = useState("account");
+  const [activeTab, setActiveTab] = useState("profile");
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
