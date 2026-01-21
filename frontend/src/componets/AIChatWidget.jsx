@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import {
   X,
   Send,
@@ -38,6 +38,8 @@ const AIChatWidget = ({
     actionIndex: null,
   });
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [smartSuggestions, setSmartSuggestions] = useState([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -48,6 +50,30 @@ const AIChatWidget = ({
     scrollToBottom();
   }, [messages]);
 
+  // Fetch smart suggestions when widget opens
+  const fetchSmartSuggestions = useCallback(async () => {
+    try {
+      setSuggestionsLoading(true);
+      const token = localStorage.getItem("accessToken");
+      if (!token) return;
+
+      const response = await fetch(ENDPOINTS.AI.SMART_SUGGESTIONS, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setSmartSuggestions(data.suggestions || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch smart suggestions:", error);
+    } finally {
+      setSuggestionsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     // Simulate initial load time for widget
     const timer = setTimeout(() => {
@@ -55,6 +81,13 @@ const AIChatWidget = ({
     }, 800);
     return () => clearTimeout(timer);
   }, []);
+
+  // Fetch suggestions when widget opens and no messages exist
+  useEffect(() => {
+    if (isOpen && !isInitializing && messages.length === 0) {
+      fetchSmartSuggestions();
+    }
+  }, [isOpen, isInitializing, messages.length, fetchSmartSuggestions]);
 
   const getValidToken = async () => {
     try {
@@ -100,6 +133,7 @@ const AIChatWidget = ({
           method = "POST";
           body = JSON.stringify({
             ...action.data,
+            description: action.data.description || `Goal: ${action.data.title}`,
             progress: 0,
             tasks: [],
           });
@@ -253,6 +287,7 @@ const AIChatWidget = ({
     if (!inputMessage.trim() || isLoading) return;
 
     const userMessage = inputMessage.trim();
+    const isFirstMessage = messages.length === 0;
     setInputMessage("");
 
     const newMessages = [...messages, { role: "user", content: userMessage }];
@@ -278,13 +313,13 @@ const AIChatWidget = ({
         body: JSON.stringify({
           message: userMessage,
           conversationHistory: recentHistory,
+          isNewChat: isFirstMessage,
         }),
       });
 
       if (!response.ok) throw new Error("Failed to get AI response");
 
       const data = await response.json();
-      console.log(data);
 
       const aiMessage = {
         role: "assistant",
@@ -292,17 +327,18 @@ const AIChatWidget = ({
         suggestedActions: data.response.suggestedActions || [],
       };
 
+      // Update conversation with messages and title if it's a new chat
       const updates = { messages: [...newMessages, aiMessage] };
-      if (messages.length === 0 && data.suggestedTitle) {
-        updates.title = data.suggestedTitle; // aiService generates title
+      if (isFirstMessage && data.suggestedTitle) {
+        updates.title = data.suggestedTitle;
       }
 
-      updateConversation({ messages: [...newMessages, aiMessage] });
+      updateConversation(updates);
     } catch (error) {
       console.error("AI chat error:", error);
       updateConversation({
         messages: [
-          ...messages,
+          ...newMessages,
           {
             role: "assistant",
             content: "Sorry, I'm having trouble right now. Please try again.",
@@ -318,6 +354,68 @@ const AIChatWidget = ({
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
+    }
+  };
+
+  // Auto-send when clicking a suggestion card
+  const handleSuggestionClick = async (prompt) => {
+    if (isLoading) return;
+
+    const isFirstMessage = messages.length === 0;
+    const newMessages = [...messages, { role: "user", content: prompt }];
+    updateConversation({ messages: newMessages });
+    setIsLoading(true);
+
+    try {
+      const token = await getValidToken();
+      if (!token) throw new Error("Not authenticated");
+
+      const recentHistory = newMessages.slice(-10).map((m) => ({
+        role: m.role,
+        content: m.content,
+      }));
+
+      const response = await fetch(ENDPOINTS.AI.CHAT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          message: prompt,
+          conversationHistory: recentHistory,
+          isNewChat: isFirstMessage,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to get AI response");
+
+      const data = await response.json();
+
+      const aiMessage = {
+        role: "assistant",
+        content: data.response.message,
+        suggestedActions: data.response.suggestedActions || [],
+      };
+
+      const updates = { messages: [...newMessages, aiMessage] };
+      if (isFirstMessage && data.suggestedTitle) {
+        updates.title = data.suggestedTitle;
+      }
+      updateConversation(updates);
+    } catch (error) {
+      console.error("AI chat error:", error);
+      updateConversation({
+        messages: [
+          ...newMessages,
+          {
+            role: "assistant",
+            content: "Sorry, I'm having trouble right now. Please try again.",
+          },
+        ],
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -364,93 +462,156 @@ const AIChatWidget = ({
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {messages.map((message, messageIndex) => (
-              <div key={messageIndex} className="space-y-3">
-                <div className="flex gap-3">
-                  <div className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center ${
-                    message.role === "user"
-                      ? "bg-blue-600 dark:bg-blue-500"
-                      : "bg-gradient-to-br from-blue-500 to-purple-600"
-                  }`}>
-                    {message.role === "user" ? (
-                      <User className="h-4 w-4 text-white" />
-                    ) : (
-                      <Sparkles className="h-3.5 w-3.5 text-white" />
-                    )}
-                  </div>
-
-                  {/* Message Content */}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">
-                      {message.role === "user" ? "You" : "Focusphere AI"}
-                    </p>
-                    <p className="text-sm text-gray-800 dark:text-slate-200 whitespace-pre-wrap leading-relaxed">
-                      {message.content}
-                    </p>
-                  </div>
+          <div className="flex-1 overflow-y-auto p-4">
+            {/* Welcome Screen - Show when no messages */}
+            {messages.length === 0 && !isLoading ? (
+              /* Welcome Section - Matches Skeleton Layout */
+              <div className="flex flex-col items-center justify-center h-full space-y-4">
+                {/* Icon */}
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <Sparkles className="h-6 w-6 text-white" />
                 </div>
 
-                {/* Action Container - Single or Multiple */}
-                {message.suggestedActions &&
-                  message.suggestedActions.length > 0 &&
-                  (message.suggestedActions.length === 1 ? (
-                    // Single action - show normally
-                    <div className="ml-10">
-                      <ActionCard
-                        action={message.suggestedActions[0]}
-                        onApprove={() =>
-                          handleActionApproval(messageIndex, 0, true)
-                        }
-                        onDecline={() =>
-                          handleActionApproval(messageIndex, 0, false)
-                        }
-                      />
-                    </div>
-                  ) : (
-                    // Multiple actions - show collapsible
-                    <div className="ml-10">
-                      <MultiActionCard
-                        actions={message.suggestedActions}
-                        onApprove={() => handleBulkApproval(messageIndex, true)}
-                        onDecline={() =>
-                          handleBulkApproval(messageIndex, false)
-                        }
-                        onIndividualApprove={(idx) =>
-                          handleActionApproval(messageIndex, idx, true)
-                        }
-                        onIndividualDecline={(idx) =>
-                          handleActionApproval(messageIndex, idx, false)
-                        }
-                        onIndividualEdit={(aIdx) =>
-                          openEditModal(messageIndex, aIdx)
-                        }
-                      />
-                    </div>
-                  ))}
-              </div>
-            ))}
-
-            {isLoading && (
-              <div className="flex gap-3">
-                <div className="flex-shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                  <Sparkles className="h-3.5 w-3.5 text-white" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">
+                {/* Title and Description */}
+                <div className="text-center space-y-1 w-full">
+                  <h2 className="text-lg font-bold text-gray-800 dark:text-white">
                     Focusphere AI
+                  </h2>
+                  <p className="text-sm text-gray-500 dark:text-slate-400">
+                    How can I help you today?
                   </p>
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" />
-                    <span className="text-sm text-gray-600 dark:text-slate-400">
-                      Thinking...
-                    </span>
-                  </div>
                 </div>
+
+                {/* Suggestion Cards - 2x2 Grid */}
+                <div className="grid grid-cols-2 gap-2 w-full">
+                  {suggestionsLoading ? (
+                    // Loading skeleton for suggestions
+                    <>
+                      {[1, 2, 3, 4].map((i) => (
+                        <div
+                          key={i}
+                          className="bg-gray-100 dark:bg-slate-700/50 border-2 border-gray-200 dark:border-slate-700 rounded-lg p-3 space-y-1.5 animate-pulse"
+                        >
+                          <div className="h-4 w-20 bg-gray-200 dark:bg-slate-600 rounded" />
+                          <div className="h-3 w-full bg-gray-200 dark:bg-slate-600 rounded" />
+                        </div>
+                      ))}
+                    </>
+                  ) : (
+                    (smartSuggestions.length > 0 ? smartSuggestions : [
+                      { title: "Create my tasks", description: "Generate 5 tasks for today", prompt: "Create 5 productive tasks for me to work on today" },
+                      { title: "Set a new goal", description: "Help me define a goal", prompt: "Help me create a SMART goal for improving my productivity this month" },
+                      { title: "Review progress", description: "Analyze my tasks", prompt: "Analyze my current tasks and goals, and give me a progress summary" },
+                      { title: "Plan schedule", description: "Organize priorities", prompt: "Help me prioritize and organize my pending tasks for maximum productivity" }
+                    ]).map((suggestion, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => handleSuggestionClick(suggestion.prompt)}
+                        disabled={isLoading}
+                        className="bg-gray-100 dark:bg-slate-700/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 border-2 border-gray-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-700 rounded-lg p-3 text-left transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <p className="font-semibold text-sm text-gray-800 dark:text-white mb-0.5">
+                          {suggestion.title}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-slate-400 line-clamp-1">
+                          {suggestion.description}
+                        </p>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+            ) : (
+              /* Conversation Messages */
+              <div className="space-y-4">
+                {messages.map((message, messageIndex) => (
+                  <div key={messageIndex} className="space-y-3">
+                    <div className="flex gap-3">
+                      <div className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center ${
+                        message.role === "user"
+                          ? "bg-blue-600 dark:bg-blue-500"
+                          : "bg-gradient-to-br from-blue-500 to-purple-600"
+                      }`}>
+                        {message.role === "user" ? (
+                          <User className="h-4 w-4 text-white" />
+                        ) : (
+                          <Sparkles className="h-3.5 w-3.5 text-white" />
+                        )}
+                      </div>
+
+                      {/* Message Content */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">
+                          {message.role === "user" ? "You" : "Focusphere AI"}
+                        </p>
+                        <p className="text-sm text-gray-800 dark:text-slate-200 whitespace-pre-wrap leading-relaxed">
+                          {message.content}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Action Container - Single or Multiple */}
+                    {message.suggestedActions &&
+                      message.suggestedActions.length > 0 &&
+                      (message.suggestedActions.length === 1 ? (
+                        // Single action - show normally
+                        <div className="ml-10">
+                          <ActionCard
+                            action={message.suggestedActions[0]}
+                            onApprove={() =>
+                              handleActionApproval(messageIndex, 0, true)
+                            }
+                            onDecline={() =>
+                              handleActionApproval(messageIndex, 0, false)
+                            }
+                          />
+                        </div>
+                      ) : (
+                        // Multiple actions - show collapsible
+                        <div className="ml-10">
+                          <MultiActionCard
+                            actions={message.suggestedActions}
+                            onApprove={() => handleBulkApproval(messageIndex, true)}
+                            onDecline={() =>
+                              handleBulkApproval(messageIndex, false)
+                            }
+                            onIndividualApprove={(idx) =>
+                              handleActionApproval(messageIndex, idx, true)
+                            }
+                            onIndividualDecline={(idx) =>
+                              handleActionApproval(messageIndex, idx, false)
+                            }
+                            onIndividualEdit={(aIdx) =>
+                              openEditModal(messageIndex, aIdx)
+                            }
+                          />
+                        </div>
+                      ))}
+                  </div>
+                ))}
+
+                {isLoading && (
+                  <div className="flex gap-3">
+                    <div className="flex-shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                      <Sparkles className="h-3.5 w-3.5 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">
+                        Focusphere AI
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" />
+                        <span className="text-sm text-gray-600 dark:text-slate-400">
+                          Thinking...
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div ref={messagesEndRef} />
               </div>
             )}
-
-            <div ref={messagesEndRef} />
           </div>
 
           <div className="border-t border-gray-200 dark:border-slate-700 p-4 bg-gray-50 dark:bg-slate-900/50">

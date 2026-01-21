@@ -1,4 +1,10 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useMemo,
+  useCallback,
+} from "react";
 import {
   Send,
   Loader2,
@@ -37,6 +43,8 @@ const AIAssistant = ({
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedImage, setSelectedImage] = useState(null);
+  const [smartSuggestions, setSmartSuggestions] = useState([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -50,6 +58,30 @@ const AIAssistant = ({
     }
   };
 
+  // Fetch smart suggestions
+  const fetchSmartSuggestions = useCallback(async () => {
+    try {
+      setSuggestionsLoading(true);
+      const token = localStorage.getItem("accessToken");
+      if (!token) return;
+
+      const response = await fetch(ENDPOINTS.AI.SMART_SUGGESTIONS, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setSmartSuggestions(data.suggestions || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch smart suggestions:", error);
+    } finally {
+      setSuggestionsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [conversations, currentConversationId]);
@@ -61,6 +93,13 @@ const AIAssistant = ({
     }, 1000);
     return () => clearTimeout(timer);
   }, []);
+
+  // Fetch suggestions when no messages exist
+  useEffect(() => {
+    if (!isInitializing && messages.length === 0) {
+      fetchSmartSuggestions();
+    }
+  }, [isInitializing, messages.length, fetchSmartSuggestions]);
 
   const executeAction = async (action) => {
     try {
@@ -87,7 +126,13 @@ const AIAssistant = ({
         case "create_goal":
           endpoint = ENDPOINTS.GOALS.BASE;
           method = "POST";
-          body = JSON.stringify({ ...action.data, progress: 0, tasks: [] });
+          body = JSON.stringify({
+            ...action.data,
+            description:
+              action.data.description || `Goal: ${action.data.title}`,
+            progress: 0,
+            tasks: [],
+          });
           break;
         case "update_goal":
           endpoint = ENDPOINTS.GOALS.BY_ID(action.data.goalId);
@@ -301,6 +346,62 @@ const AIAssistant = ({
       handleSendMessage();
     }
   };
+  const handleSuggestionClick = async (prompt) => {
+    if (isLoading) return;
+
+    const isFirstMessage = messages.length === 0;
+    const newMessages = [...messages, { role: "user", content: prompt }];
+    updateConversation({ messages: newMessages });
+    setIsLoading(true);
+
+    try {
+      const token = await getValidToken();
+      if (!token) throw new Error("Not authenticated");
+
+      const recentHistory = newMessages.slice(-10).map((m) => ({
+        role: m.role,
+        content: m.content,
+      }));
+
+      const response = await fetch(ENDPOINTS.AI.CHAT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          message: prompt,
+          conversationHistory: recentHistory,
+          isNewChat: isFirstMessage,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to get AI response");
+
+      const data = await response.json();
+
+      const aiMessage = {
+        role: "assistant",
+        content: data.response.message,
+        suggestedActions: data.response.suggestedActions || [],
+      };
+
+      const updatePayload = { messages: [...newMessages, aiMessage] };
+      if (isFirstMessage && data.suggestedTitle) {
+        updatePayload.title = data.suggestedTitle;
+      }
+      updateConversation(updatePayload);
+    } catch (error) {
+      console.error("AI chat error:", error);
+      const errorMessage = {
+        role: "assistant",
+        content: "Sorry, I'm having trouble right now. Please try again.",
+      };
+      updateConversation({ messages: [...newMessages, errorMessage] });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const filteredConversations = conversations.filter(
     (c) =>
@@ -391,158 +492,176 @@ const AIAssistant = ({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-8">
-          {!conversation?.messages.length && (
-            <div className="flex flex-col items-center justify-center h-full text-center space-y-6 px-8">
+        <div className="flex-1 overflow-y-auto p-6">
+          {!conversation?.messages.length ? (
+            /* Welcome Section - Matches Skeleton Layout */
+            <div className="flex flex-col items-center justify-center space-y-6">
+              {/* Icon */}
               <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
                 <Sparkles className="h-8 w-8 text-white" />
               </div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
-                  Welcome to Focusphere AI
+
+              {/* Title and Description */}
+              <div className="text-center space-y-2 w-full max-w-md">
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
+                  Focusphere AI
                 </h2>
-                <p className="text-gray-600 dark:text-slate-400 max-w-md">
-                  I'm here to help you manage your tasks and goals efficiently.
-                  Just tell me what you need!
+                <p className="text-gray-500 dark:text-slate-400">
+                  Your AI-powered productivity assistant. I can help you create
+                  tasks, set goals, and organize your schedule efficiently.
                 </p>
               </div>
+
+              {/* Suggestion Cards - 2x2 Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-2xl">
-                <button
-                  onClick={() =>
-                    setInputMessage(
-                      "Create 5 tasks for my web development project",
-                    )
-                  }
-                  className="bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 border-2 border-blue-200 dark:border-blue-800 rounded-lg p-4 text-left transition-colors"
-                >
-                  <div className="font-semibold text-blue-900 dark:text-blue-300 mb-1">
-                    📝 Create Tasks
-                  </div>
-                  <div className="text-sm text-blue-700 dark:text-blue-400">
-                    Generate tasks for your project
-                  </div>
-                </button>
-                <button
-                  onClick={() =>
-                    setInputMessage("Show me all my high priority tasks")
-                  }
-                  className="bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/30 border-2 border-purple-200 dark:border-purple-800 rounded-lg p-4 text-left transition-colors"
-                >
-                  <div className="font-semibold text-purple-900 dark:text-purple-300 mb-1">
-                    🎯 View Tasks
-                  </div>
-                  <div className="text-sm text-purple-700 dark:text-purple-400">
-                    See your priority tasks
-                  </div>
-                </button>
-                <button
-                  onClick={() =>
-                    setInputMessage("Update my task status to in-progress")
-                  }
-                  className="bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30 border-2 border-green-200 dark:border-green-800 rounded-lg p-4 text-left transition-colors"
-                >
-                  <div className="font-semibold text-green-900 dark:text-green-300 mb-1">
-                    ✏️ Update Tasks
-                  </div>
-                  <div className="text-sm text-green-700 dark:text-green-400">
-                    Modify task details
-                  </div>
-                </button>
-                <button
-                  onClick={() =>
-                    setInputMessage("Create a goal for learning React")
-                  }
-                  className="bg-yellow-50 dark:bg-yellow-900/20 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 border-2 border-yellow-200 dark:border-yellow-800 rounded-lg p-4 text-left transition-colors"
-                >
-                  <div className="font-semibold text-yellow-900 dark:text-yellow-300 mb-1">
-                    🏆 Set Goals
-                  </div>
-                  <div className="text-sm text-yellow-700 dark:text-yellow-400">
-                    Define new objectives
-                  </div>
-                </button>
+                {suggestionsLoading ? (
+                  // Loading skeleton
+                  <>
+                    {[1, 2, 3, 4].map((i) => (
+                      <div
+                        key={i}
+                        className="bg-gray-100 dark:bg-slate-700/50 border-2 border-gray-200 dark:border-slate-700 rounded-lg p-4 space-y-2 animate-pulse"
+                      >
+                        <div className="h-5 w-32 bg-gray-200 dark:bg-slate-600 rounded" />
+                        <div className="h-4 w-full bg-gray-200 dark:bg-slate-600 rounded" />
+                      </div>
+                    ))}
+                  </>
+                ) : (
+                  // Show fetched suggestions or default fallback
+                  (smartSuggestions.length > 0
+                    ? smartSuggestions
+                    : [
+                        {
+                          title: "Create my tasks",
+                          description: "Generate 5 productive tasks for today",
+                          prompt:
+                            "Create 5 productive tasks for me to work on today",
+                        },
+                        {
+                          title: "Set a new goal",
+                          description: "Help me define a SMART goal",
+                          prompt:
+                            "Help me create a SMART goal for improving my productivity this month",
+                        },
+                        {
+                          title: "Review my progress",
+                          description: "Analyze my tasks and goals",
+                          prompt:
+                            "Analyze my current tasks and goals, and give me a progress summary",
+                        },
+                        {
+                          title: "Plan my schedule",
+                          description: "Organize and prioritize my tasks",
+                          prompt:
+                            "Help me prioritize and organize my pending tasks for maximum productivity",
+                        },
+                      ]
+                  ).map((suggestion, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleSuggestionClick(suggestion.prompt)}
+                      disabled={isLoading}
+                      className="bg-gray-100 dark:bg-slate-700/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 border-2 border-gray-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-700 rounded-lg p-4 text-left transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <p className="font-semibold text-gray-800 dark:text-white mb-1">
+                        {suggestion.title}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-slate-400">
+                        {suggestion.description}
+                      </p>
+                    </button>
+                  ))
+                )}
               </div>
             </div>
-          )}
-          {conversation?.messages.map((message, messageIndex) => (
-            <div key={messageIndex} className="space-y-4">
-              {message.role === "user" ? (
-                <div className="flex justify-end">
-                  <div className="max-w-[70%] bg-blue-600 dark:bg-blue-500 text-white rounded-2xl px-5 py-3">
-                    {message.image && (
-                      <img
-                        src={message.image}
-                        alt="Uploaded"
-                        className="rounded-lg mb-2 max-w-full"
-                      />
-                    )}
-                    <p className="text-sm whitespace-pre-wrap leading-relaxed">
-                      {message.content}
-                    </p>
-                  </div>
+          ) : (
+            <div className="space-y-8">
+              {conversation?.messages.map((message, messageIndex) => (
+                <div key={messageIndex} className="space-y-4">
+                  {message.role === "user" ? (
+                    <div className="flex justify-end">
+                      <div className="max-w-[70%] bg-blue-600 dark:bg-blue-500 text-white rounded-2xl px-5 py-3">
+                        {message.image && (
+                          <img
+                            src={message.image}
+                            alt="Uploaded"
+                            className="rounded-lg mb-2 max-w-full"
+                          />
+                        )}
+                        <p className="text-sm whitespace-pre-wrap leading-relaxed">
+                          {message.content}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex gap-4">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                        <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div className="flex-1 pt-1">
+                        <p className="text-gray-800 dark:text-slate-200 text-sm leading-relaxed whitespace-pre-wrap">
+                          {message.content}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {message.suggestedActions &&
+                    message.suggestedActions.length > 0 &&
+                    (message.suggestedActions.length === 1 ? (
+                      <div className="ml-12">
+                        <ActionCard
+                          action={message.suggestedActions[0]}
+                          onApprove={() =>
+                            handleActionApproval(messageIndex, 0, true)
+                          }
+                          onDecline={() =>
+                            handleActionApproval(messageIndex, 0, false)
+                          }
+                        />
+                      </div>
+                    ) : (
+                      <div className="ml-12">
+                        <MultiActionCard
+                          actions={message.suggestedActions}
+                          onApprove={() =>
+                            handleBulkApproval(messageIndex, true)
+                          }
+                          onDecline={() =>
+                            handleBulkApproval(messageIndex, false)
+                          }
+                          onIndividualApprove={(idx) =>
+                            handleActionApproval(messageIndex, idx, true)
+                          }
+                          onIndividualDecline={(idx) =>
+                            handleActionApproval(messageIndex, idx, false)
+                          }
+                        />
+                      </div>
+                    ))}
                 </div>
-              ) : (
+              ))}
+
+              {isLoading && (
                 <div className="flex gap-4">
                   <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
                     <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                   </div>
                   <div className="flex-1 pt-1">
-                    <p className="text-gray-800 dark:text-slate-200 text-sm leading-relaxed whitespace-pre-wrap">
-                      {message.content}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" />
+                      <span className="text-sm text-gray-600 dark:text-slate-400">
+                        Thinking...
+                      </span>
+                    </div>
                   </div>
                 </div>
               )}
 
-              {message.suggestedActions &&
-                message.suggestedActions.length > 0 &&
-                (message.suggestedActions.length === 1 ? (
-                  <div className="ml-12">
-                    <ActionCard
-                      action={message.suggestedActions[0]}
-                      onApprove={() =>
-                        handleActionApproval(messageIndex, 0, true)
-                      }
-                      onDecline={() =>
-                        handleActionApproval(messageIndex, 0, false)
-                      }
-                    />
-                  </div>
-                ) : (
-                  <div className="ml-12">
-                    <MultiActionCard
-                      actions={message.suggestedActions}
-                      onApprove={() => handleBulkApproval(messageIndex, true)}
-                      onDecline={() => handleBulkApproval(messageIndex, false)}
-                      onIndividualApprove={(idx) =>
-                        handleActionApproval(messageIndex, idx, true)
-                      }
-                      onIndividualDecline={(idx) =>
-                        handleActionApproval(messageIndex, idx, false)
-                      }
-                    />
-                  </div>
-                ))}
-            </div>
-          ))}
-
-          {isLoading && (
-            <div className="flex gap-4">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div className="flex-1 pt-1">
-                <div className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" />
-                  <span className="text-sm text-gray-600 dark:text-slate-400">
-                    Thinking...
-                  </span>
-                </div>
-              </div>
+              <div ref={messagesEndRef} />
             </div>
           )}
-
-          <div ref={messagesEndRef} />
         </div>
 
         <div className="border-t border-gray-200 dark:border-slate-700 p-4 bg-gray-50 dark:bg-slate-900/50">
@@ -751,18 +870,30 @@ const MultiActionCard = ({
 };
 
 // Individual Action Card Component (Compact)
-const ActionDetailCard = ({ action, actionNumber, onApprove, onDecline, onEdit }) => {
+const ActionDetailCard = ({
+  action,
+  actionNumber,
+  onApprove,
+  onDecline,
+  onEdit,
+}) => {
   const getActionIcon = () => {
-    if (action.type.includes("create")) return <Plus className="h-5 w-5 text-green-600 dark:text-green-400" />;
-    if (action.type.includes("update")) return <Edit className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />;
-    if (action.type.includes("delete")) return <Trash2 className="h-5 w-5 text-red-600 dark:text-red-400" />;
+    if (action.type.includes("create"))
+      return <Plus className="h-5 w-5 text-green-600 dark:text-green-400" />;
+    if (action.type.includes("update"))
+      return <Edit className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />;
+    if (action.type.includes("delete"))
+      return <Trash2 className="h-5 w-5 text-red-600 dark:text-red-400" />;
     return null;
   };
 
   const getActionBg = () => {
-    if (action.type.includes("create")) return "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800";
-    if (action.type.includes("update")) return "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800";
-    if (action.type.includes("delete")) return "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800";
+    if (action.type.includes("create"))
+      return "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800";
+    if (action.type.includes("update"))
+      return "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800";
+    if (action.type.includes("delete"))
+      return "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800";
     return "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800";
   };
 
@@ -773,7 +904,7 @@ const ActionDetailCard = ({ action, actionNumber, onApprove, onDecline, onEdit }
     return "ACTION";
   };
 
-  const getActionType = () => action.type.includes("task") ? "TASK" : "GOAL";
+  const getActionType = () => (action.type.includes("task") ? "TASK" : "GOAL");
 
   if (action.status === "approved") {
     return (
@@ -781,7 +912,8 @@ const ActionDetailCard = ({ action, actionNumber, onApprove, onDecline, onEdit }
         <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
           <Check className="h-5 w-5" />
           <span className="font-semibold">
-            ✅ Action #{actionNumber}: {getActionType()} has been {getActionTitle().toLowerCase()}d successfully
+            ✅ Action #{actionNumber}: {getActionType()} has been{" "}
+            {getActionTitle().toLowerCase()}d successfully
           </span>
         </div>
       </div>
@@ -793,7 +925,9 @@ const ActionDetailCard = ({ action, actionNumber, onApprove, onDecline, onEdit }
       <div className="bg-gray-50 dark:bg-slate-800/50 border-2 border-gray-300 dark:border-slate-600 rounded-xl p-4 opacity-60">
         <div className="flex items-center gap-2 text-gray-600 dark:text-slate-400">
           <XIcon className="h-5 w-5" />
-          <span className="font-semibold">Action #{actionNumber}: Declined</span>
+          <span className="font-semibold">
+            Action #{actionNumber}: Declined
+          </span>
         </div>
       </div>
     );
@@ -804,7 +938,9 @@ const ActionDetailCard = ({ action, actionNumber, onApprove, onDecline, onEdit }
       <div className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-500 dark:border-blue-700 rounded-xl p-4 animate-pulse">
         <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
           <Loader2 className="h-5 w-5 animate-spin" />
-          <span className="font-semibold">Action #{actionNumber}: Processing...</span>
+          <span className="font-semibold">
+            Action #{actionNumber}: Processing...
+          </span>
         </div>
       </div>
     );
@@ -835,10 +971,12 @@ const ActionDetailCard = ({ action, actionNumber, onApprove, onDecline, onEdit }
             <h4 className="font-bold text-sm text-gray-900 dark:text-white">
               {getActionTitle()} {getActionType()}
             </h4>
-            <p className="text-xs text-gray-500 dark:text-slate-400">Action #{actionNumber}</p>
+            <p className="text-xs text-gray-500 dark:text-slate-400">
+              Action #{actionNumber}
+            </p>
           </div>
         </div>
-        {!action.status && (
+        {!action.status && onEdit && (
           <button
             onClick={onEdit}
             className="p-2 hover:bg-white/50 dark:hover:bg-slate-700/50 rounded-full transition-all group"
@@ -862,7 +1000,9 @@ const ActionDetailCard = ({ action, actionNumber, onApprove, onDecline, onEdit }
       <div className="bg-white dark:bg-slate-700 rounded-lg p-3 space-y-2 text-sm">
         {(action.data.title || action.data.updates?.title) && (
           <div className="flex gap-2">
-            <span className="font-semibold text-gray-600 dark:text-slate-400 min-w-[70px]">Title:</span>
+            <span className="font-semibold text-gray-600 dark:text-slate-400 min-w-[70px]">
+              Title:
+            </span>
             <span className="text-gray-900 dark:text-white font-medium">
               {action.data.title || action.data.updates?.title}
             </span>
@@ -871,7 +1011,9 @@ const ActionDetailCard = ({ action, actionNumber, onApprove, onDecline, onEdit }
 
         {(action.data.category || action.data.updates?.category) && (
           <div className="flex gap-2 items-center">
-            <span className="font-semibold text-gray-600 dark:text-slate-400 min-w-[70px]">Category:</span>
+            <span className="font-semibold text-gray-600 dark:text-slate-400 min-w-[70px]">
+              Category:
+            </span>
             <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded text-xs font-medium">
               {action.data.category || action.data.updates?.category}
             </span>
@@ -880,22 +1022,32 @@ const ActionDetailCard = ({ action, actionNumber, onApprove, onDecline, onEdit }
 
         {(action.data.priority || action.data.updates?.priority) && (
           <div className="flex gap-2 items-center">
-            <span className="font-semibold text-gray-600 dark:text-slate-400 min-w-[70px]">Priority:</span>
-            <span className={`px-2 py-0.5 rounded text-xs font-bold ${
-              (action.data.priority || action.data.updates?.priority) === "high"
-                ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300"
-                : (action.data.priority || action.data.updates?.priority) === "medium"
-                  ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300"
-                  : "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"
-            }`}>
-              {(action.data.priority || action.data.updates?.priority)?.toUpperCase()}
+            <span className="font-semibold text-gray-600 dark:text-slate-400 min-w-[70px]">
+              Priority:
+            </span>
+            <span
+              className={`px-2 py-0.5 rounded text-xs font-bold ${
+                (action.data.priority || action.data.updates?.priority) ===
+                "high"
+                  ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300"
+                  : (action.data.priority || action.data.updates?.priority) ===
+                      "medium"
+                    ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300"
+                    : "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"
+              }`}
+            >
+              {(
+                action.data.priority || action.data.updates?.priority
+              )?.toUpperCase()}
             </span>
           </div>
         )}
 
         {(action.data.status || action.data.updates?.status) && (
           <div className="flex gap-2 items-center">
-            <span className="font-semibold text-gray-600 dark:text-slate-400 min-w-[70px]">Status:</span>
+            <span className="font-semibold text-gray-600 dark:text-slate-400 min-w-[70px]">
+              Status:
+            </span>
             <span className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded text-xs font-medium capitalize">
               {action.data.status || action.data.updates?.status}
             </span>
@@ -904,43 +1056,62 @@ const ActionDetailCard = ({ action, actionNumber, onApprove, onDecline, onEdit }
 
         {(action.data.due_date || action.data.updates?.due_date) && (
           <div className="flex gap-2">
-            <span className="font-semibold text-gray-600 dark:text-slate-400 min-w-[70px]">Due Date:</span>
+            <span className="font-semibold text-gray-600 dark:text-slate-400 min-w-[70px]">
+              Due Date:
+            </span>
             <span className="text-gray-700 dark:text-slate-300">
-              {new Date(action.data.due_date || action.data.updates?.due_date).toLocaleDateString()}
+              {new Date(
+                action.data.due_date || action.data.updates?.due_date,
+              ).toLocaleDateString()}
             </span>
           </div>
         )}
 
         {action.data.updates?.progress !== undefined && (
           <div className="flex gap-2 items-center">
-            <span className="font-semibold text-gray-600 dark:text-slate-400 min-w-[70px]">Progress:</span>
+            <span className="font-semibold text-gray-600 dark:text-slate-400 min-w-[70px]">
+              Progress:
+            </span>
             <div className="flex items-center gap-2 flex-1">
               <div className="flex-1 h-2 bg-gray-200 dark:bg-slate-600 rounded-full overflow-hidden">
-                <div className="h-full bg-blue-600 dark:bg-blue-500" style={{ width: `${action.data.updates.progress}%` }} />
+                <div
+                  className="h-full bg-blue-600 dark:bg-blue-500"
+                  style={{ width: `${action.data.updates.progress}%` }}
+                />
               </div>
-              <span className="text-xs font-bold text-gray-700 dark:text-slate-300">{action.data.updates.progress}%</span>
+              <span className="text-xs font-bold text-gray-700 dark:text-slate-300">
+                {action.data.updates.progress}%
+              </span>
             </div>
           </div>
         )}
 
         {(action.data.deadline || action.data.updates?.deadline) && (
           <div className="flex gap-2">
-            <span className="font-semibold text-gray-600 dark:text-slate-400 min-w-[70px]">Deadline:</span>
+            <span className="font-semibold text-gray-600 dark:text-slate-400 min-w-[70px]">
+              Deadline:
+            </span>
             <span className="text-gray-700 dark:text-slate-300">
-              {new Date(action.data.deadline || action.data.updates?.deadline).toLocaleDateString()}
+              {new Date(
+                action.data.deadline || action.data.updates?.deadline,
+              ).toLocaleDateString()}
             </span>
           </div>
         )}
 
         {action.type.includes("update") && action.data.updates && (
           <div className="pt-2 border-t border-gray-200 dark:border-slate-600">
-            <p className="text-xs font-semibold text-gray-600 dark:text-slate-400 mb-1">Changes:</p>
+            <p className="text-xs font-semibold text-gray-600 dark:text-slate-400 mb-1">
+              Changes:
+            </p>
             <ul className="text-xs text-gray-700 dark:text-slate-300 space-y-0.5">
               {Object.keys(action.data.updates).map((key) => (
                 <li key={key} className="flex items-center gap-1">
                   <span className="text-blue-600 dark:text-blue-400">•</span>
                   <span className="capitalize">{key.replace("_", " ")}</span>
-                  <span className="text-gray-500 dark:text-slate-500">updated</span>
+                  <span className="text-gray-500 dark:text-slate-500">
+                    updated
+                  </span>
                 </li>
               ))}
             </ul>

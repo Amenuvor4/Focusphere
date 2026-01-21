@@ -21,5 +21,6 @@ export const ENDPOINTS = {
   AI: {
     CHAT: `${BASE_URL}/ai/chat`,
     ANALYZE: `${BASE_URL}/ai/analyze`,
+    SMART_SUGGESTIONS: `${BASE_URL}/ai/smart-suggestions`,
   }
 };

@@ -206,7 +206,8 @@ exports.chat = async (req, res) => {
 
     let suggestedTitle = null;
     if (isNewChat) {
-      suggestedTitle = await aiService.generateChatTitle(message);
+      // Generate title using both user message and AI response for better context
+      suggestedTitle = await aiService.generateChatTitle(message, response.message);
     }
 
     res.json({
@@ -421,5 +422,156 @@ exports.suggestGoals = async (req, res) => {
   } catch (error) {
     console.error("AI goal suggestion error:", error);
     res.status(500).json({ error: "Failed to suggest goals" });
+  }
+};
+
+/**
+ * Get smart AI prompt suggestions based on user data
+ * Returns 4 contextual suggestions for the chat widget/assistant
+ */
+exports.getSmartSuggestions = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const tasks = await Task.find({ user_id: userId });
+    const goals = await Goal.find({ userId });
+
+    // Default suggestions for new users (no data)
+    const defaultSuggestions = [
+      {
+        icon: "📝",
+        title: "Create Tasks",
+        description: "Set up your first tasks to get started",
+        prompt: "Help me create 5 tasks to organize my day"
+      },
+      {
+        icon: "🎯",
+        title: "Set Goals",
+        description: "Define goals to track your progress",
+        prompt: "Help me create a goal for improving my productivity"
+      },
+      {
+        icon: "📅",
+        title: "Plan My Week",
+        description: "Organize your upcoming schedule",
+        prompt: "Help me plan my tasks for this week"
+      },
+      {
+        icon: "🔗",
+        title: "Sync Calendar",
+        description: "Connect Google Calendar (coming soon)",
+        prompt: "Tell me about integrating with Google Calendar"
+      }
+    ];
+
+    // If user has no tasks and no goals, return defaults
+    if (tasks.length === 0 && goals.length === 0) {
+      return res.json({ suggestions: defaultSuggestions, hasData: false });
+    }
+
+    // Calculate analytics for smart suggestions
+    const analytics = await getAnalyticsData(userId);
+    const overdueTasks = tasks.filter(t => {
+      if (!t.due_date || t.status === 'completed') return false;
+      return new Date(t.due_date) < new Date();
+    });
+    const highPriorityTasks = tasks.filter(t => t.priority === 'high' && t.status !== 'completed');
+    const inProgressTasks = tasks.filter(t => t.status === 'in-progress');
+    const todoTasks = tasks.filter(t => t.status === 'todo');
+    const incompleteGoals = goals.filter(g => g.progress < 100);
+
+    // Build smart suggestions based on user data
+    const smartSuggestions = [];
+
+    // Priority 1: Overdue tasks
+    if (overdueTasks.length > 0) {
+      smartSuggestions.push({
+        icon: "⚠️",
+        title: "Overdue Tasks",
+        description: `You have ${overdueTasks.length} overdue task${overdueTasks.length > 1 ? 's' : ''}`,
+        prompt: "Show me my overdue tasks and help me prioritize them"
+      });
+    }
+
+    // Priority 2: High priority tasks
+    if (highPriorityTasks.length > 0) {
+      smartSuggestions.push({
+        icon: "🔥",
+        title: "High Priority",
+        description: `${highPriorityTasks.length} high priority task${highPriorityTasks.length > 1 ? 's' : ''} need attention`,
+        prompt: "Show me my high priority tasks"
+      });
+    }
+
+    // Priority 3: In-progress tasks
+    if (inProgressTasks.length > 0) {
+      smartSuggestions.push({
+        icon: "🚀",
+        title: "In Progress",
+        description: `${inProgressTasks.length} task${inProgressTasks.length > 1 ? 's' : ''} in progress`,
+        prompt: "Show me my tasks that are in progress"
+      });
+    }
+
+    // Priority 4: Goals needing attention
+    if (incompleteGoals.length > 0) {
+      const lowestProgressGoal = incompleteGoals.sort((a, b) => a.progress - b.progress)[0];
+      smartSuggestions.push({
+        icon: "🎯",
+        title: "Goal Progress",
+        description: `"${lowestProgressGoal.title.slice(0, 20)}${lowestProgressGoal.title.length > 20 ? '...' : ''}" at ${lowestProgressGoal.progress}%`,
+        prompt: `Help me make progress on my goal "${lowestProgressGoal.title}"`
+      });
+    }
+
+    // Priority 5: Create more tasks if few exist
+    if (todoTasks.length < 3 && tasks.length < 10) {
+      smartSuggestions.push({
+        icon: "➕",
+        title: "Add Tasks",
+        description: "Create more tasks to stay organized",
+        prompt: "Help me create tasks for my current projects"
+      });
+    }
+
+    // Priority 6: Low completion rate
+    if (analytics && analytics.completionRate < 50 && tasks.length >= 5) {
+      smartSuggestions.push({
+        icon: "📊",
+        title: "Boost Productivity",
+        description: `${analytics.completionRate}% completion rate`,
+        prompt: "Give me tips to improve my task completion rate"
+      });
+    }
+
+    // Priority 7: Plan for tomorrow
+    smartSuggestions.push({
+      icon: "📅",
+      title: "Plan Ahead",
+      description: "Organize your upcoming tasks",
+      prompt: "Help me plan my tasks for tomorrow"
+    });
+
+    // Priority 8: Calendar integration (always available)
+    smartSuggestions.push({
+      icon: "🔗",
+      title: "Sync Calendar",
+      description: "Connect Google Calendar (coming soon)",
+      prompt: "Tell me about integrating with Google Calendar"
+    });
+
+    // Return top 4 suggestions
+    res.json({
+      suggestions: smartSuggestions.slice(0, 4),
+      hasData: true,
+      stats: {
+        totalTasks: tasks.length,
+        totalGoals: goals.length,
+        overdue: overdueTasks.length,
+        completionRate: analytics?.completionRate || 0
+      }
+    });
+  } catch (error) {
+    console.error("Smart suggestions error:", error);
+    res.status(500).json({ error: "Failed to generate suggestions" });
   }
 };

@@ -68,4 +68,11 @@ router.get('/schedule', aiController.suggestSchedule);
  */
 router.get('/suggest-goals', aiController.suggestGoals);
 
+/**
+ * @route   GET /api/ai/smart-suggestions
+ * @desc    Get 4 smart AI prompt suggestions based on user data
+ * @access  Private
+ */
+router.get('/smart-suggestions', aiController.getSmartSuggestions);
+
 module.exports = router;

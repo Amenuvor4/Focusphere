@@ -18,13 +18,7 @@ export function Dashboard() {
     const newConv = {
       id: Date.now().toString(),
       title: "New Chat",
-      messages: [
-        {
-          role: "assistant",
-          content:
-            "Hi! I'm your Focusphere AI assistant. Try: 'Create 5 tasks for my project' or 'Update my report task to high priority'!",
-        },
-      ],
+      messages: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -36,13 +30,7 @@ export function Dashboard() {
     const newConv = {
       id: Date.now().toString(),
       title: "New Chat",
-      messages: [
-        {
-          role: "assistant",
-          content:
-            "Hi! I'm your Focusphere AI assistant. Try: 'Create 5 tasks for my project' or 'Update my report task to high priority'!",
-        },
-      ],
+      messages: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

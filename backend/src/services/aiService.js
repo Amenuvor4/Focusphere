@@ -37,6 +37,10 @@ Valid action types:
 - create_task, update_task, delete_task
 - create_goal, update_goal, delete_goal
 
+Goal requirements:
+- Goals MUST have: title, description (REQUIRED), progress (default 0), priority (low/medium/high)
+- Always include a meaningful description when creating goals!
+
 Examples:
 
 User: "Show me my tasks"
@@ -171,30 +175,52 @@ Be helpful, clear, and make productivity easy!`
   }
 
   /**
-   * Generate chat title from first message
+   * Generate chat title from conversation context (user message + AI response)
+   * Uses the first user message and AI response to generate a contextual title
    */
-  async generateChatTitle(firstMessage) {
-    const prompt = `Generate a short title (3-6 words max) for a chat starting with: "${firstMessage}"
+  async generateChatTitle(userMessage, aiResponse = null) {
+    // Build context for title generation
+    let context = `User: "${userMessage}"`;
+    if (aiResponse) {
+      // Truncate AI response to first 100 chars for context
+      const truncatedResponse = aiResponse.slice(0, 100);
+      context += `\nAI Response: "${truncatedResponse}..."`;
+    }
+
+    const prompt = `Generate a concise, descriptive title (3-5 words) for this conversation:
+
+${context}
 
 Rules:
-- Maximum 6 words
-- No quotes
+- Maximum 5 words
+- Be specific about the topic
+- No quotes in output
 - Title case
+- Focus on what the user wants to accomplish
 
 Examples:
-"Create 5 tasks" → "Task Creation"
-"Help me plan" → "Planning Assistance"
+User: "Create 5 tasks for my project" → "Project Task Creation"
+User: "Show my overdue tasks" → "Overdue Task Review"
+User: "Help me set a fitness goal" → "Fitness Goal Setup"
+User: "Delete all completed tasks" → "Completed Tasks Cleanup"
 
 Title:`;
 
     try {
       const result = await this.model.generateContent(prompt);
       const title = result.response.text().trim();
-      const cleanTitle = title.replace(/^["']|["']$/g, "");
+      // Clean up the title
+      const cleanTitle = title
+        .replace(/^["']|["']$/g, "") // Remove quotes
+        .replace(/^\*+|\*+$/g, "") // Remove markdown asterisks
+        .replace(/^#+\s*/, "") // Remove markdown headers
+        .trim();
       return cleanTitle.slice(0, 50);
     } catch (error) {
       console.error("Title generation error:", error);
-      return firstMessage.split(" ").slice(0, 4).join(" ");
+      // Fallback: extract key words from user message
+      const words = userMessage.split(" ").filter(w => w.length > 2);
+      return words.slice(0, 4).join(" ");
     }
   }
 

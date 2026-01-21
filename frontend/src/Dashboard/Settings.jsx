@@ -143,6 +143,22 @@ export function Settings() {
           </div>
         )}
 
+        {activeTab === "notifications" && (
+          <div className="space-y-4 animate-in fade-in duration-300">
+            <div className="flex flex-col items-center justify-center p-12 bg-gray-50 dark:bg-slate-800 rounded-xl text-center">
+              <div className="text-4xl mb-4">🔔</div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                Coming Soon
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md">
+                Notification settings are currently under development. This
+                feature will be available in a future update. Thanks for trying
+                the beta!
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="pt-6 border-t flex items-center justify-between">
           {message.text && (
             <span
