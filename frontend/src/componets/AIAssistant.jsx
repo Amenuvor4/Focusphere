@@ -22,7 +22,9 @@ import {
   ChevronUp,
   X,
   MoreHorizontal,
+  RotateCcw,
 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 import { ENDPOINTS } from "../config/api.js";
 import { TaskEditDialog } from "../Dashboard/TaskEditDialog.jsx";
 import { AIAssistantSkeleton } from "./AIAssistantSkeleton.jsx";
@@ -512,6 +514,12 @@ const AIAssistant = ({
                 </p>
               </div>
 
+              {/* Smart Prompts Note */}
+              <div className="flex items-center gap-2 text-sm text-gray-400 dark:text-slate-500">
+                <Sparkles className="h-4 w-4" />
+                <span>Select a smart prompt below or type your own message</span>
+              </div>
+
               {/* Suggestion Cards - 2x2 Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-2xl">
                 {suggestionsLoading ? (
@@ -534,25 +542,21 @@ const AIAssistant = ({
                     : [
                         {
                           title: "Create my tasks",
-                          description: "Generate 5 productive tasks for today",
                           prompt:
                             "Create 5 productive tasks for me to work on today",
                         },
                         {
                           title: "Set a new goal",
-                          description: "Help me define a SMART goal",
                           prompt:
                             "Help me create a SMART goal for improving my productivity this month",
                         },
                         {
                           title: "Review my progress",
-                          description: "Analyze my tasks and goals",
                           prompt:
                             "Analyze my current tasks and goals, and give me a progress summary",
                         },
                         {
                           title: "Plan my schedule",
-                          description: "Organize and prioritize my tasks",
                           prompt:
                             "Help me prioritize and organize my pending tasks for maximum productivity",
                         },
@@ -562,13 +566,13 @@ const AIAssistant = ({
                       key={idx}
                       onClick={() => handleSuggestionClick(suggestion.prompt)}
                       disabled={isLoading}
-                      className="bg-gray-100 dark:bg-slate-700/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 border-2 border-gray-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-700 rounded-lg p-4 text-left transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="bg-gray-100 dark:bg-slate-700/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 border-2 border-gray-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-700 rounded-lg p-4 text-left transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
                     >
-                      <p className="font-semibold text-gray-800 dark:text-white mb-1">
+                      <p className="font-semibold text-gray-800 dark:text-white mb-1.5">
                         {suggestion.title}
                       </p>
-                      <p className="text-sm text-gray-500 dark:text-slate-400">
-                        {suggestion.description}
+                      <p className="text-sm text-gray-500 dark:text-slate-400 leading-relaxed">
+                        "{suggestion.prompt}"
                       </p>
                     </button>
                   ))
@@ -599,10 +603,8 @@ const AIAssistant = ({
                       <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
                         <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                       </div>
-                      <div className="flex-1 pt-1">
-                        <p className="text-gray-800 dark:text-slate-200 text-sm leading-relaxed whitespace-pre-wrap">
-                          {message.content}
-                        </p>
+                      <div className="flex-1 pt-1 prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 prose-headings:my-2 prose-strong:text-gray-900 dark:prose-strong:text-white">
+                        <ReactMarkdown>{message.content}</ReactMarkdown>
                       </div>
                     </div>
                   )}
