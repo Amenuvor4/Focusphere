@@ -1,0 +1,34 @@
+import React, { useState } from "react";
+import { TaskEditDialog } from "../../Dashboard/TaskEditDialog.jsx";
+import ActionDetailCard from "./ActionDetailCard.jsx";
+
+const ActionCard = ({ action, onApprove, onDecline }) => {
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [localActionData, setLocalActionData] = useState(action.data);
+
+  const handleEditSave = (updateFields) => {
+    setLocalActionData(updateFields);
+    setIsEditDialogOpen(false);
+  };
+
+  return (
+    <>
+      <ActionDetailCard
+        action={{ ...action, data: localActionData }}
+        actionNumber={1}
+        onApprove={() => onApprove({ ...action, data: localActionData })}
+        onDecline={onDecline}
+        onEdit={() => setIsEditDialogOpen(true)}
+      />
+
+      <TaskEditDialog
+        isOpen={isEditDialogOpen}
+        onClose={() => setIsEditDialogOpen(false)}
+        task={localActionData}
+        onSave={handleEditSave}
+      />
+    </>
+  );
+};
+
+export default ActionCard;
