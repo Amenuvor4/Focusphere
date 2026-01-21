@@ -22,7 +22,6 @@ import {
   ChevronUp,
   X,
   MoreHorizontal,
-  RotateCcw,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { ENDPOINTS } from "../config/api.js";
@@ -609,39 +608,25 @@ const AIAssistant = ({
                     </div>
                   )}
 
-                  {message.suggestedActions &&
-                    message.suggestedActions.length > 0 &&
-                    (message.suggestedActions.length === 1 ? (
-                      <div className="ml-12">
+                  {message.suggestedActions?.length > 0 && (
+                    <div className="ml-12">
+                      {message.suggestedActions.length === 1 ? (
                         <ActionCard
                           action={message.suggestedActions[0]}
-                          onApprove={() =>
-                            handleActionApproval(messageIndex, 0, true)
-                          }
-                          onDecline={() =>
-                            handleActionApproval(messageIndex, 0, false)
-                          }
+                          onApprove={() => handleActionApproval(messageIndex, 0, true)}
+                          onDecline={() => handleActionApproval(messageIndex, 0, false)}
                         />
-                      </div>
-                    ) : (
-                      <div className="ml-12">
+                      ) : (
                         <MultiActionCard
                           actions={message.suggestedActions}
-                          onApprove={() =>
-                            handleBulkApproval(messageIndex, true)
-                          }
-                          onDecline={() =>
-                            handleBulkApproval(messageIndex, false)
-                          }
-                          onIndividualApprove={(idx) =>
-                            handleActionApproval(messageIndex, idx, true)
-                          }
-                          onIndividualDecline={(idx) =>
-                            handleActionApproval(messageIndex, idx, false)
-                          }
+                          onApprove={() => handleBulkApproval(messageIndex, true)}
+                          onDecline={() => handleBulkApproval(messageIndex, false)}
+                          onIndividualApprove={(idx) => handleActionApproval(messageIndex, idx, true)}
+                          onIndividualDecline={(idx) => handleActionApproval(messageIndex, idx, false)}
                         />
-                      </div>
-                    ))}
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
 
