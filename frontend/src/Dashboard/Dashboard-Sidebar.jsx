@@ -7,13 +7,12 @@ import {
   ChevronDown,
   Settings,
 } from "lucide-react";
-import React, { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-import getValidToken from "../config/tokenUtils.js";
+import { useState, useEffect, useRef } from "react";
+import { useAuth } from "../context/AuthContext";
 import { ENDPOINTS } from "../config/api.js";
 
 export function DashboardSidebar({ currentView, setCurrentView }) {
-  const navigate = useNavigate();
+  const { logout, getValidToken } = useAuth();
   const [userName, setUserName] = useState("User");
   const [userEmail, setUserEmail] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -83,9 +82,7 @@ export function DashboardSidebar({ currentView, setCurrentView }) {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-    navigate("/login");
+    logout();
   };
 
   const handleSettingsClick = () => {
