@@ -41,6 +41,7 @@ export function AuthProvider({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [authError, setAuthError] = useState(null);
+  const [skipNextAuthCheck, setSkipNextAuthCheck] = useState(false);
 
   // Refresh access token using refresh token
   const refreshAccessToken = useCallback(async () => {
@@ -111,7 +112,20 @@ export function AuthProvider({ children }) {
   }, []);
 
   // Check authentication status on mount
-  const checkAuth = useCallback(async () => {
+  const checkAuth = useCallback(async (forceCheck = false) => {
+    // Skip if already authenticated and not forcing (prevents delay on navigation)
+    if (isAuthenticated && user && !forceCheck) {
+      setIsLoading(false);
+      return true;
+    }
+
+    // Skip if marked to skip (just logged in)
+    if (skipNextAuthCheck) {
+      setSkipNextAuthCheck(false);
+      setIsLoading(false);
+      return isAuthenticated;
+    }
+
     setIsLoading(true);
     setAuthError(null);
 
@@ -145,7 +159,7 @@ export function AuthProvider({ children }) {
     } finally {
       setIsLoading(false);
     }
-  }, [getValidToken, fetchUserProfile]);
+  }, [getValidToken, fetchUserProfile, isAuthenticated, user, skipNextAuthCheck]);
 
   // Login with email/password
   const login = useCallback(async (email, password) => {
@@ -169,6 +183,8 @@ export function AuthProvider({ children }) {
 
       setUser(data.user);
       setIsAuthenticated(true);
+      setIsLoading(false);
+      setSkipNextAuthCheck(true); // Prevent redundant auth check on navigation
 
       return { success: true };
     } catch (error) {
@@ -216,6 +232,8 @@ export function AuthProvider({ children }) {
       if (userData) {
         setUser(userData);
         setIsAuthenticated(true);
+        setIsLoading(false);
+        setSkipNextAuthCheck(true); // Prevent redundant auth check on navigation
         return true;
       }
 
@@ -243,10 +261,31 @@ export function AuthProvider({ children }) {
     return true;
   }, [refreshAccessToken, logout]);
 
-  // Initialize auth on mount
+  // Initialize auth on mount only
   useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
+    const initAuth = async () => {
+      // Check if we have stored tokens on initial mount
+      const token = getStoredToken("accessToken");
+      if (token && isTokenValid(token)) {
+        // Token exists and is valid - fetch profile
+        try {
+          const userData = await fetchUserProfile(token);
+          if (userData) {
+            setUser(userData);
+            setIsAuthenticated(true);
+          } else {
+            removeStoredTokens();
+          }
+        } catch {
+          removeStoredTokens();
+        }
+      }
+      setIsLoading(false);
+    };
+
+    initAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); 
 
   const value = {
     user,

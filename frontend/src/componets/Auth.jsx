@@ -10,6 +10,7 @@ import {
   AlertCircle,
   Check,
   X,
+  ArrowLeft,
 } from "lucide-react";
 import { FaGoogle } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
@@ -242,6 +243,15 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-900 dark:to-slate-800 p-4">
+      {/* Back to home link */}
+      <button
+        onClick={() => navigate("/")}
+        className="absolute top-6 left-6 flex items-center gap-2 text-gray-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+      >
+        <ArrowLeft className="h-5 w-5" />
+        <span className="font-medium">Back to Home</span>
+      </button>
+
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 p-8 w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
@@ -258,7 +268,6 @@ export default function Auth() {
           </p>
         </div>
 
-        {/* Error Message */}
         {error && (
           <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-2">
             <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
