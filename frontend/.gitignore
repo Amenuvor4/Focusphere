@@ -8,6 +8,14 @@
 # testing
 /coverage
 
+# Playwright
+/e2e-report/
+/e2e-screenshots/
+/test-results/
+/playwright-report/
+/playwright/.cache/
+e2e/.env.test
+
 # production
 /build
 
