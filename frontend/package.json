@@ -41,7 +41,10 @@
     "test:e2e:report": "npx playwright show-report e2e-report",
     "test:e2e:auth": "npx playwright test auth.spec.js",
     "test:e2e:tasks": "npx playwright test tasks.spec.js",
-    "test:e2e:goals": "npx playwright test goals.spec.js"
+    "test:e2e:goals": "npx playwright test goals.spec.js",
+    "test:e2e:dashboard": "npx playwright test dashboard.spec.js",
+    "test:e2e:analytics": "npx playwright test analytics.spec.js"
+
   },
   "eslintConfig": {
     "extends": [
