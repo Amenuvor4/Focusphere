@@ -43,8 +43,9 @@
     "test:e2e:tasks": "npx playwright test tasks.spec.js",
     "test:e2e:goals": "npx playwright test goals.spec.js",
     "test:e2e:dashboard": "npx playwright test dashboard.spec.js",
-    "test:e2e:analytics": "npx playwright test analytics.spec.js"
-
+    "test:e2e:analytics": "npx playwright test analytics.spec.js",
+    "test:e2e:ai-assistant": "npx playwright test ai-assistant.spec.js",
+    "test:e2e:settings": "npx playwright test settings.spec.js"
   },
   "eslintConfig": {
     "extends": [

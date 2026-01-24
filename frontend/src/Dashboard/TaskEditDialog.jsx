@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import getValidToken from "../config/tokenUtils";
 import { ENDPOINTS } from "../config/api.js";
+import GoalModal from "../componets/GoalModal.jsx";
 
 export function TaskEditDialog({ isOpen, onClose, task, onSave }) {
   const [title, setTitle] = useState("");
@@ -13,6 +14,8 @@ export function TaskEditDialog({ isOpen, onClose, task, onSave }) {
   const [goals, setGoals] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
+  const [validationError, setValidationError] = useState(null);
 
   // Populate form fields if editing an existing task
   useEffect(() => {
@@ -34,40 +37,75 @@ export function TaskEditDialog({ isOpen, onClose, task, onSave }) {
     }
   }, [task, isOpen]);
 
+  // Fetch goals function - reusable for initial load and after goal creation
+  const fetchGoals = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const token = await getValidToken();
+      if (!token) {
+        return;
+      }
+
+      const response = await fetch(ENDPOINTS.GOALS.BASE, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch goals");
+      }
+
+      const data = await response.json();
+      setGoals(data);
+      return data;
+    } catch (error) {
+      console.error("Error fetching goals:", error);
+      setError("Failed to fetch goals. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Fetch goals when the dialog is opened
   useEffect(() => {
     if (isOpen) {
-      const fetchGoals = async () => {
-        setIsLoading(true);
-        setError(null);
-
-        try {
-          const token = await getValidToken();
-          if (!token) {
-            return;
-          }
-
-          const response = await fetch(ENDPOINTS.GOALS.BASE, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-
-          if (!response.ok) {
-            throw new Error("Failed to fetch goals");
-          }
-
-          const data = await response.json();
-          setGoals(data);
-        } catch (error) {
-          console.error("Error fetching goals:", error);
-          setError("Failed to fetch goals. Please try again.");
-        } finally {
-          setIsLoading(false);
-        }
-      };
-
       fetchGoals();
     }
   }, [isOpen]);
+
+  // Handle "Create New Goal" option selection
+  const handleCategoryChange = (e) => {
+    const value = e.target.value;
+    if (value === "__create_new_goal__") {
+      // Validate that important task fields are filled
+      if (!title.trim()) {
+        setValidationError("Please fill in the task title before creating a new goal.");
+        return;
+      }
+      if (!description.trim()) {
+        setValidationError("Please fill in the task description before creating a new goal.");
+        return;
+      }
+      setValidationError(null);
+      setIsGoalModalOpen(true);
+    } else {
+      setCategory(value);
+      setValidationError(null);
+    }
+  };
+
+  // Handle goal creation success
+  const handleGoalCreated = async () => {
+    // Refetch goals to get the newly created one
+    const updatedGoals = await fetchGoals();
+    if (updatedGoals && updatedGoals.length > 0) {
+      // Auto-select the most recently created goal (last in the list or find by newest)
+      const newestGoal = updatedGoals[updatedGoals.length - 1];
+      setCategory(newestGoal.title);
+    }
+    setIsGoalModalOpen(false);
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -177,7 +215,7 @@ export function TaskEditDialog({ isOpen, onClose, task, onSave }) {
               </label>
               <select
                 value={category}
-                onChange={(e) => setCategory(e.target.value)}
+                onChange={handleCategoryChange}
                 className="w-full p-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
                 disabled={isLoading}
               >
@@ -187,15 +225,26 @@ export function TaskEditDialog({ isOpen, onClose, task, onSave }) {
                     Loading categories...
                   </option>
                 ) : (
-                  goals.map((goal) => (
-                    <option key={goal._id} value={goal.title}>
-                      {goal.title}
+                  <>
+                    {goals.map((goal) => (
+                      <option key={goal._id} value={goal.title}>
+                        {goal.title}
+                      </option>
+                    ))}
+                    <option value="__create_new_goal__" className="font-medium text-blue-600">
+                      + Create New Goal
                     </option>
-                  ))
+                  </>
                 )}
               </select>
             </div>
           </div>
+
+          {validationError && (
+            <div className="text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 p-2 rounded">
+              {validationError}
+            </div>
+          )}
 
           {error && <div className="text-sm text-red-500 dark:text-red-400">{error}</div>}
 
@@ -216,6 +265,15 @@ export function TaskEditDialog({ isOpen, onClose, task, onSave }) {
           </div>
         </form>
       </div>
+
+      {/* Goal Creation Modal */}
+      {isGoalModalOpen && (
+        <GoalModal
+          isOpen={isGoalModalOpen}
+          onClose={() => setIsGoalModalOpen(false)}
+          onSave={handleGoalCreated}
+        />
+      )}
     </div>
   );
 }
