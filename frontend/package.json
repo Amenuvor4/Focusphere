@@ -45,7 +45,9 @@
     "test:e2e:dashboard": "npx playwright test dashboard.spec.js",
     "test:e2e:analytics": "npx playwright test analytics.spec.js",
     "test:e2e:ai-assistant": "npx playwright test ai-assistant.spec.js",
-    "test:e2e:settings": "npx playwright test settings.spec.js"
+    "test:e2e:settings": "npx playwright test settings.spec.js",
+    "test:e2e:edge-cases": "npx playwright test edge-cases.spec.js"
+
   },
   "eslintConfig": {
     "extends": [
