@@ -95,14 +95,22 @@ export function TaskEditDialog({ isOpen, onClose, task, onSave }) {
     }
   };
 
-  // Handle goal creation success
   const handleGoalCreated = async () => {
     // Refetch goals to get the newly created one
     const updatedGoals = await fetchGoals();
     if (updatedGoals && updatedGoals.length > 0) {
       // Auto-select the most recently created goal (last in the list or find by newest)
       const newestGoal = updatedGoals[updatedGoals.length - 1];
-      setCategory(newestGoal.title);
+      onSave({
+        ...(task || {}),
+        id: task?.id,
+        title,
+        description,
+        status,
+        priority,
+        dueDate,
+        category: newestGoal.title,
+      });
     }
     setIsGoalModalOpen(false);
   };
