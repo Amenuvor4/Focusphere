@@ -4,6 +4,7 @@ import getValidToken from "../config/tokenUtils.js";
 import GoalCard from "./GoalCard";
 import GoalDetails from "./GoalDetails";
 import GoalModal from "../componets/GoalModal.jsx";
+import ConfirmModal from "../componets/ConfirmModal.jsx";
 import { ENDPOINTS } from "../config/api.js";
 import { GoalsListSkeleton } from "../componets/GoalsListSkeletion.jsx";
 
@@ -15,6 +16,7 @@ const GoalList = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState(null);
   const [viewingGoal, setViewingGoal] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, goalId: null, taskCount: 0 });
   // FETCH DATA AT CONCURRENTLY
   useEffect(() => {
     fetchData();
@@ -65,9 +67,14 @@ const GoalList = () => {
     setViewingGoal(goal);
   };
 
-  const handleDeleteGoal = async (goalId) => {
-    if (!window.confirm("Are you sure you want to delete this goal?")) return;
+  const handleDeleteGoal = (goalId) => {
+    const goalToDelete = goals.find((g) => g._id === goalId);
+    const taskCount = goalToDelete?.tasks?.length || 0;
+    setDeleteConfirm({ isOpen: true, goalId, taskCount });
+  };
 
+  const confirmDelete = async () => {
+    const { goalId } = deleteConfirm;
     try {
       const token = await getValidToken();
       const response = await fetch(ENDPOINTS.GOALS.BY_ID(goalId), {
@@ -77,13 +84,11 @@ const GoalList = () => {
 
       if (response.ok) {
         setGoals(goals.filter((g) => g._id !== goalId));
-        alert("Goal deleted successfully!");
       } else {
-        alert("Failed to delete goal");
+        console.error("Failed to delete goal");
       }
     } catch (error) {
       console.error("Error deleting goal:", error);
-      alert("Error deleting goal");
     }
   };
 
@@ -183,6 +188,22 @@ const GoalList = () => {
           goal={selectedGoal}
         />
       )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, goalId: null, taskCount: 0 })}
+        onConfirm={confirmDelete}
+        title="Delete Goal"
+        message={
+          deleteConfirm.taskCount > 0
+            ? `Are you sure you want to delete this goal?\n\nThis will also delete ${deleteConfirm.taskCount} task${deleteConfirm.taskCount === 1 ? "" : "s"} associated with this goal. This action cannot be undone.`
+            : "Are you sure you want to delete this goal? This action cannot be undone."
+        }
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+      />
     </div>
   );
 };

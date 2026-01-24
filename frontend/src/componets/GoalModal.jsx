@@ -15,15 +15,18 @@ const GoalModal = ({ isOpen, onClose, onSave, goal = null }) => {
       : "",
   });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
 
     try {
       const token = await getValidToken();
       if (!token) {
-        alert("Please log in again");
+        setError("Session expired. Please log in again.");
+        setLoading(false);
         return;
       }
 
@@ -46,16 +49,15 @@ const GoalModal = ({ isOpen, onClose, onSave, goal = null }) => {
       });
 
       if (response.ok) {
-        alert(`Goal ${isEditing ? "updated" : "created"} successfully!`);
         onSave();
         onClose();
       } else {
-        const error = await response.json();
-        alert(error.error || "Failed to save goal");
+        const errorData = await response.json();
+        setError(errorData.error || "Failed to save goal");
       }
-    } catch (error) {
-      console.error("Error saving goal:", error);
-      alert("Error saving goal");
+    } catch (err) {
+      console.error("Error saving goal:", err);
+      setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -183,6 +185,13 @@ const GoalModal = ({ isOpen, onClose, onSave, goal = null }) => {
               className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
             />
           </div>
+
+          {/* Error Message */}
+          {error && (
+            <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+              <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+            </div>
+          )}
 
           {/* Buttons */}
           <div className="flex gap-2 pt-4">
