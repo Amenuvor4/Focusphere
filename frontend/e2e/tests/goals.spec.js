@@ -381,9 +381,10 @@ test.describe("Goals - Delete Goal", () => {
 
     await page.click('button:has-text("Delete")');
 
-    // Confirm deletion if confirmation dialog appears
+    // ConfirmModal uses "Delete" as the confirm button text
     const confirmButton = page
-      .locator('button:has-text("Confirm")')
+      .locator('.fixed.inset-0').last().locator('button:has-text("Delete")')
+      .or(page.locator('button:has-text("Confirm")'))
       .or(page.locator('button:has-text("Yes")'));
     if (await confirmButton.isVisible({ timeout: 2000 }).catch(() => false)) {
       await confirmButton.click();

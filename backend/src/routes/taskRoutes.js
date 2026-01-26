@@ -65,8 +65,9 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Title is required' });
     }
 
+    // Default to "General" category if not provided
     if (!category) {
-      return res.status(400).json({ error: 'Category is required' });
+      category = 'General';
     }
 
     // Sanitize and validate priority
