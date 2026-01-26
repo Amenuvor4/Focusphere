@@ -448,8 +448,7 @@ test.describe("Tasks - Priority Colors", () => {
     await page.click('button:has-text("Create Task")');
     await page.waitForTimeout(2000);
 
-    // Task should be visible
-    await expect(page.locator('text=High Priority Task')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('text=High Priority Task').first()).toBeVisible({ timeout: 10000 });
   });
 
   test("should display low priority with gray/green styling", async ({ page }) => {
@@ -467,7 +466,7 @@ test.describe("Tasks - Priority Colors", () => {
     await page.click('button:has-text("Create Task")');
     await page.waitForTimeout(2000);
 
-    await expect(page.locator('text=Low Priority Task')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('text=Low Priority Task').first()).toBeVisible({ timeout: 10000 });
   });
 });
 

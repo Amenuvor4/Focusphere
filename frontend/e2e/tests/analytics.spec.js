@@ -46,8 +46,8 @@ test.describe("Analytics - Dashboard Display", () => {
       .locator("select")
       .or(
         page
-          .locator('button:has-text("This week")')
-          .or(page.locator('button:has-text("This month")')),
+          .locator('button:has-text("This Week")')
+          .or(page.locator('button:has-text("This Month")')),
       );
     await expect(timeSelector.first()).toBeVisible({ timeout: 10000 });
   });
@@ -56,14 +56,8 @@ test.describe("Analytics - Dashboard Display", () => {
     const timeSelector = page.locator("select").first();
 
     if (await timeSelector.isVisible().catch(() => false)) {
-      await timeSelector.click();
-
-      // Check for options
-      await expect(
-        page
-          .locator('option:has-text("week")')
-          .or(page.locator("text=This week")),
-      ).toBeVisible();
+      const optionCount = await timeSelector.locator("option").count();
+      expect(optionCount).toBeGreaterThanOrEqual(2);
     }
   });
 });
@@ -79,9 +73,9 @@ test.describe("Analytics - Stats Cards", () => {
     ).toBeVisible({ timeout: 10000 });
   });
 
-  test("should display Tasks Created card", async ({ page }) => {
+  test("should display Recent Activity card", async ({ page }) => {
     await expect(
-      page.locator("text=Tasks Created").or(page.locator("text=Created")),
+      page.locator("text=Recent Activity").or(page.locator("text=Activity")),
     ).toBeVisible({ timeout: 10000 });
   });
 
@@ -116,43 +110,30 @@ test.describe("Analytics - Time Range Selection", () => {
     await loginAndGoToAnalytics(page);
   });
 
-  test("should default to 'This week' view", async ({ page }) => {
-    const weekOption = page
-      .locator("text=This week")
-      .or(page.locator('option:checked:has-text("week")'));
-    await expect(weekOption.first()).toBeVisible({ timeout: 10000 });
+  test("should default to 'This Week' view", async ({ page }) => {
+    const timeSelector = page.locator("select").first();
+    await expect(timeSelector).toHaveValue("Week", { timeout: 10000 });
   });
 
   test("should change data when selecting different time range", async ({
     page,
   }) => {
-    // Get initial stats
-    const initialStats = await page
-      .locator("text=/\\d+/")
-      .first()
-      .textContent();
-
-    // Change time range
     const timeSelector = page.locator("select").first();
     if (await timeSelector.isVisible().catch(() => false)) {
-      await timeSelector.selectOption({ label: /month/i });
+      await timeSelector.selectOption("Month");
       await page.waitForTimeout(1000);
+      await expect(timeSelector).toHaveValue("Month");
     }
-
-    // Page should update (data may or may not change)
-    await expect(page.locator("body")).toBeVisible();
   });
 
   test("should have quarter and year options", async ({ page }) => {
     const timeSelector = page.locator("select").first();
 
     if (await timeSelector.isVisible().catch(() => false)) {
-      // Check for quarter option
-      const quarterOption = page.locator('option:has-text("quarter")');
-      const yearOption = page.locator('option:has-text("year")');
-
-      // At least one long-term option should exist
-      await expect(quarterOption.or(yearOption).first()).toBeVisible();
+      const options = await timeSelector.locator("option").allTextContents();
+      const hasQuarter = options.some((o) => o.includes("Quarter"));
+      const hasYear = options.some((o) => o.includes("Year"));
+      expect(hasQuarter || hasYear).toBe(true);
     }
   });
 });
@@ -170,7 +151,7 @@ test.describe("Analytics - Charts", () => {
 
   test("should display Tasks by Priority chart", async ({ page }) => {
     await expect(
-      page.locator("text=Tasks by Priority").or(page.locator("text=Priority")),
+      page.locator("text=Tasks by Priority").first(),
     ).toBeVisible({ timeout: 10000 });
   });
 
@@ -271,10 +252,7 @@ test.describe("Analytics - All Activity Modal", () => {
   test("should open modal on View All click", async ({ page }) => {
     await page.click('button:has-text("View All")');
 
-    // Modal should open
-    await expect(
-      page.locator('[role="dialog"]').or(page.locator('[class*="modal"]')),
-    ).toBeVisible({ timeout: 5000 });
+    await expect(page.locator("text=All Activity")).toBeVisible({ timeout: 5000 });
   });
 
   test("should display activity filter controls", async ({ page }) => {
@@ -307,28 +285,18 @@ test.describe("Analytics - All Activity Modal", () => {
     await page.click('button:has-text("View All")');
     await page.waitForTimeout(500);
 
-    // Look for category filter
-    const categoryFilter = page
-      .locator("text=Category")
-      .or(page.locator("select").filter({ hasText: /category/i }));
-    // Category filter might not be visible
-    await expect(
-      page.locator('[role="dialog"]').or(page.locator('[class*="modal"]')),
-    ).toBeVisible();
+    await expect(page.locator("text=All Activity")).toBeVisible();
+    const selects = page.locator("select");
+    expect(await selects.count()).toBeGreaterThanOrEqual(2);
   });
 
   test("should have priority filter", async ({ page }) => {
     await page.click('button:has-text("View All")');
     await page.waitForTimeout(500);
 
-    // Look for priority filter
-    const priorityFilter = page
-      .locator("text=Priority")
-      .or(page.locator("select").filter({ hasText: /priority/i }));
-    // Priority filter might not be visible
-    await expect(
-      page.locator('[role="dialog"]').or(page.locator('[class*="modal"]')),
-    ).toBeVisible();
+    await expect(page.locator("text=All Activity")).toBeVisible();
+    const selects = page.locator("select");
+    expect(await selects.count()).toBeGreaterThanOrEqual(3);
   });
 
   test("should close modal on close button", async ({ page }) => {
@@ -487,12 +455,10 @@ test.describe("Analytics - Responsive Design", () => {
   test("should adapt layout on mobile", async ({ page }) => {
     await loginAndGoToAnalytics(page);
 
-    // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
     await page.waitForTimeout(500);
 
-    // Stats cards should still be visible
-    await expect(page.locator("text=Analytics").first()).toBeVisible();
+    await expect(page.locator("text=Tasks Completed").first()).toBeVisible();
   });
 
   test("should stack cards on small screens", async ({ page }) => {
