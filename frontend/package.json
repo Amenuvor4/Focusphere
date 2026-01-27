@@ -30,7 +30,7 @@
   },
   "scripts": {
     "start": "SET NODE_OPTIONS=--openssl-legacy-provider && react-scripts start",
-    "build": "SET NODE_OPTIONS=--openssl-legacy-provider && react-scripts build",
+    "build": "cross-env NODE_OPTIONS=--openssl-legacy-provider react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "dev": "vite",
@@ -47,7 +47,6 @@
     "test:e2e:ai-assistant": "npx playwright test ai-assistant.spec.js",
     "test:e2e:settings": "npx playwright test settings.spec.js",
     "test:e2e:edge-cases": "npx playwright test edge-cases.spec.js"
-
   },
   "eslintConfig": {
     "extends": [
