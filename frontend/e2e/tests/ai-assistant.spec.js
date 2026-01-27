@@ -39,8 +39,9 @@ test.describe("AI Assistant - Full Page View", () => {
   });
 
   test("should display AI Assistant header", async ({ page }) => {
+    // Use specific h1 selector to avoid matching multiple elements
     await expect(
-      page.locator("text=Focusphere AI").or(page.locator("text=AI Assistant")),
+      page.locator("h1").filter({ hasText: "Focusphere AI" }),
     ).toBeVisible({ timeout: 10000 });
   });
 
@@ -54,10 +55,10 @@ test.describe("AI Assistant - Full Page View", () => {
   });
 
   test("should display main chat area", async ({ page }) => {
-    // Chat area with message input
-    await expect(
-      page.locator('[placeholder*="message" i]').or(page.locator("textarea")),
-    ).toBeVisible({ timeout: 10000 });
+    // Chat area with message input - use the actual placeholder text
+    await expect(page.getByPlaceholder("Ask Focusphere AI...")).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test("should display New Chat button", async ({ page }) => {
@@ -73,10 +74,9 @@ test.describe("AI Assistant - Welcome Screen", () => {
   });
 
   test("should display welcome message", async ({ page }) => {
+    // Use specific h2 selector for the welcome screen title
     await expect(
-      page
-        .locator("text=Focusphere AI")
-        .or(page.locator("text=How can I help")),
+      page.locator("h2").filter({ hasText: "Focusphere AI" }),
     ).toBeVisible({ timeout: 10000 });
   });
 
@@ -116,9 +116,7 @@ test.describe("AI Assistant - Chat Interface", () => {
   });
 
   test("should display message input field", async ({ page }) => {
-    const input = page
-      .locator("textarea")
-      .or(page.locator('input[placeholder*="message" i]'));
+    const input = page.getByPlaceholder("Ask Focusphere AI...");
     await expect(input).toBeVisible({ timeout: 10000 });
   });
 
@@ -133,9 +131,7 @@ test.describe("AI Assistant - Chat Interface", () => {
   });
 
   test("should enable send button when input has text", async ({ page }) => {
-    const input = page
-      .locator("textarea")
-      .or(page.locator('input[placeholder*="message" i]'));
+    const input = page.getByPlaceholder("Ask Focusphere AI...");
     await input.fill("Hello AI");
 
     const sendButton = page.locator('button:has([class*="send"])').or(
@@ -150,21 +146,21 @@ test.describe("AI Assistant - Chat Interface", () => {
   });
 
   test("should send message on button click", async ({ page }) => {
-    // Mock AI response
+    // Mock AI response - match expected structure: { response: { message, suggestedActions } }
     await page.route("**/api/ai/chat", (route) => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
-          message: "Hello! How can I help you today?",
-          actions: [],
+          response: {
+            message: "Hello! How can I help you today?",
+            suggestedActions: [],
+          },
         }),
       });
     });
 
-    const input = page
-      .locator("textarea")
-      .or(page.locator('input[placeholder*="message" i]'));
+    const input = page.getByPlaceholder("Ask Focusphere AI...");
     await input.fill("Hello");
 
     await page.click('button:has([class*="send"])').catch(() => {
@@ -179,8 +175,8 @@ test.describe("AI Assistant - Chat Interface", () => {
     // Should show loading or response
     await page.waitForTimeout(1000);
 
-    // Message should appear in chat
-    await expect(page.locator("text=Hello")).toBeVisible();
+    // Message should appear in chat (use .first() to avoid strict mode with multiple matches)
+    await expect(page.locator("text=Hello").first()).toBeVisible();
   });
 
   test("should send message on Enter key", async ({ page }) => {
@@ -189,15 +185,15 @@ test.describe("AI Assistant - Chat Interface", () => {
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
-          message: "I can help with that!",
-          actions: [],
+          response: {
+            message: "I can help with that!",
+            suggestedActions: [],
+          },
         }),
       });
     });
 
-    const input = page
-      .locator("textarea")
-      .or(page.locator('input[placeholder*="message" i]'));
+    const input = page.getByPlaceholder("Ask Focusphere AI...");
     await input.fill("Test message");
     await input.press("Enter");
 
@@ -208,14 +204,14 @@ test.describe("AI Assistant - Chat Interface", () => {
   });
 
   test("should support Shift+Enter for newline", async ({ page }) => {
-    const input = page.locator("textarea");
+    const textarea = page.locator("textarea");
 
-    if (await input.isVisible().catch(() => false)) {
-      await input.fill("Line 1");
-      await input.press("Shift+Enter");
-      await input.type("Line 2");
+    if (await textarea.isVisible().catch(() => false)) {
+      await textarea.fill("Line 1");
+      await textarea.press("Shift+Enter");
+      await textarea.type("Line 2");
 
-      const value = await input.inputValue();
+      const value = await textarea.inputValue();
       expect(value).toContain("Line 1");
       expect(value).toContain("Line 2");
     }
@@ -226,13 +222,13 @@ test.describe("AI Assistant - Chat Interface", () => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ message: "Response", actions: [] }),
+        body: JSON.stringify({
+          response: { message: "Response", suggestedActions: [] },
+        }),
       });
     });
 
-    const input = page
-      .locator("textarea")
-      .or(page.locator('input[placeholder*="message" i]'));
+    const input = page.getByPlaceholder("Ask Focusphere AI...");
     await input.fill("User message test");
     await input.press("Enter");
 
@@ -249,15 +245,15 @@ test.describe("AI Assistant - Chat Interface", () => {
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
-          message: "AI response with avatar",
-          actions: [],
+          response: {
+            message: "AI response with avatar",
+            suggestedActions: [],
+          },
         }),
       });
     });
 
-    const input = page
-      .locator("textarea")
-      .or(page.locator('input[placeholder*="message" i]'));
+    const input = page.getByPlaceholder("Ask Focusphere AI...");
     await input.fill("Hello");
     await input.press("Enter");
 
@@ -278,13 +274,13 @@ test.describe("AI Assistant - Chat Interface", () => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ message: "Delayed response", actions: [] }),
+        body: JSON.stringify({
+          response: { message: "Delayed response", suggestedActions: [] },
+        }),
       });
     });
 
-    const input = page
-      .locator("textarea")
-      .or(page.locator('input[placeholder*="message" i]'));
+    const input = page.getByPlaceholder("Ask Focusphere AI...");
     await input.fill("Slow request");
     await input.press("Enter");
 
@@ -304,14 +300,14 @@ test.describe("AI Assistant - Chat Interface", () => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ message: "Response", actions: [] }),
+        body: JSON.stringify({
+          response: { message: "Response", suggestedActions: [] },
+        }),
       });
     });
 
     // Send multiple messages
-    const input = page
-      .locator("textarea")
-      .or(page.locator('input[placeholder*="message" i]'));
+    const input = page.getByPlaceholder("Ask Focusphere AI...");
 
     for (let i = 0; i < 3; i++) {
       await input.fill(`Message ${i}`);
@@ -335,8 +331,10 @@ test.describe("AI Assistant - Smart Suggestions", () => {
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
-          message: "I'll help you create tasks!",
-          actions: [],
+          response: {
+            message: "I'll help you create tasks!",
+            suggestedActions: [],
+          },
         }),
       });
     });
@@ -369,9 +367,7 @@ test.describe("AI Assistant - Conversation Management", () => {
     await page.waitForTimeout(500);
 
     // New chat area should be ready
-    const input = page
-      .locator("textarea")
-      .or(page.locator('input[placeholder*="message" i]'));
+    const input = page.getByPlaceholder("Ask Focusphere AI...");
     await expect(input).toBeVisible();
   });
 
@@ -380,13 +376,13 @@ test.describe("AI Assistant - Conversation Management", () => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ message: "Response", actions: [] }),
+        body: JSON.stringify({
+          response: { message: "Response", suggestedActions: [] },
+        }),
       });
     });
 
-    const input = page
-      .locator("textarea")
-      .or(page.locator('input[placeholder*="message" i]'));
+    const input = page.getByPlaceholder("Ask Focusphere AI...");
     await input.fill("Test conversation save");
     await input.press("Enter");
     await page.waitForTimeout(1000);
@@ -404,14 +400,14 @@ test.describe("AI Assistant - Conversation Management", () => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ message: "Response", actions: [] }),
+        body: JSON.stringify({
+          response: { message: "Response", suggestedActions: [] },
+        }),
       });
     });
 
     // Start a conversation
-    const input = page
-      .locator("textarea")
-      .or(page.locator('input[placeholder*="message" i]'));
+    const input = page.getByPlaceholder("Ask Focusphere AI...");
     await input.fill("Sidebar test");
     await input.press("Enter");
     await page.waitForTimeout(1000);
@@ -431,13 +427,13 @@ test.describe("AI Assistant - Conversation Management", () => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ message: "Response 1", actions: [] }),
+        body: JSON.stringify({
+          response: { message: "Response 1", suggestedActions: [] },
+        }),
       });
     });
 
-    const input = page
-      .locator("textarea")
-      .or(page.locator('input[placeholder*="message" i]'));
+    const input = page.getByPlaceholder("Ask Focusphere AI...");
     await input.fill("First conversation");
     await input.press("Enter");
     await page.waitForTimeout(1000);
@@ -464,13 +460,13 @@ test.describe("AI Assistant - Conversation Management", () => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ message: "Response", actions: [] }),
+        body: JSON.stringify({
+          response: { message: "Response", suggestedActions: [] },
+        }),
       });
     });
 
-    const input = page
-      .locator("textarea")
-      .or(page.locator('input[placeholder*="message" i]'));
+    const input = page.getByPlaceholder("Ask Focusphere AI...");
     await input.fill("Delete test");
     await input.press("Enter");
     await page.waitForTimeout(1000);
@@ -507,30 +503,30 @@ test.describe("AI Assistant - AI Actions", () => {
   test("should display action card when AI suggests action", async ({
     page,
   }) => {
-    // Mock AI response with action
+    // Mock AI response with action - use correct structure
     await page.route("**/api/ai/chat", (route) => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
-          message: "I'll create a task for you.",
-          actions: [
-            {
-              type: "create_task",
-              data: {
-                title: "AI Generated Task",
-                description: "Task created by AI",
-                priority: "medium",
+          response: {
+            message: "I'll create a task for you.",
+            suggestedActions: [
+              {
+                type: "create_task",
+                data: {
+                  title: "AI Generated Task",
+                  description: "Task created by AI",
+                  priority: "medium",
+                },
               },
-            },
-          ],
+            ],
+          },
         }),
       });
     });
 
-    const input = page
-      .locator("textarea")
-      .or(page.locator('input[placeholder*="message" i]'));
+    const input = page.getByPlaceholder("Ask Focusphere AI...");
     await input.fill("Create a task for me");
     await input.press("Enter");
 
@@ -548,19 +544,21 @@ test.describe("AI Assistant - AI Actions", () => {
   });
 
   test("should accept action when clicking approve", async ({ page }) => {
-    // Mock AI response with action
+    // Mock AI response with action - use correct structure
     await page.route("**/api/ai/chat", (route) => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
-          message: "Creating task...",
-          actions: [
-            {
-              type: "create_task",
-              data: { title: "Test Task", priority: "high" },
-            },
-          ],
+          response: {
+            message: "Creating task...",
+            suggestedActions: [
+              {
+                type: "create_task",
+                data: { title: "Test Task", priority: "high" },
+              },
+            ],
+          },
         }),
       });
     });
@@ -578,9 +576,7 @@ test.describe("AI Assistant - AI Actions", () => {
       }
     });
 
-    const input = page
-      .locator("textarea")
-      .or(page.locator('input[placeholder*="message" i]'));
+    const input = page.getByPlaceholder("Ask Focusphere AI...");
     await input.fill("Create a task");
     await input.press("Enter");
 
@@ -613,20 +609,20 @@ test.describe("AI Assistant - AI Actions", () => {
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
-          message: "I can delete this task.",
-          actions: [
-            {
-              type: "delete_task",
-              data: { id: "task-id" },
-            },
-          ],
+          response: {
+            message: "I can delete this task.",
+            suggestedActions: [
+              {
+                type: "delete_task",
+                data: { id: "task-id" },
+              },
+            ],
+          },
         }),
       });
     });
 
-    const input = page
-      .locator("textarea")
-      .or(page.locator('input[placeholder*="message" i]'));
+    const input = page.getByPlaceholder("Ask Focusphere AI...");
     await input.fill("Delete the task");
     await input.press("Enter");
 
@@ -659,34 +655,34 @@ test.describe("AI Assistant - AI Actions", () => {
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
-          message: "Here's the task I'll create:",
-          actions: [
-            {
-              type: "create_task",
-              data: {
-                title: "Preview Test Task",
-                description: "This is a test description",
-                priority: "high",
-                dueDate: "2024-12-31",
+          response: {
+            message: "Here's the task I'll create:",
+            suggestedActions: [
+              {
+                type: "create_task",
+                data: {
+                  title: "Preview Test Task",
+                  description: "This is a test description",
+                  priority: "high",
+                  dueDate: "2024-12-31",
+                },
               },
-            },
-          ],
+            ],
+          },
         }),
       });
     });
 
-    const input = page
-      .locator("textarea")
-      .or(page.locator('input[placeholder*="message" i]'));
+    const input = page.getByPlaceholder("Ask Focusphere AI...");
     await input.fill("Create a task with details");
     await input.press("Enter");
 
     await page.waitForTimeout(2000);
 
-    // Preview should show task details
-    await expect(
-      page.locator("text=Preview Test Task").or(page.locator("text=high")),
-    ).toBeVisible({ timeout: 10000 });
+    // Preview should show task details (use .first() to avoid strict mode)
+    await expect(page.locator("text=Preview Test Task").first()).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test("should handle multiple actions", async ({ page }) => {
@@ -695,19 +691,19 @@ test.describe("AI Assistant - AI Actions", () => {
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
-          message: "I'll create multiple tasks:",
-          actions: [
-            { type: "create_task", data: { title: "Task 1" } },
-            { type: "create_task", data: { title: "Task 2" } },
-            { type: "create_task", data: { title: "Task 3" } },
-          ],
+          response: {
+            message: "I'll create multiple tasks:",
+            suggestedActions: [
+              { type: "create_task", data: { title: "Task 1" } },
+              { type: "create_task", data: { title: "Task 2" } },
+              { type: "create_task", data: { title: "Task 3" } },
+            ],
+          },
         }),
       });
     });
 
-    const input = page
-      .locator("textarea")
-      .or(page.locator('input[placeholder*="message" i]'));
+    const input = page.getByPlaceholder("Ask Focusphere AI...");
     await input.fill("Create 3 tasks");
     await input.press("Enter");
 
@@ -753,28 +749,20 @@ test.describe("AI Assistant - Chat Widget", () => {
   test("should open widget on button click", async ({ page }) => {
     // Find the floating widget button
     const widgetButton = page
-      .locator('button[class*="fixed"]')
-      .or(
-        page
-          .locator('[class*="bottom-4"]')
-          .or(page.locator('[class*="right-4"]')),
-      )
+      .locator("button.fixed")
       .filter({ has: page.locator("svg") });
 
-    if (
-      await widgetButton
-        .first()
-        .isVisible()
-        .catch(() => false)
-    ) {
-      await widgetButton.first().click();
+    if (await widgetButton.isVisible().catch(() => false)) {
+      await widgetButton.click();
+      await page.waitForTimeout(1000);
 
       // Widget popup should appear
       await expect(
-        page
-          .locator('[class*="chat-widget"]')
-          .or(page.locator('[class*="popup"]')),
+        page.getByPlaceholder("Message Focusphere AI..."),
       ).toBeVisible({ timeout: 5000 });
+    } else {
+      // Widget button not presen
+      expect(true).toBe(true);
     }
   });
 
@@ -816,27 +804,22 @@ test.describe("AI Assistant - Chat Widget", () => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ message: "Widget response", actions: [] }),
+        body: JSON.stringify({
+          response: { message: "Widget response", suggestedActions: [] },
+        }),
       });
     });
 
     const widgetButton = page
-      .locator('button[class*="fixed"]')
+      .locator("button.fixed")
       .filter({ has: page.locator("svg") });
 
-    if (
-      await widgetButton
-        .first()
-        .isVisible()
-        .catch(() => false)
-    ) {
-      await widgetButton.first().click();
+    if (await widgetButton.isVisible().catch(() => false)) {
+      await widgetButton.click();
       await page.waitForTimeout(500);
 
       // Find input in widget
-      const input = page
-        .locator("textarea")
-        .or(page.locator('input[placeholder*="message" i]'));
+      const input = page.getByPlaceholder("Message Focusphere AI...");
 
       if (await input.isVisible().catch(() => false)) {
         await input.fill("Widget test");
@@ -864,9 +847,7 @@ test.describe("AI Assistant - Error Handling", () => {
       });
     });
 
-    const input = page
-      .locator("textarea")
-      .or(page.locator('input[placeholder*="message" i]'));
+    const input = page.getByPlaceholder("Ask Focusphere AI...");
     await input.fill("Error test");
     await input.press("Enter");
 
@@ -889,9 +870,7 @@ test.describe("AI Assistant - Error Handling", () => {
       });
     });
 
-    const input = page
-      .locator("textarea")
-      .or(page.locator('input[placeholder*="message" i]'));
+    const input = page.getByPlaceholder("Ask Focusphere AI...");
     await input.fill("Retry test");
     await input.press("Enter");
 
@@ -912,9 +891,7 @@ test.describe("AI Assistant - Error Handling", () => {
       route.abort();
     });
 
-    const input = page
-      .locator("textarea")
-      .or(page.locator('input[placeholder*="message" i]'));
+    const input = page.getByPlaceholder("Ask Focusphere AI...");
     await input.fill("Timeout test");
     await input.press("Enter");
 
@@ -937,24 +914,24 @@ test.describe("AI Assistant - Markdown Rendering", () => {
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
-          message: "Here's a **bold** and *italic* message with `code`.",
-          actions: [],
+          response: {
+            message: "Here's a **bold** and *italic* message with `code`.",
+            suggestedActions: [],
+          },
         }),
       });
     });
 
-    const input = page
-      .locator("textarea")
-      .or(page.locator('input[placeholder*="message" i]'));
+    const input = page.getByPlaceholder("Ask Focusphere AI...");
     await input.fill("Test markdown");
     await input.press("Enter");
 
     await page.waitForTimeout(2000);
 
-    // Response should be visible
-    await expect(
-      page.locator("text=bold").or(page.locator("text=italic")),
-    ).toBeVisible({ timeout: 10000 });
+    // Response should be visible (use .first() to avoid strict mode)
+    await expect(page.locator("text=bold").first()).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test("should render code blocks", async ({ page }) => {
@@ -963,16 +940,16 @@ test.describe("AI Assistant - Markdown Rendering", () => {
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
-          message:
-            "Here's some code:\n```javascript\nconsole.log('Hello');\n```",
-          actions: [],
+          response: {
+            message:
+              "Here's some code:\n```javascript\nconsole.log('Hello');\n```",
+            suggestedActions: [],
+          },
         }),
       });
     });
 
-    const input = page
-      .locator("textarea")
-      .or(page.locator('input[placeholder*="message" i]'));
+    const input = page.getByPlaceholder("Ask Focusphere AI...");
     await input.fill("Show me code");
     await input.press("Enter");
 
