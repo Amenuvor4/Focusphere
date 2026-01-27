@@ -11,21 +11,24 @@ const HomePage = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
+    <div className="min-h-screen relative">
       {/* Animated Background - White with Blue Streaks */}
       <AnimatedBackground />
       {/* Header */}
       <Header mobileMenuOpen={mobileMenuOpen} setMobileMenuOpen={setMobileMenuOpen} />
-      {/* Hero Section */}
-      <Hero />
-      {/* Features Section */}
-      <Features />
-      {/* About Section */}
-      <About />
-      {/* FAQ Section */}
-      <FAQ/>
-      {/* Footer */}
-      <Footer />
+      {/* Wrap content to ensure padding from fixed header */}
+      <div className="pt-20">
+        {/* Hero Section */}
+        <Hero />
+        {/* Features Section */}
+        <Features />
+        {/* About Section */}
+        <About />
+        {/* FAQ Section */}
+        <FAQ />
+        {/* Footer */}
+        <Footer />
+      </div>
     </div>
   )
 }

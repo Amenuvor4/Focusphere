@@ -1,25 +1,25 @@
-import { BarChart3, Calendar, Settings } from "lucide-react"
+import { Sparkles, FolderKanban, CheckSquare } from "lucide-react"
 
 const FeaturesSection = () => {
   const features = [
     {
-      icon: <BarChart3 className="w-10 h-10" />,
-      title: "AI-Powered Prioritization",
-      description: "Our advanced AI analyzes your behavior and deadlines to optimize your task list intelligently.",
+      icon: <Sparkles className="w-10 h-10" />,
+      title: "AI Chat Assistant",
+      description: "Chat naturally to create tasks, update goals, and get intelligent planning suggestions in real-time.",
       gradient: "from-blue-500 to-blue-600",
       glowColor: "blue"
     },
     {
-      icon: <Calendar className="w-10 h-10" />,
-      title: "Efficient Planning",
-      description: "Plan your tasks more effectively with our intuitive calendar integration and smart scheduling.",
+      icon: <FolderKanban className="w-10 h-10" />,
+      title: "Agentic Goal Management",
+      description: "Define high-level goals and let the AI propose the sub-tasks needed to achieve them.",
       gradient: "from-cyan-500 to-blue-500",
       glowColor: "cyan"
     },
     {
-      icon: <Settings className="w-10 h-10" />,
-      title: "Seamless Integration",
-      description: "Sync effortlessly across all your devices for a unified and consistent productivity experience.",
+      icon: <CheckSquare className="w-10 h-10" />,
+      title: "Human-in-the-loop",
+      description: "The AI proposes actions, but you stay in control. Approve, decline, or edit suggestions with one click.",
       gradient: "from-blue-600 to-cyan-500",
       glowColor: "blue"
     }
@@ -56,7 +56,7 @@ const FeaturesSection = () => {
             >
               {/* Gradient overlay on hover */}
               <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-cyan-50/50 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              
+
               {/* Content */}
               <div className="relative z-10">
                 {/* Icon container with glow effect */}
@@ -66,7 +66,7 @@ const FeaturesSection = () => {
                     {feature.icon}
                   </div>
                 </div>
-                
+
                 <h3 className="text-2xl font-bold mb-4 text-gray-900 group-hover:text-blue-700 transition-colors duration-300">
                   {feature.title}
                 </h3>

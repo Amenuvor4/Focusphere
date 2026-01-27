@@ -1,15 +1,15 @@
 const AboutSection = () => {
   const benefits = [
     {
-      text: "Smart task prioritization based on deadlines and importance",
+      text: "Conversational task creation using natural language",
       icon: "✓"
     },
     {
-      text: "Personalized recommendations that adapt to your work style",
+      text: "Dynamic Kanban boards organized by AI status detection",
       icon: "✓"
     },
     {
-      text: "Automated task creation and scheduling suggestions",
+      text: "Proactive suggestions for task deadlines and priorities",
       icon: "✓"
     }
   ]
@@ -31,16 +31,16 @@ const AboutSection = () => {
                 About Us
               </span>
             </div>
-            
+
             <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 bg-gradient-to-r from-gray-900 via-blue-800 to-cyan-700 bg-clip-text text-transparent leading-tight">
               Powered by Advanced AI
             </h2>
-            
+
             <p className="text-xl mb-8 text-gray-700 leading-relaxed">
               Focusphere uses cutting-edge machine learning to analyze your work patterns and optimize your
               productivity. Stay focused and achieve more with our intelligent task management system.
             </p>
-            
+
             <ul className="space-y-5 mb-8">
               {benefits.map((item, index) => (
                 <li key={index} className="flex items-start gap-4 group">
