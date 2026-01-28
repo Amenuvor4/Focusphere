@@ -20,7 +20,7 @@ import {
   Edit,
   User,
 } from "lucide-react";
-import { ENDPOINTS } from "../config.js";
+import { ENDPOINTS } from "../config/api.js";
 import { TaskEditDialog } from "../Dashboard/TaskEditDialog.jsx";
 import { AIChatWidgetSkeleton } from "./AIChatWidgetSkeleton.jsx";
 

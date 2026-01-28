@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { format } from "date-fns";
-import { ENDPOINTS } from "../config.js";
+import { ENDPOINTS } from "../config/api.js";
 
 export function TaskDialog({ isOpen, onClose, task }) {
   const [title, setTitle] = useState("");
@@ -20,19 +20,21 @@ export function TaskDialog({ isOpen, onClose, task }) {
       const fetchGoals = async () => {
         setIsLoading(true);
         try {
-          const token = await localStorage("accessToken");
+          const token = localStorage.getItem("accessToken");
           if (!token) {
+            setIsLoading(false);
             return;
           }
           const response = await fetch(ENDPOINTS.GOALS.BASE, {
             headers: { Authorization: `Bearer ${token}` },
           });
-          setGoals(response.data);
+          const data = await response.json();
+          setGoals(data);
 
-          setLoading(false);
+          setIsLoading(false);
         } catch (error) {
           console.error("Error fetching data:", error);
-          setLoading(false);
+          setIsLoading(false);
         }
       };
       fetchGoals();
@@ -82,15 +84,16 @@ export function TaskDialog({ isOpen, onClose, task }) {
     };
 
     try {
-      console.log("Token:", localStorage.getItem("token"));
+      const token = localStorage.getItem("accessToken");
+      console.log("Token:", token);
 
       if (isEditing) {
-        await axios.put(`/tasks/${task._id}`, taskData, {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        await axios.put(ENDPOINTS.TASKS.BY_ID(task._id), taskData, {
+          headers: { Authorization: `Bearer ${token}` },
         });
       } else {
-        await axios.post("/tasks", taskData, {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        await axios.post(ENDPOINTS.TASKS.BASE, taskData, {
+          headers: { Authorization: `Bearer ${token}` },
         });
       }
       onClose();

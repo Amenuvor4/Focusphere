@@ -6,7 +6,7 @@ import {
   useCallback,
 } from "react";
 import { jwtDecode } from "jwt-decode";
-import { ENDPOINTS } from "../config";
+import { ENDPOINTS } from "../config/api.js";
 
 const AuthContext = createContext(null);
 

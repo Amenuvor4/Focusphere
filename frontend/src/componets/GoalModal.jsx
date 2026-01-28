@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { X } from "lucide-react";
 import getValidToken from "../config/tokenUtils.js";
-import { ENDPOINTS } from "../config.js";
+import { ENDPOINTS } from "../config/api.js";
 
 const GoalModal = ({ isOpen, onClose, onSave, goal = null }) => {
   const isEditing = !!goal;

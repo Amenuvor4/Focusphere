@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import getValidToken from "../config/tokenUtils";
-import { ENDPOINTS } from "../config.js";
+import { ENDPOINTS } from "../config/api.js";
 import GoalModal from "../componets/GoalModal.jsx";
 
 export function TaskEditDialog({ isOpen, onClose, task, onSave }) {

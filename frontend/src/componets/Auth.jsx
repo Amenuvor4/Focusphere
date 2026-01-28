@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { FaGoogle } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
-import { ENDPOINTS } from "../config";
+import { ENDPOINTS } from "../config/api.js";
 import { AuthLoadingOverlay } from "./AuthSkeleton";
 
 // Password validation rules

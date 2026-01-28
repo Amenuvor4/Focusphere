@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
-import { ENDPOINTS } from "../config.js";
+import { ENDPOINTS } from "../config/api.js";
 
 export function DashboardSidebar({ currentView, setCurrentView }) {
   const { logout, getValidToken } = useAuth();

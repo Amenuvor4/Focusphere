@@ -20,7 +20,7 @@ import {
   BarElement,
 } from "chart.js";
 import getValidToken from "../config/tokenUtils";
-import { ENDPOINTS } from "../config.js";
+import { ENDPOINTS } from "../config/api.js";
 import { AnalyticsSkeleton } from "../componets/AnalyticsSkeleton.jsx";
 import AllActivityModal from "../componets/AllTasksModal.jsx";
 

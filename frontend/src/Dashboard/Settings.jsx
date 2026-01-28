@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Loader2, User, Palette, Bell, Check, AlertCircle } from "lucide-react";
 import getValidToken from "../config/tokenUtils";
-import { ENDPOINTS } from "../config";
+import { ENDPOINTS } from "../config/api.js";
 import { useTheme } from "../context/ThemeContext";
 import { SettingsSkeleton } from "../componets/SettingsSkeleton";
 

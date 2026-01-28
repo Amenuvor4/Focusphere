@@ -5,7 +5,7 @@ import GoalCard from "./GoalCard";
 import GoalDetails from "./GoalDetails";
 import GoalModal from "../componets/GoalModal.jsx";
 import ConfirmModal from "../componets/ConfirmModal.jsx";
-import { ENDPOINTS } from "../config.js";
+import { ENDPOINTS } from "../config/api.js";
 import { GoalsListSkeleton } from "../componets/GoalsListSkeletion.jsx";
 
 const GoalList = () => {

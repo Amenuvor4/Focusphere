@@ -1,5 +1,5 @@
 import { jwtDecode } from "jwt-decode";
-import { ENDPOINTS } from "..js";
+import { ENDPOINTS } from "./api.js";
 
 // Internal helper to Check if token is expiring
 const isTokenExpiring = (token) => {
