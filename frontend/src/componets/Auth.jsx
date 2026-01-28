@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { FaGoogle } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
-import { ENDPOINTS } from "../config/api";
+import { ENDPOINTS } from "../config";
 import { AuthLoadingOverlay } from "./AuthSkeleton";
 
 // Password validation rules
@@ -127,7 +127,7 @@ export default function Auth() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [error, setError] = useState(
-    oauthError ? "OAuth authentication failed. Please try again." : null
+    oauthError ? "OAuth authentication failed. Please try again." : null,
   );
   const [successMessage, setSuccessMessage] = useState(null);
   const [showPassword, setShowPassword] = useState(false);

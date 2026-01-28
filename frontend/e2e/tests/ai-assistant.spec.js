@@ -147,7 +147,7 @@ test.describe("AI Assistant - Chat Interface", () => {
 
   test("should send message on button click", async ({ page }) => {
     // Mock AI response - match expected structure: { response: { message, suggestedActions } }
-    await page.route("**/api/ai/chat", (route) => {
+    await page.route("**/ai/chat", (route) => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -180,7 +180,7 @@ test.describe("AI Assistant - Chat Interface", () => {
   });
 
   test("should send message on Enter key", async ({ page }) => {
-    await page.route("**/api/ai/chat", (route) => {
+    await page.route("**/ai/chat", (route) => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -218,7 +218,7 @@ test.describe("AI Assistant - Chat Interface", () => {
   });
 
   test("should display user message with correct styling", async ({ page }) => {
-    await page.route("**/api/ai/chat", (route) => {
+    await page.route("**/ai/chat", (route) => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -240,7 +240,7 @@ test.describe("AI Assistant - Chat Interface", () => {
   });
 
   test("should display AI response with avatar", async ({ page }) => {
-    await page.route("**/api/ai/chat", (route) => {
+    await page.route("**/ai/chat", (route) => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -269,7 +269,7 @@ test.describe("AI Assistant - Chat Interface", () => {
     page,
   }) => {
     // Mock slow AI response
-    await page.route("**/api/ai/chat", async (route) => {
+    await page.route("**/ai/chat", async (route) => {
       await new Promise((resolve) => setTimeout(resolve, 3000));
       route.fulfill({
         status: 200,
@@ -296,7 +296,7 @@ test.describe("AI Assistant - Chat Interface", () => {
   });
 
   test("should auto-scroll to latest message", async ({ page }) => {
-    await page.route("**/api/ai/chat", (route) => {
+    await page.route("**/ai/chat", (route) => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -326,7 +326,7 @@ test.describe("AI Assistant - Smart Suggestions", () => {
   });
 
   test("should click suggestion to send as message", async ({ page }) => {
-    await page.route("**/api/ai/chat", (route) => {
+    await page.route("**/ai/chat", (route) => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -372,7 +372,7 @@ test.describe("AI Assistant - Conversation Management", () => {
   });
 
   test("should save conversation to localStorage", async ({ page }) => {
-    await page.route("**/api/ai/chat", (route) => {
+    await page.route("**/ai/chat", (route) => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -396,7 +396,7 @@ test.describe("AI Assistant - Conversation Management", () => {
   });
 
   test("should display conversation in sidebar", async ({ page }) => {
-    await page.route("**/api/ai/chat", (route) => {
+    await page.route("**/ai/chat", (route) => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -423,7 +423,7 @@ test.describe("AI Assistant - Conversation Management", () => {
     // Create first conversation
     await page.click('button:has-text("New Chat")');
 
-    await page.route("**/api/ai/chat", (route) => {
+    await page.route("**/ai/chat", (route) => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -456,7 +456,7 @@ test.describe("AI Assistant - Conversation Management", () => {
 
   test("should delete conversation", async ({ page }) => {
     // Create a conversation first
-    await page.route("**/api/ai/chat", (route) => {
+    await page.route("**/ai/chat", (route) => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -504,7 +504,7 @@ test.describe("AI Assistant - AI Actions", () => {
     page,
   }) => {
     // Mock AI response with action - use correct structure
-    await page.route("**/api/ai/chat", (route) => {
+    await page.route("**/ai/chat", (route) => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -545,7 +545,7 @@ test.describe("AI Assistant - AI Actions", () => {
 
   test("should accept action when clicking approve", async ({ page }) => {
     // Mock AI response with action - use correct structure
-    await page.route("**/api/ai/chat", (route) => {
+    await page.route("**/ai/chat", (route) => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -564,7 +564,7 @@ test.describe("AI Assistant - AI Actions", () => {
     });
 
     // Mock task creation
-    await page.route("**/api/tasks", (route) => {
+    await page.route("**/tasks", (route) => {
       if (route.request().method() === "POST") {
         route.fulfill({
           status: 201,
@@ -604,7 +604,7 @@ test.describe("AI Assistant - AI Actions", () => {
   });
 
   test("should decline action when clicking decline", async ({ page }) => {
-    await page.route("**/api/ai/chat", (route) => {
+    await page.route("**/ai/chat", (route) => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -650,7 +650,7 @@ test.describe("AI Assistant - AI Actions", () => {
   });
 
   test("should show action preview details", async ({ page }) => {
-    await page.route("**/api/ai/chat", (route) => {
+    await page.route("**/ai/chat", (route) => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -686,7 +686,7 @@ test.describe("AI Assistant - AI Actions", () => {
   });
 
   test("should handle multiple actions", async ({ page }) => {
-    await page.route("**/api/ai/chat", (route) => {
+    await page.route("**/ai/chat", (route) => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -800,7 +800,7 @@ test.describe("AI Assistant - Chat Widget", () => {
   });
 
   test("should send messages from widget", async ({ page }) => {
-    await page.route("**/api/ai/chat", (route) => {
+    await page.route("**/ai/chat", (route) => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -839,7 +839,7 @@ test.describe("AI Assistant - Error Handling", () => {
   });
 
   test("should handle API error gracefully", async ({ page }) => {
-    await page.route("**/api/ai/chat", (route) => {
+    await page.route("**/ai/chat", (route) => {
       route.fulfill({
         status: 500,
         contentType: "application/json",
@@ -862,7 +862,7 @@ test.describe("AI Assistant - Error Handling", () => {
   });
 
   test("should show retry button on error", async ({ page }) => {
-    await page.route("**/api/ai/chat", (route) => {
+    await page.route("**/ai/chat", (route) => {
       route.fulfill({
         status: 500,
         contentType: "application/json",
@@ -886,7 +886,7 @@ test.describe("AI Assistant - Error Handling", () => {
   });
 
   test("should handle network timeout", async ({ page }) => {
-    await page.route("**/api/ai/chat", async (route) => {
+    await page.route("**/ai/chat", async (route) => {
       await new Promise((resolve) => setTimeout(resolve, 60000));
       route.abort();
     });
@@ -909,7 +909,7 @@ test.describe("AI Assistant - Markdown Rendering", () => {
   });
 
   test("should render markdown in AI responses", async ({ page }) => {
-    await page.route("**/api/ai/chat", (route) => {
+    await page.route("**/ai/chat", (route) => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -935,7 +935,7 @@ test.describe("AI Assistant - Markdown Rendering", () => {
   });
 
   test("should render code blocks", async ({ page }) => {
-    await page.route("**/api/ai/chat", (route) => {
+    await page.route("**/ai/chat", (route) => {
       route.fulfill({
         status: 200,
         contentType: "application/json",

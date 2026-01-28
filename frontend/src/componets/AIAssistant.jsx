@@ -18,7 +18,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
-import { ENDPOINTS } from "../config/api.js";
+import { ENDPOINTS } from "../config.js";
 import { AIAssistantSkeleton } from "./AIAssistantSkeleton.jsx";
 import {
   TypeWriter,

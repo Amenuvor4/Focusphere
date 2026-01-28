@@ -46,10 +46,12 @@ test.describe("Tasks - List Display", () => {
     await page.waitForTimeout(2000);
 
     // Verify we're on the tasks page with the New Task button
-    await expect(page.locator('button:has-text("New Task")')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('button:has-text("New Task")')).toBeVisible({
+      timeout: 10000,
+    });
 
     // Check that status filters exist (which proves the task view loaded)
-    const statusSelect = page.locator('select').first();
+    const statusSelect = page.locator("select").first();
     await expect(statusSelect).toBeVisible({ timeout: 5000 });
   });
 
@@ -60,7 +62,11 @@ test.describe("Tasks - List Display", () => {
     await expect(page.locator('button:has-text("New Task")')).toBeVisible();
 
     // Check that the page has loaded task content (filters)
-    const hasFilters = await page.locator('select').first().isVisible().catch(() => false);
+    const hasFilters = await page
+      .locator("select")
+      .first()
+      .isVisible()
+      .catch(() => false);
     expect(hasFilters).toBe(true);
   });
 
@@ -74,7 +80,10 @@ test.describe("Tasks - List Display", () => {
 
     // Welcome banner should show user stats
     // Look for task counts or completion info
-    const statsArea = page.locator('text=tasks').or(page.locator('text=completed')).or(page.locator('text=deadline'));
+    const statsArea = page
+      .locator("text=tasks")
+      .or(page.locator("text=completed"))
+      .or(page.locator("text=deadline"));
     await expect(statsArea.first()).toBeVisible({ timeout: 5000 });
   });
 });
@@ -88,7 +97,9 @@ test.describe("Tasks - Create Task", () => {
     await page.click('button:has-text("New Task")');
 
     // Dialog should open - uses fixed backdrop with form
-    const dialog = page.locator('.fixed.inset-0').filter({ has: page.locator('form') });
+    const dialog = page
+      .locator(".fixed.inset-0")
+      .filter({ has: page.locator("form") });
     await expect(dialog).toBeVisible({ timeout: 5000 });
   });
 
@@ -98,9 +109,15 @@ test.describe("Tasks - Create Task", () => {
     await page.waitForTimeout(500);
 
     // Check for form fields
-    await expect(page.locator('input[placeholder*="title" i]').or(page.locator('label:has-text("Title")'))).toBeVisible();
     await expect(
-      page.locator('textarea[placeholder*="description" i]').or(page.locator('label:has-text("Description")'))
+      page
+        .locator('input[placeholder*="title" i]')
+        .or(page.locator('label:has-text("Title")')),
+    ).toBeVisible();
+    await expect(
+      page
+        .locator('textarea[placeholder*="description" i]')
+        .or(page.locator('label:has-text("Description")')),
     ).toBeVisible();
   });
 
@@ -111,7 +128,7 @@ test.describe("Tasks - Create Task", () => {
     await page.waitForTimeout(500);
 
     // Fill title - the dialog has a form with input fields
-    const dialog = page.locator('.fixed.inset-0');
+    const dialog = page.locator(".fixed.inset-0");
     const titleInput = dialog.locator('input[type="text"]').first();
     await titleInput.fill(testData.taskTitle);
 
@@ -122,7 +139,9 @@ test.describe("Tasks - Create Task", () => {
     await page.waitForTimeout(1000);
 
     // Task should appear in the list
-    await expect(page.locator(`text=${testData.taskTitle}`)).toBeVisible({ timeout: 10000 });
+    await expect(page.locator(`text=${testData.taskTitle}`)).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test("should create task with all fields filled", async ({ page }) => {
@@ -132,17 +151,17 @@ test.describe("Tasks - Create Task", () => {
     await page.waitForTimeout(500);
 
     // Fill title
-    const dialog = page.locator('.fixed.inset-0');
+    const dialog = page.locator(".fixed.inset-0");
     await dialog.locator('input[type="text"]').first().fill(testData.taskTitle);
 
     // Fill description
-    const descInput = dialog.locator('textarea').first();
+    const descInput = dialog.locator("textarea").first();
     if (await descInput.isVisible()) {
       await descInput.fill(testData.taskDescription);
     }
 
     // Select priority - the second select in the grid is priority
-    const selects = dialog.locator('select');
+    const selects = dialog.locator("select");
     const prioritySelect = selects.nth(1); // Status is first, Priority is second
     if (await prioritySelect.isVisible().catch(() => false)) {
       await prioritySelect.selectOption("high");
@@ -155,7 +174,9 @@ test.describe("Tasks - Create Task", () => {
     await page.waitForTimeout(1000);
 
     // Task should appear
-    await expect(page.locator(`text=${testData.taskTitle}`)).toBeVisible({ timeout: 10000 });
+    await expect(page.locator(`text=${testData.taskTitle}`)).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test("should show validation error for empty title", async ({ page }) => {
@@ -166,7 +187,9 @@ test.describe("Tasks - Create Task", () => {
     await page.click('button:has-text("Create Task")');
 
     // The dialog should stay open because title is required
-    const dialog = page.locator('.fixed.inset-0').filter({ has: page.locator('form') });
+    const dialog = page
+      .locator(".fixed.inset-0")
+      .filter({ has: page.locator("form") });
     await expect(dialog).toBeVisible({ timeout: 2000 });
   });
 
@@ -178,7 +201,9 @@ test.describe("Tasks - Create Task", () => {
     await page.click('button:has-text("Cancel")');
 
     // Dialog should close
-    const dialog = page.locator('.fixed.inset-0').filter({ has: page.locator('form') });
+    const dialog = page
+      .locator(".fixed.inset-0")
+      .filter({ has: page.locator("form") });
     await expect(dialog).not.toBeVisible({ timeout: 5000 });
   });
 
@@ -188,7 +213,7 @@ test.describe("Tasks - Create Task", () => {
     await page.click('button:has-text("New Task")');
     await page.waitForTimeout(500);
 
-    const dialog = page.locator('.fixed.inset-0');
+    const dialog = page.locator(".fixed.inset-0");
     await dialog.locator('input[type="text"]').first().fill(testData.taskTitle);
     await page.click('button:has-text("Create Task")');
 
@@ -200,7 +225,11 @@ test.describe("Tasks - Create Task", () => {
     await page.waitForTimeout(500);
 
     // Form should be empty
-    const titleValue = await page.locator('.fixed.inset-0').locator('input[type="text"]').first().inputValue();
+    const titleValue = await page
+      .locator(".fixed.inset-0")
+      .locator('input[type="text"]')
+      .first()
+      .inputValue();
     expect(titleValue).toBe("");
   });
 });
@@ -218,22 +247,26 @@ test.describe("Tasks - Edit Task", () => {
     await page.click('button:has-text("New Task")');
     await page.waitForTimeout(500);
 
-    const dialog = page.locator('.fixed.inset-0');
+    const dialog = page.locator(".fixed.inset-0");
     await dialog.locator('input[type="text"]').first().fill(createdTaskTitle);
     await page.click('button:has-text("Create Task")');
     await page.waitForTimeout(2000);
 
     // Verify task was created
-    await expect(page.locator(`text=${createdTaskTitle}`)).toBeVisible({ timeout: 10000 });
+    await expect(page.locator(`text=${createdTaskTitle}`)).toBeVisible({
+      timeout: 10000,
+    });
   });
 
-  test("should open edit dialog when clicking edit on task", async ({ page }) => {
+  test("should open edit dialog when clicking edit on task", async ({
+    page,
+  }) => {
     // Click on the task card to open detail view
     const taskCard = page.locator(`text=${createdTaskTitle}`).first();
     await taskCard.click();
 
     // A dialog/modal should open (TaskDetail component)
-    const dialog = page.locator('.fixed.inset-0');
+    const dialog = page.locator(".fixed.inset-0");
     await expect(dialog).toBeVisible({ timeout: 5000 });
   });
 
@@ -252,7 +285,7 @@ test.describe("Tasks - Edit Task", () => {
     }
 
     // The edit dialog should have the title pre-filled
-    const dialog = page.locator('.fixed.inset-0');
+    const dialog = page.locator(".fixed.inset-0");
     const titleInput = dialog.locator('input[type="text"]').first();
     const titleValue = await titleInput.inputValue().catch(() => "");
     expect(titleValue).toContain("Test Task");
@@ -274,7 +307,7 @@ test.describe("Tasks - Edit Task", () => {
     }
 
     // Update title in edit dialog
-    const dialog = page.locator('.fixed.inset-0');
+    const dialog = page.locator(".fixed.inset-0");
     const titleInput = dialog.locator('input[type="text"]').first();
     await titleInput.fill(newTitle);
 
@@ -283,7 +316,9 @@ test.describe("Tasks - Edit Task", () => {
     await page.waitForTimeout(1000);
 
     // Updated task should appear
-    await expect(page.locator(`text=${newTitle}`)).toBeVisible({ timeout: 10000 });
+    await expect(page.locator(`text=${newTitle}`)).toBeVisible({
+      timeout: 10000,
+    });
   });
 });
 
@@ -300,13 +335,15 @@ test.describe("Tasks - Delete Task", () => {
     await page.click('button:has-text("New Task")');
     await page.waitForTimeout(500);
 
-    const dialog = page.locator('.fixed.inset-0');
+    const dialog = page.locator(".fixed.inset-0");
     await dialog.locator('input[type="text"]').first().fill(taskToDelete);
     await page.click('button:has-text("Create Task")');
     await page.waitForTimeout(2000);
 
     // Verify task was created
-    await expect(page.locator(`text=${taskToDelete}`)).toBeVisible({ timeout: 10000 });
+    await expect(page.locator(`text=${taskToDelete}`)).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test("should show delete option in task menu", async ({ page }) => {
@@ -316,7 +353,9 @@ test.describe("Tasks - Delete Task", () => {
     await page.waitForTimeout(500);
 
     // Delete button should be visible in the detail view
-    await expect(page.locator('button:has-text("Delete")')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('button:has-text("Delete")')).toBeVisible({
+      timeout: 5000,
+    });
   });
 
   test("should delete task when confirmed", async ({ page }) => {
@@ -329,7 +368,9 @@ test.describe("Tasks - Delete Task", () => {
     await page.click('button:has-text("Delete")');
 
     // Confirm deletion if confirmation dialog appears
-    const confirmButton = page.locator('button:has-text("Confirm")').or(page.locator('button:has-text("Yes")'));
+    const confirmButton = page
+      .locator('button:has-text("Confirm")')
+      .or(page.locator('button:has-text("Yes")'));
     if (await confirmButton.isVisible({ timeout: 2000 }).catch(() => false)) {
       await confirmButton.click();
     }
@@ -338,7 +379,9 @@ test.describe("Tasks - Delete Task", () => {
     await page.waitForTimeout(1000);
 
     // Task should be removed
-    await expect(page.locator(`text=${taskToDelete}`)).not.toBeVisible({ timeout: 10000 });
+    await expect(page.locator(`text=${taskToDelete}`)).not.toBeVisible({
+      timeout: 10000,
+    });
   });
 });
 
@@ -348,7 +391,9 @@ test.describe("Tasks - Filtering and Search", () => {
   });
 
   test("should display search input", async ({ page }) => {
-    const searchInput = page.locator('input[placeholder*="search" i]').or(page.locator('input[type="search"]'));
+    const searchInput = page
+      .locator('input[placeholder*="search" i]')
+      .or(page.locator('input[type="search"]'));
     await expect(searchInput).toBeVisible({ timeout: 5000 });
   });
 
@@ -358,7 +403,7 @@ test.describe("Tasks - Filtering and Search", () => {
     await page.click('button:has-text("New Task")');
     await page.waitForTimeout(500);
 
-    const dialog = page.locator('.fixed.inset-0');
+    const dialog = page.locator(".fixed.inset-0");
     await dialog.locator('input[type="text"]').first().fill(uniqueTitle);
     await page.click('button:has-text("Create Task")');
     await page.waitForTimeout(2000);
@@ -368,12 +413,14 @@ test.describe("Tasks - Filtering and Search", () => {
     await searchInput.fill("UniqueSearchTerm");
 
     // Should show the matching task
-    await expect(page.locator(`text=${uniqueTitle}`)).toBeVisible({ timeout: 5000 });
+    await expect(page.locator(`text=${uniqueTitle}`)).toBeVisible({
+      timeout: 5000,
+    });
   });
 
   test("should display filter dropdowns", async ({ page }) => {
     // Look for filter select elements (Status, Priority, Time filters)
-    const filterSelects = page.locator('select');
+    const filterSelects = page.locator("select");
     const filterCount = await filterSelects.count();
 
     // There should be at least 3 filter dropdowns (status, priority, time)
@@ -382,13 +429,22 @@ test.describe("Tasks - Filtering and Search", () => {
 
   test("should filter by status", async ({ page }) => {
     // Find and click status filter
-    const statusFilter = page.locator('select').or(page.locator('button:has-text("Status")'));
+    const statusFilter = page
+      .locator("select")
+      .or(page.locator('button:has-text("Status")'));
 
-    if (await statusFilter.first().isVisible().catch(() => false)) {
+    if (
+      await statusFilter
+        .first()
+        .isVisible()
+        .catch(() => false)
+    ) {
       await statusFilter.first().click();
 
       // Select a status option
-      const todoOption = page.locator('option:has-text("To Do")').or(page.locator('button:has-text("To Do")'));
+      const todoOption = page
+        .locator('option:has-text("To Do")')
+        .or(page.locator('button:has-text("To Do")'));
       if (await todoOption.isVisible().catch(() => false)) {
         await todoOption.click();
       }
@@ -397,13 +453,23 @@ test.describe("Tasks - Filtering and Search", () => {
 
   test("should filter by priority", async ({ page }) => {
     // Find and click priority filter
-    const priorityFilter = page.locator('select').filter({ hasText: /priority/i }).or(page.locator('button:has-text("Priority")'));
+    const priorityFilter = page
+      .locator("select")
+      .filter({ hasText: /priority/i })
+      .or(page.locator('button:has-text("Priority")'));
 
-    if (await priorityFilter.first().isVisible().catch(() => false)) {
+    if (
+      await priorityFilter
+        .first()
+        .isVisible()
+        .catch(() => false)
+    ) {
       await priorityFilter.first().click();
 
       // Select high priority
-      const highOption = page.locator('option:has-text("High")').or(page.locator('button:has-text("High")'));
+      const highOption = page
+        .locator('option:has-text("High")')
+        .or(page.locator('button:has-text("High")'));
       if (await highOption.isVisible().catch(() => false)) {
         await highOption.click();
       }
@@ -420,9 +486,11 @@ test.describe("Tasks - Filtering and Search", () => {
       await searchInput.clear();
 
       // Results should show all tasks again
-      const taskCards = page.locator('[class*="task"]').or(page.locator('[class*="card"]'));
+      const taskCards = page
+        .locator('[class*="task"]')
+        .or(page.locator('[class*="card"]'));
       // Just verify the page didn't crash
-      await expect(page.locator('body')).toBeVisible();
+      await expect(page.locator("body")).toBeVisible();
     }
   });
 });
@@ -437,36 +505,48 @@ test.describe("Tasks - Priority Colors", () => {
     await page.click('button:has-text("New Task")');
     await page.waitForTimeout(500);
 
-    const dialog = page.locator('.fixed.inset-0');
-    await dialog.locator('input[type="text"]').first().fill("High Priority Task");
+    const dialog = page.locator(".fixed.inset-0");
+    await dialog
+      .locator('input[type="text"]')
+      .first()
+      .fill("High Priority Task");
 
     // Select high priority - Priority is the second select in the grid
-    const selects = dialog.locator('select');
+    const selects = dialog.locator("select");
     const prioritySelect = selects.nth(1);
     await prioritySelect.selectOption("high");
 
     await page.click('button:has-text("Create Task")');
     await page.waitForTimeout(2000);
 
-    await expect(page.locator('text=High Priority Task').first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator("text=High Priority Task").first()).toBeVisible({
+      timeout: 10000,
+    });
   });
 
-  test("should display low priority with gray/green styling", async ({ page }) => {
+  test("should display low priority with gray/green styling", async ({
+    page,
+  }) => {
     await page.click('button:has-text("New Task")');
     await page.waitForTimeout(500);
 
-    const dialog = page.locator('.fixed.inset-0');
-    await dialog.locator('input[type="text"]').first().fill("Low Priority Task");
+    const dialog = page.locator(".fixed.inset-0");
+    await dialog
+      .locator('input[type="text"]')
+      .first()
+      .fill("Low Priority Task");
 
     // Select low priority - Priority is the second select
-    const selects = dialog.locator('select');
+    const selects = dialog.locator("select");
     const prioritySelect = selects.nth(1);
     await prioritySelect.selectOption("low");
 
     await page.click('button:has-text("Create Task")');
     await page.waitForTimeout(2000);
 
-    await expect(page.locator('text=Low Priority Task').first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator("text=Low Priority Task").first()).toBeVisible({
+      timeout: 10000,
+    });
   });
 });
 
@@ -475,19 +555,23 @@ test.describe("Tasks - Status Changes", () => {
     await loginAndGoToTasks(page);
   });
 
-  test("should move task between columns on status change", async ({ page }) => {
+  test("should move task between columns on status change", async ({
+    page,
+  }) => {
     // Create a task in To Do
     const taskTitle = `Status Change Test ${Date.now()}`;
     await page.click('button:has-text("New Task")');
     await page.waitForTimeout(500);
 
-    const dialog = page.locator('.fixed.inset-0');
+    const dialog = page.locator(".fixed.inset-0");
     await dialog.locator('input[type="text"]').first().fill(taskTitle);
     await page.click('button:has-text("Create Task")');
     await page.waitForTimeout(2000);
 
     // Task should be visible
-    await expect(page.locator(`text=${taskTitle}`)).toBeVisible({ timeout: 10000 });
+    await expect(page.locator(`text=${taskTitle}`)).toBeVisible({
+      timeout: 10000,
+    });
 
     // Click on task to open detail view
     const taskCard = page.locator(`text=${taskTitle}`).first();
@@ -502,8 +586,8 @@ test.describe("Tasks - Status Changes", () => {
     }
 
     // Change status - Status is the first select in the grid
-    const editDialog = page.locator('.fixed.inset-0');
-    const selects = editDialog.locator('select');
+    const editDialog = page.locator(".fixed.inset-0");
+    const selects = editDialog.locator("select");
     const statusSelect = selects.first();
     await statusSelect.selectOption("in-progress");
 
@@ -511,7 +595,9 @@ test.describe("Tasks - Status Changes", () => {
     await page.waitForTimeout(1000);
 
     // Task should still be visible (in different column)
-    await expect(page.locator(`text=${taskTitle}`)).toBeVisible({ timeout: 10000 });
+    await expect(page.locator(`text=${taskTitle}`)).toBeVisible({
+      timeout: 10000,
+    });
   });
 });
 
@@ -525,7 +611,9 @@ test.describe("Tasks - Due Dates", () => {
     await page.waitForTimeout(500);
 
     // Look for date input
-    const dateInput = page.locator('input[type="date"]').or(page.locator('input[placeholder*="date" i]'));
+    const dateInput = page
+      .locator('input[type="date"]')
+      .or(page.locator('input[placeholder*="date" i]'));
     await expect(dateInput).toBeVisible({ timeout: 5000 });
   });
 
@@ -535,8 +623,11 @@ test.describe("Tasks - Due Dates", () => {
     await page.click('button:has-text("New Task")');
     await page.waitForTimeout(500);
 
-    const dialog = page.locator('.fixed.inset-0');
-    await dialog.locator('input[type="text"]').first().fill("Task with Due Date");
+    const dialog = page.locator(".fixed.inset-0");
+    await dialog
+      .locator('input[type="text"]')
+      .first()
+      .fill("Task with Due Date");
 
     const dateInput = dialog.locator('input[type="date"]');
     if (await dateInput.isVisible().catch(() => false)) {
@@ -546,14 +637,16 @@ test.describe("Tasks - Due Dates", () => {
     await page.click('button:has-text("Create Task")');
     await page.waitForTimeout(2000);
 
-    await expect(page.locator('text=Task with Due Date')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator("text=Task with Due Date")).toBeVisible({
+      timeout: 10000,
+    });
   });
 });
 
 test.describe("Tasks - Loading States", () => {
   test("should show skeleton while loading tasks", async ({ page }) => {
     // Mock slow API response
-    await page.route("**/api/tasks", async (route) => {
+    await page.route("**/tasks", async (route) => {
       await new Promise((resolve) => setTimeout(resolve, 2000));
       route.fulfill({
         status: 200,
@@ -565,16 +658,18 @@ test.describe("Tasks - Loading States", () => {
     await loginAndGoToTasks(page);
 
     // Should show skeleton or loading indicator
-    const skeleton = page.locator('[class*="skeleton"]').or(page.locator('[class*="animate-pulse"]'));
+    const skeleton = page
+      .locator('[class*="skeleton"]')
+      .or(page.locator('[class*="animate-pulse"]'));
     // Skeleton should appear or page should load normally
-    await expect(page.locator('body')).toBeVisible();
+    await expect(page.locator("body")).toBeVisible();
   });
 });
 
 test.describe("Tasks - Empty State", () => {
   test("should display empty state when no tasks", async ({ page }) => {
     // Mock empty tasks response
-    await page.route("**/api/tasks", (route) => {
+    await page.route("**/tasks", (route) => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -586,7 +681,9 @@ test.describe("Tasks - Empty State", () => {
 
     // Should show empty state or just the columns
     // At minimum, the New Task button should be visible
-    await expect(page.locator('button:has-text("New Task")')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('button:has-text("New Task")')).toBeVisible({
+      timeout: 10000,
+    });
   });
 });
 
@@ -595,7 +692,7 @@ test.describe("Tasks - Error Handling", () => {
     await loginAndGoToTasks(page);
 
     // Mock API error for task creation
-    await page.route("**/api/tasks", (route) => {
+    await page.route("**/tasks", (route) => {
       if (route.request().method() === "POST") {
         route.fulfill({
           status: 500,
@@ -610,11 +707,13 @@ test.describe("Tasks - Error Handling", () => {
     await page.click('button:has-text("New Task")');
     await page.waitForTimeout(500);
 
-    await page.locator('input').first().fill("Error Test Task");
-    await page.click('button:has-text("Save")').catch(() => page.click('button:has-text("Create")'));
+    await page.locator("input").first().fill("Error Test Task");
+    await page
+      .click('button:has-text("Save")')
+      .catch(() => page.click('button:has-text("Create")'));
 
     // Should show error or dialog stays open
     // Just verify page doesn't crash
-    await expect(page.locator('body')).toBeVisible();
+    await expect(page.locator("body")).toBeVisible();
   });
 });

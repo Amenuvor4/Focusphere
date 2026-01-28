@@ -1,4 +1,10 @@
-import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useMemo,
+  useCallback,
+} from "react";
 import {
   X,
   Send,
@@ -14,7 +20,7 @@ import {
   Edit,
   User,
 } from "lucide-react";
-import { ENDPOINTS } from "../config/api.js";
+import { ENDPOINTS } from "../config.js";
 import { TaskEditDialog } from "../Dashboard/TaskEditDialog.jsx";
 import { AIChatWidgetSkeleton } from "./AIChatWidgetSkeleton.jsx";
 
@@ -133,7 +139,8 @@ const AIChatWidget = ({
           method = "POST";
           body = JSON.stringify({
             ...action.data,
-            description: action.data.description || `Goal: ${action.data.title}`,
+            description:
+              action.data.description || `Goal: ${action.data.title}`,
             progress: 0,
             tasks: [],
           });
@@ -445,7 +452,7 @@ const AIChatWidget = ({
       )}
 
       {isOpen && isInitializing && <AIChatWidgetSkeleton />}
-      
+
       {isOpen && !isInitializing && (
         <div className="fixed bottom-6 right-6 z-50 flex h-[500px] w-[420px] flex-col rounded-lg bg-white dark:bg-slate-800 shadow-2xl border border-gray-200 dark:border-slate-700">
           <div className="flex items-center justify-between rounded-t-lg bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-3 text-white">
@@ -498,12 +505,35 @@ const AIChatWidget = ({
                       ))}
                     </>
                   ) : (
-                    (smartSuggestions.length > 0 ? smartSuggestions : [
-                      { title: "Create my tasks", description: "Generate 5 tasks for today", prompt: "Create 5 productive tasks for me to work on today" },
-                      { title: "Set a new goal", description: "Help me define a goal", prompt: "Help me create a SMART goal for improving my productivity this month" },
-                      { title: "Review progress", description: "Analyze my tasks", prompt: "Analyze my current tasks and goals, and give me a progress summary" },
-                      { title: "Plan schedule", description: "Organize priorities", prompt: "Help me prioritize and organize my pending tasks for maximum productivity" }
-                    ]).map((suggestion, idx) => (
+                    (smartSuggestions.length > 0
+                      ? smartSuggestions
+                      : [
+                          {
+                            title: "Create my tasks",
+                            description: "Generate 5 tasks for today",
+                            prompt:
+                              "Create 5 productive tasks for me to work on today",
+                          },
+                          {
+                            title: "Set a new goal",
+                            description: "Help me define a goal",
+                            prompt:
+                              "Help me create a SMART goal for improving my productivity this month",
+                          },
+                          {
+                            title: "Review progress",
+                            description: "Analyze my tasks",
+                            prompt:
+                              "Analyze my current tasks and goals, and give me a progress summary",
+                          },
+                          {
+                            title: "Plan schedule",
+                            description: "Organize priorities",
+                            prompt:
+                              "Help me prioritize and organize my pending tasks for maximum productivity",
+                          },
+                        ]
+                    ).map((suggestion, idx) => (
                       <button
                         key={idx}
                         onClick={() => handleSuggestionClick(suggestion.prompt)}
@@ -527,11 +557,13 @@ const AIChatWidget = ({
                 {messages.map((message, messageIndex) => (
                   <div key={messageIndex} className="space-y-3">
                     <div className="flex gap-3">
-                      <div className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center ${
-                        message.role === "user"
-                          ? "bg-blue-600 dark:bg-blue-500"
-                          : "bg-gradient-to-br from-blue-500 to-purple-600"
-                      }`}>
+                      <div
+                        className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center ${
+                          message.role === "user"
+                            ? "bg-blue-600 dark:bg-blue-500"
+                            : "bg-gradient-to-br from-blue-500 to-purple-600"
+                        }`}
+                      >
                         {message.role === "user" ? (
                           <User className="h-4 w-4 text-white" />
                         ) : (
@@ -571,7 +603,9 @@ const AIChatWidget = ({
                         <div className="ml-10">
                           <MultiActionCard
                             actions={message.suggestedActions}
-                            onApprove={() => handleBulkApproval(messageIndex, true)}
+                            onApprove={() =>
+                              handleBulkApproval(messageIndex, true)
+                            }
                             onDecline={() =>
                               handleBulkApproval(messageIndex, false)
                             }
@@ -639,7 +673,8 @@ const AIChatWidget = ({
               </button>
             </div>
             <p className="text-xs text-gray-400 dark:text-slate-500 mt-2 text-center">
-              💡 Try: "Create 5 tasks" • "Show overdue tasks" • "Delete completed"
+              💡 Try: "Create 5 tasks" • "Show overdue tasks" • "Delete
+              completed"
             </p>
           </div>
         </div>
@@ -840,16 +875,22 @@ const MultiActionCard = ({
 // Single Action Card
 const ActionCard = ({ action, onApprove, onDecline }) => {
   const getActionIcon = () => {
-    if (action.type.includes("create")) return <Plus className="h-4 w-4 text-green-600 dark:text-green-400" />;
-    if (action.type.includes("update")) return <Edit className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />;
-    if (action.type.includes("delete")) return <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />;
+    if (action.type.includes("create"))
+      return <Plus className="h-4 w-4 text-green-600 dark:text-green-400" />;
+    if (action.type.includes("update"))
+      return <Edit className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />;
+    if (action.type.includes("delete"))
+      return <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />;
     return null;
   };
 
   const getActionColor = () => {
-    if (action.type.includes("create")) return "border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20";
-    if (action.type.includes("update")) return "border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20";
-    if (action.type.includes("delete")) return "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20";
+    if (action.type.includes("create"))
+      return "border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20";
+    if (action.type.includes("update"))
+      return "border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20";
+    if (action.type.includes("delete"))
+      return "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20";
     return "border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20";
   };
 
@@ -920,7 +961,9 @@ const ActionCard = ({ action, onApprove, onDecline }) => {
         <div className="p-1.5 bg-white dark:bg-slate-700 rounded-md shadow-sm">
           {getActionIcon()}
         </div>
-        <span className="font-semibold text-sm text-gray-900 dark:text-white">{getActionTitle()}</span>
+        <span className="font-semibold text-sm text-gray-900 dark:text-white">
+          {getActionTitle()}
+        </span>
       </div>
 
       <div className="bg-white dark:bg-slate-700 rounded-lg p-3 border border-gray-200 dark:border-slate-600">
@@ -955,7 +998,9 @@ const ActionPreview = ({ action }) => {
         <>
           {action.data.title && (
             <div className="flex">
-              <span className="font-medium w-24 text-gray-600 dark:text-slate-400">Title:</span>
+              <span className="font-medium w-24 text-gray-600 dark:text-slate-400">
+                Title:
+              </span>
               <span className="text-gray-700 dark:text-slate-300">
                 {action.data.title}
               </span>
@@ -963,7 +1008,9 @@ const ActionPreview = ({ action }) => {
           )}
           {action.data.updates?.title && (
             <div className="flex">
-              <span className="font-medium w-24 text-gray-600 dark:text-slate-400">New Title:</span>
+              <span className="font-medium w-24 text-gray-600 dark:text-slate-400">
+                New Title:
+              </span>
               <span className="text-gray-700 dark:text-slate-300">
                 {action.data.updates.title}
               </span>
@@ -971,7 +1018,9 @@ const ActionPreview = ({ action }) => {
           )}
           {(action.data.category || action.data.updates?.category) && (
             <div className="flex">
-              <span className="font-medium w-24 text-gray-600 dark:text-slate-400">Category:</span>
+              <span className="font-medium w-24 text-gray-600 dark:text-slate-400">
+                Category:
+              </span>
               <span className="text-gray-700 dark:text-slate-300">
                 {action.data.category || action.data.updates.category}
               </span>
@@ -979,7 +1028,9 @@ const ActionPreview = ({ action }) => {
           )}
           {(action.data.priority || action.data.updates?.priority) && (
             <div className="flex">
-              <span className="font-medium w-24 text-gray-600 dark:text-slate-400">Priority:</span>
+              <span className="font-medium w-24 text-gray-600 dark:text-slate-400">
+                Priority:
+              </span>
               <span
                 className={`capitalize ${
                   (action.data.priority || action.data.updates?.priority) ===
@@ -997,7 +1048,9 @@ const ActionPreview = ({ action }) => {
           )}
           {(action.data.status || action.data.updates?.status) && (
             <div className="flex">
-              <span className="font-medium w-24 text-gray-600 dark:text-slate-400">Status:</span>
+              <span className="font-medium w-24 text-gray-600 dark:text-slate-400">
+                Status:
+              </span>
               <span className="text-gray-700 dark:text-slate-300 capitalize">
                 {action.data.status || action.data.updates.status}
               </span>
@@ -1010,7 +1063,9 @@ const ActionPreview = ({ action }) => {
         <>
           {action.data.title && (
             <div className="flex">
-              <span className="font-medium w-24 text-gray-600 dark:text-slate-400">Title:</span>
+              <span className="font-medium w-24 text-gray-600 dark:text-slate-400">
+                Title:
+              </span>
               <span className="text-gray-700 dark:text-slate-300">
                 {action.data.title}
               </span>
@@ -1018,7 +1073,9 @@ const ActionPreview = ({ action }) => {
           )}
           {action.data.updates?.title && (
             <div className="flex">
-              <span className="font-medium w-24 text-gray-600 dark:text-slate-400">New Title:</span>
+              <span className="font-medium w-24 text-gray-600 dark:text-slate-400">
+                New Title:
+              </span>
               <span className="text-gray-700 dark:text-slate-300">
                 {action.data.updates.title}
               </span>
@@ -1026,7 +1083,9 @@ const ActionPreview = ({ action }) => {
           )}
           {action.data.updates?.progress !== undefined && (
             <div className="flex">
-              <span className="font-medium w-24 text-gray-600 dark:text-slate-400">Progress:</span>
+              <span className="font-medium w-24 text-gray-600 dark:text-slate-400">
+                Progress:
+              </span>
               <span className="text-gray-700 dark:text-slate-300">
                 {action.data.updates.progress}%
               </span>

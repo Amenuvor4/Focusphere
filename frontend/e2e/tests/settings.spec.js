@@ -25,7 +25,10 @@ async function loginAndGoToSettings(page) {
   await page.waitForURL("**/dashboard", { timeout: 15000 });
 
   // Navigate to Settings via profile menu
-  const profileSection = page.locator('button').filter({ has: page.locator('[class*="rounded-full"]') }).last();
+  const profileSection = page
+    .locator("button")
+    .filter({ has: page.locator('[class*="rounded-full"]') })
+    .last();
   await profileSection.click();
   await page.click('button:has-text("Settings")');
   await page.waitForTimeout(1000);
@@ -38,9 +41,15 @@ test.describe("Settings - Page Navigation", () => {
 
   test("should display settings page with tabs", async ({ page }) => {
     // Should show tab navigation
-    await expect(page.locator('button:has-text("Profile")')).toBeVisible({ timeout: 10000 });
-    await expect(page.locator('button:has-text("Appearance")')).toBeVisible({ timeout: 10000 });
-    await expect(page.locator('button:has-text("Notifications")')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('button:has-text("Profile")')).toBeVisible({
+      timeout: 10000,
+    });
+    await expect(page.locator('button:has-text("Appearance")')).toBeVisible({
+      timeout: 10000,
+    });
+    await expect(page.locator('button:has-text("Notifications")')).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test("should default to Profile tab", async ({ page }) => {
@@ -53,17 +62,17 @@ test.describe("Settings - Page Navigation", () => {
     await page.click('button:has-text("Appearance")');
     await page.waitForTimeout(300);
 
-    await expect(page.locator('text=Dark Mode').first()).toBeVisible();
+    await expect(page.locator("text=Dark Mode").first()).toBeVisible();
 
     await page.click('button:has-text("Notifications")');
     await page.waitForTimeout(300);
 
-    await expect(page.locator('text=Coming Soon').first()).toBeVisible();
+    await expect(page.locator("text=Coming Soon").first()).toBeVisible();
 
     await page.click('button:has-text("Profile")');
     await page.waitForTimeout(300);
 
-    await expect(page.locator('text=Display Name').first()).toBeVisible();
+    await expect(page.locator("text=Display Name").first()).toBeVisible();
   });
 });
 
@@ -74,25 +83,30 @@ test.describe("Settings - Profile Tab", () => {
 
   test("should display Display Name field", async ({ page }) => {
     await expect(
-      page.locator('label:has-text("Display Name")').or(page.locator('text=Display Name'))
+      page
+        .locator('label:has-text("Display Name")')
+        .or(page.locator("text=Display Name")),
     ).toBeVisible({ timeout: 10000 });
 
-    const nameInput = page.locator('input').filter({ hasNot: page.locator('[disabled]') }).first();
+    const nameInput = page
+      .locator("input")
+      .filter({ hasNot: page.locator("[disabled]") })
+      .first();
     await expect(nameInput).toBeVisible();
   });
 
   test("should display Email field as disabled", async ({ page }) => {
     // Email field should exist but be disabled
-    const emailInput = page.locator('input[type="email"]').or(
-      page.locator('input[disabled]')
-    );
+    const emailInput = page
+      .locator('input[type="email"]')
+      .or(page.locator("input[disabled]"));
     await expect(emailInput.first()).toBeVisible({ timeout: 10000 });
   });
 
   test("should show email cannot be changed message", async ({ page }) => {
-    await expect(
-      page.locator('text=Email cannot be changed')
-    ).toBeVisible({ timeout: 10000 });
+    await expect(page.locator("text=Email cannot be changed")).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test("should pre-populate with user data", async ({ page }) => {
@@ -100,7 +114,10 @@ test.describe("Settings - Profile Tab", () => {
     await page.waitForTimeout(2000);
 
     // Name input should have a value
-    const nameInput = page.locator('input').filter({ hasNot: page.locator('[disabled]') }).first();
+    const nameInput = page
+      .locator("input")
+      .filter({ hasNot: page.locator("[disabled]") })
+      .first();
     const value = await nameInput.inputValue();
 
     // Should not be empty (either user name or placeholder)
@@ -108,14 +125,19 @@ test.describe("Settings - Profile Tab", () => {
   });
 
   test("should display Save Changes button", async ({ page }) => {
-    await expect(page.locator('button:has-text("Save")')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('button:has-text("Save")')).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test("should update name and save", async ({ page }) => {
     const newName = `Test User ${Date.now()}`;
 
     // Find and update name input
-    const nameInput = page.locator('input').filter({ hasNot: page.locator('[disabled]') }).first();
+    const nameInput = page
+      .locator("input")
+      .filter({ hasNot: page.locator("[disabled]") })
+      .first();
     await nameInput.clear();
     await nameInput.fill(newName);
 
@@ -131,7 +153,10 @@ test.describe("Settings - Profile Tab", () => {
   });
 
   test("should show loading state during save", async ({ page }) => {
-    const nameInput = page.locator('input').filter({ hasNot: page.locator('[disabled]') }).first();
+    const nameInput = page
+      .locator("input")
+      .filter({ hasNot: page.locator("[disabled]") })
+      .first();
     await nameInput.fill("Test Name");
 
     // Click save and check for loading
@@ -142,7 +167,10 @@ test.describe("Settings - Profile Tab", () => {
   });
 
   test("should validate name field", async ({ page }) => {
-    const nameInput = page.locator('input').filter({ hasNot: page.locator('[disabled]') }).first();
+    const nameInput = page
+      .locator("input")
+      .filter({ hasNot: page.locator("[disabled]") })
+      .first();
 
     // Clear the name
     await nameInput.clear();
@@ -164,22 +192,27 @@ test.describe("Settings - Appearance Tab", () => {
   });
 
   test("should display theme options", async ({ page }) => {
-    await expect(page.locator('text=Dark Mode').first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator("text=Dark Mode").first()).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test("should display Dark Mode toggle", async ({ page }) => {
-    const toggle = page.locator('button').filter({ has: page.locator('svg') }).or(
-      page.locator('input[type="checkbox"]').or(
-        page.locator('[role="switch"]')
-      )
-    );
+    const toggle = page
+      .locator("button")
+      .filter({ has: page.locator("svg") })
+      .or(
+        page
+          .locator('input[type="checkbox"]')
+          .or(page.locator('[role="switch"]')),
+      );
     await expect(toggle.first()).toBeVisible({ timeout: 10000 });
   });
 
   test("should have theme preview cards", async ({ page }) => {
     // Look for Light and Dark theme cards
-    const lightCard = page.locator('text=Light').first();
-    const darkCard = page.locator('text=Dark').first();
+    const lightCard = page.locator("text=Light").first();
+    const darkCard = page.locator("text=Dark").first();
 
     await expect(lightCard).toBeVisible();
     await expect(darkCard).toBeVisible();
@@ -187,7 +220,7 @@ test.describe("Settings - Appearance Tab", () => {
 
   test("should select theme when clicking card", async ({ page }) => {
     // Click Dark theme
-    const darkCard = page.locator('text=Dark').first();
+    const darkCard = page.locator("text=Dark").first();
     await darkCard.click();
     await page.waitForTimeout(500);
 
@@ -201,9 +234,10 @@ test.describe("Settings - Appearance Tab", () => {
 
   test("should toggle dark mode", async ({ page }) => {
     // Find toggle switch
-    const toggle = page.locator('[role="switch"]').or(
-      page.locator('button').filter({ hasText: /toggle|switch/i })
-    ).first();
+    const toggle = page
+      .locator('[role="switch"]')
+      .or(page.locator("button").filter({ hasText: /toggle|switch/i }))
+      .first();
 
     if (await toggle.isVisible().catch(() => false)) {
       // Get initial state
@@ -226,7 +260,7 @@ test.describe("Settings - Appearance Tab", () => {
 
   test("should persist theme preference", async ({ page }) => {
     // Enable dark mode
-    const darkCard = page.locator('text=Dark').first();
+    const darkCard = page.locator("text=Dark").first();
     await darkCard.click();
     await page.waitForTimeout(500);
 
@@ -237,7 +271,9 @@ test.describe("Settings - Appearance Tab", () => {
     await page.reload();
     await page.waitForTimeout(1000);
 
-    const themeAfterReload = await page.evaluate(() => localStorage.getItem("theme"));
+    const themeAfterReload = await page.evaluate(() =>
+      localStorage.getItem("theme"),
+    );
     expect(themeAfterReload).toBe(savedTheme);
   });
 
@@ -260,17 +296,17 @@ test.describe("Settings - Notifications Tab", () => {
 
   test("should display Coming Soon message", async ({ page }) => {
     await expect(
-      page.locator('text=Coming Soon').or(page.locator('text=coming soon'))
+      page.locator("text=Coming Soon").or(page.locator("text=coming soon")),
     ).toBeVisible({ timeout: 10000 });
   });
 
   test("should show development badge", async ({ page }) => {
-    await expect(page.locator('text=Coming Soon').first()).toBeVisible();
+    await expect(page.locator("text=Coming Soon").first()).toBeVisible();
   });
 
   test("should show future customization message", async ({ page }) => {
     await expect(
-      page.locator('text=customiz').or(page.locator('text=future'))
+      page.locator("text=customiz").or(page.locator("text=future")),
     ).toBeVisible({ timeout: 10000 });
   });
 
@@ -297,14 +333,20 @@ test.describe("Settings - Save Button Visibility", () => {
     await page.click('button:has-text("Appearance")');
     await page.waitForTimeout(300);
 
-    const saveOnAppearance = await page.locator('button:has-text("Save Changes")').isVisible().catch(() => false);
+    const saveOnAppearance = await page
+      .locator('button:has-text("Save Changes")')
+      .isVisible()
+      .catch(() => false);
     // Save might not be visible
 
     // Notifications tab - should not have Save
     await page.click('button:has-text("Notifications")');
     await page.waitForTimeout(300);
 
-    const saveOnNotifications = await page.locator('button:has-text("Save Changes")').isVisible().catch(() => false);
+    const saveOnNotifications = await page
+      .locator('button:has-text("Save Changes")')
+      .isVisible()
+      .catch(() => false);
     // Save might not be visible
 
     // Back to Profile - should have Save
@@ -318,7 +360,7 @@ test.describe("Settings - Save Button Visibility", () => {
 test.describe("Settings - Loading States", () => {
   test("should show skeleton while loading profile", async ({ page }) => {
     // Mock slow API
-    await page.route("**/api/auth/profile", async (route) => {
+    await page.route("**/auth/profile", async (route) => {
       await new Promise((resolve) => setTimeout(resolve, 2000));
       route.fulfill({
         status: 200,
@@ -335,11 +377,13 @@ test.describe("Settings - Loading States", () => {
     await loginAndGoToSettings(page);
 
     // Should show skeleton or loading
-    const skeleton = page.locator('[class*="skeleton"]').or(
-      page.locator('[class*="animate-pulse"]')
-    );
+    const skeleton = page
+      .locator('[class*="skeleton"]')
+      .or(page.locator('[class*="animate-pulse"]'));
     // Page should eventually load
-    await expect(page.locator('button:has-text("Profile")')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('button:has-text("Profile")')).toBeVisible({
+      timeout: 15000,
+    });
   });
 });
 
@@ -349,27 +393,34 @@ test.describe("Settings - Feedback Messages", () => {
   });
 
   test("should show success message after saving", async ({ page }) => {
-    const nameInput = page.locator('input').filter({ hasNot: page.locator('[disabled]') }).first();
+    const nameInput = page
+      .locator("input")
+      .filter({ hasNot: page.locator("[disabled]") })
+      .first();
     await nameInput.fill(`Updated Name ${Date.now()}`);
 
     await page.click('button:has-text("Save")');
     await page.waitForTimeout(2000);
 
-    const successMsg = page.locator('text=Settings updated successfully');
-    const errorMsg = page.locator('text=Failed');
-    const hasMessage = await successMsg.isVisible().catch(() => false) ||
-                       await errorMsg.isVisible().catch(() => false);
+    const successMsg = page.locator("text=Settings updated successfully");
+    const errorMsg = page.locator("text=Failed");
+    const hasMessage =
+      (await successMsg.isVisible().catch(() => false)) ||
+      (await errorMsg.isVisible().catch(() => false));
     expect(hasMessage).toBe(true);
   });
 
   test("should auto-dismiss success message", async ({ page }) => {
-    const nameInput = page.locator('input').filter({ hasNot: page.locator('[disabled]') }).first();
+    const nameInput = page
+      .locator("input")
+      .filter({ hasNot: page.locator("[disabled]") })
+      .first();
     await nameInput.fill(`Updated Name ${Date.now()}`);
 
     await page.click('button:has-text("Save")');
     await page.waitForTimeout(2000);
 
-    const successMsg = page.locator('text=Settings updated successfully');
+    const successMsg = page.locator("text=Settings updated successfully");
     if (await successMsg.isVisible().catch(() => false)) {
       await page.waitForTimeout(4000);
       await expect(successMsg).not.toBeVisible({ timeout: 2000 });
@@ -378,7 +429,7 @@ test.describe("Settings - Feedback Messages", () => {
 
   test("should show error message on save failure", async ({ page }) => {
     // Mock API error
-    await page.route("**/api/auth/profile", (route) => {
+    await page.route("**/auth/profile", (route) => {
       if (route.request().method() === "PUT") {
         route.fulfill({
           status: 500,
@@ -390,14 +441,20 @@ test.describe("Settings - Feedback Messages", () => {
       }
     });
 
-    const nameInput = page.locator('input').filter({ hasNot: page.locator('[disabled]') }).first();
+    const nameInput = page
+      .locator("input")
+      .filter({ hasNot: page.locator("[disabled]") })
+      .first();
     await nameInput.fill("Error Test Name");
 
     await page.click('button:has-text("Save")');
 
     // Should show error
     await expect(
-      page.locator('text=error').or(page.locator('text=failed')).or(page.locator('[class*="red"]'))
+      page
+        .locator("text=error")
+        .or(page.locator("text=failed"))
+        .or(page.locator('[class*="red"]')),
     ).toBeVisible({ timeout: 5000 });
   });
 });
@@ -421,7 +478,10 @@ test.describe("Settings - Keyboard Navigation", () => {
   });
 
   test("should submit form with Enter", async ({ page }) => {
-    const nameInput = page.locator('input').filter({ hasNot: page.locator('[disabled]') }).first();
+    const nameInput = page
+      .locator("input")
+      .filter({ hasNot: page.locator("[disabled]") })
+      .first();
     await nameInput.fill("Keyboard Submit Test");
 
     // Focus the save button
@@ -445,7 +505,7 @@ test.describe("Settings - Responsive Design", () => {
 
     await expect(page.locator('button:has-text("Profile")')).toBeVisible();
 
-    await expect(page.locator('text=Display Name').first()).toBeVisible();
+    await expect(page.locator("text=Display Name").first()).toBeVisible();
   });
 
   test("should stack elements on small screens", async ({ page }) => {
@@ -467,7 +527,7 @@ test.describe("Settings - Dark Mode Integration", () => {
     await page.click('button:has-text("Appearance")');
     await page.waitForTimeout(300);
 
-    const darkCard = page.locator('text=Dark').first();
+    const darkCard = page.locator("text=Dark").first();
     await darkCard.click();
     await page.waitForTimeout(500);
 

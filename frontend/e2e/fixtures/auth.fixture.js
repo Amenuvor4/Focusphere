@@ -3,7 +3,11 @@
  * Provides pre-authenticated page for tests that need login
  */
 import { test as base, expect } from "@playwright/test";
-import { TEST_USER, clearLocalStorage, waitForNetworkIdle } from "../utils/test-helpers.js";
+import {
+  TEST_USER,
+  clearLocalStorage,
+  waitForNetworkIdle,
+} from "../utils/test-helpers.js";
 
 /**
  * Extended test fixture with authentication helpers
@@ -23,13 +27,15 @@ export const test = base.extend({
     await page.click('button[type="submit"]');
 
     // Wait for redirect to dashboard
-    await page.waitForURL("**/dashboard", { timeout: 15000 }); 
+    await page.waitForURL("**/dashboard", { timeout: 15000 });
     await expect(page).toHaveURL(/.*dashboard/);
     await use(page);
 
     // Cleanup: logout
     try {
-      const profileButton = page.locator('button:has([class*="rounded-full"])').first();
+      const profileButton = page
+        .locator('button:has([class*="rounded-full"])')
+        .first();
       if (await profileButton.isVisible()) {
         await profileButton.click();
         const logoutButton = page.locator('button:has-text("Logout")');
@@ -46,7 +52,7 @@ export const test = base.extend({
    * Page with mocked API responses for isolated testing
    */
   mockedPage: async ({ page }, use) => {
-    await page.route("**/api/auth/profile", (route) => {
+    await page.route("**/auth/profile", (route) => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -60,7 +66,7 @@ export const test = base.extend({
       });
     });
 
-    await page.route("**/api/tasks", (route) => {
+    await page.route("**/tasks", (route) => {
       if (route.request().method() === "GET") {
         route.fulfill({
           status: 200,
@@ -72,7 +78,7 @@ export const test = base.extend({
       }
     });
 
-    await page.route("**/api/goals", (route) => {
+    await page.route("**/goals", (route) => {
       if (route.request().method() === "GET") {
         route.fulfill({
           status: 200,
@@ -93,7 +99,11 @@ export { expect };
 /**
  * Login helper function for direct use in tests
  */
-export async function login(page, email = TEST_USER.email, password = TEST_USER.password) {
+export async function login(
+  page,
+  email = TEST_USER.email,
+  password = TEST_USER.password,
+) {
   await page.goto("/Auth");
   await page.waitForSelector('input[type="email"]');
   await page.fill('input[type="email"]', email);
@@ -124,7 +134,9 @@ export async function register(page, name, email, password) {
  */
 export async function logout(page) {
   // Open profile menu
-  const profileButton = page.locator('button:has([class*="rounded-full"])').first();
+  const profileButton = page
+    .locator('button:has([class*="rounded-full"])')
+    .first();
   await profileButton.click();
   await page.click('button:has-text("Logout")');
 

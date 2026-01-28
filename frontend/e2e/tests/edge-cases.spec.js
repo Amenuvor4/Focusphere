@@ -12,7 +12,11 @@
  */
 
 import { test, expect } from "@playwright/test";
-import { TEST_USER, clearLocalStorage, generateTestData } from "../utils/test-helpers.js";
+import {
+  TEST_USER,
+  clearLocalStorage,
+  generateTestData,
+} from "../utils/test-helpers.js";
 
 // Helper to login
 async function login(page) {
@@ -36,11 +40,15 @@ test.describe("Edge Cases - Input Validation", () => {
     await page.waitForTimeout(500);
 
     // Try to submit empty form
-    await page.click('button:has-text("Save")').catch(() => page.click('button:has-text("Create")'));
+    await page
+      .click('button:has-text("Save")')
+      .catch(() => page.click('button:has-text("Create")'));
 
     // Form should not submit, dialog stays open
     await expect(
-      page.locator('[class*="backdrop-blur"]').or(page.locator('.fixed.inset-0'))
+      page
+        .locator('[class*="backdrop-blur"]')
+        .or(page.locator(".fixed.inset-0")),
     ).toBeVisible({ timeout: 3000 });
   });
 
@@ -51,13 +59,15 @@ test.describe("Edge Cases - Input Validation", () => {
 
     // Create a very long string
     const longTitle = "A".repeat(1000);
-    await page.locator('input').first().fill(longTitle);
+    await page.locator("input").first().fill(longTitle);
 
     // Should handle gracefully (truncate or show error)
-    await page.click('button:has-text("Save")').catch(() => page.click('button:has-text("Create")'));
+    await page
+      .click('button:has-text("Save")')
+      .catch(() => page.click('button:has-text("Create")'));
 
     // App should not crash
-    await expect(page.locator('body')).toBeVisible();
+    await expect(page.locator("body")).toBeVisible();
   });
 
   test("should handle special characters in input", async ({ page }) => {
@@ -66,14 +76,17 @@ test.describe("Edge Cases - Input Validation", () => {
     await page.waitForTimeout(500);
 
     // Input with special characters
-    const specialChars = '<script>alert("XSS")</script> & "quotes" \'single\' emoji: 😀';
-    await page.locator('input').first().fill(specialChars);
-    await page.click('button:has-text("Save")').catch(() => page.click('button:has-text("Create")'));
+    const specialChars =
+      '<script>alert("XSS")</script> & "quotes" \'single\' emoji: 😀';
+    await page.locator("input").first().fill(specialChars);
+    await page
+      .click('button:has-text("Save")')
+      .catch(() => page.click('button:has-text("Create")'));
 
     await page.waitForTimeout(1000);
 
     // Should sanitize or escape properly
-    await expect(page.locator('body')).toBeVisible();
+    await expect(page.locator("body")).toBeVisible();
   });
 
   test("should handle unicode and emojis", async ({ page }) => {
@@ -82,15 +95,20 @@ test.describe("Edge Cases - Input Validation", () => {
     await page.waitForTimeout(500);
 
     const unicodeText = "Task: 你好世界 🎉 مرحبا العالم";
-    await page.locator('input').first().fill(unicodeText);
-    await page.click('button:has-text("Save")').catch(() => page.click('button:has-text("Create")'));
+    await page.locator("input").first().fill(unicodeText);
+    await page
+      .click('button:has-text("Save")')
+      .catch(() => page.click('button:has-text("Create")'));
 
     await page.waitForTimeout(2000);
 
     // Unicode should be preserved
-    const hasUnicode = await page.locator('text=你好').isVisible().catch(() => false);
+    const hasUnicode = await page
+      .locator("text=你好")
+      .isVisible()
+      .catch(() => false);
     // App should not crash regardless
-    await expect(page.locator('body')).toBeVisible();
+    await expect(page.locator("body")).toBeVisible();
   });
 
   test("should handle whitespace-only input", async ({ page }) => {
@@ -99,12 +117,14 @@ test.describe("Edge Cases - Input Validation", () => {
     await page.waitForTimeout(500);
 
     // Input only whitespace
-    await page.locator('input').first().fill("   ");
-    await page.click('button:has-text("Save")').catch(() => page.click('button:has-text("Create")'));
+    await page.locator("input").first().fill("   ");
+    await page
+      .click('button:has-text("Save")')
+      .catch(() => page.click('button:has-text("Create")'));
 
     // Should not accept whitespace-only as valid input
     await page.waitForTimeout(500);
-    await expect(page.locator('body')).toBeVisible();
+    await expect(page.locator("body")).toBeVisible();
   });
 
   test("should handle numeric input in text fields", async ({ page }) => {
@@ -112,15 +132,20 @@ test.describe("Edge Cases - Input Validation", () => {
     await page.click('button:has-text("New Task")');
     await page.waitForTimeout(500);
 
-    await page.locator('input').first().fill("12345");
-    await page.click('button:has-text("Save")').catch(() => page.click('button:has-text("Create")'));
+    await page.locator("input").first().fill("12345");
+    await page
+      .click('button:has-text("Save")')
+      .catch(() => page.click('button:has-text("Create")'));
 
     await page.waitForTimeout(2000);
 
     // Should accept numeric titles or handle gracefully
-    const hasNumeric = await page.locator('text=12345').isVisible().catch(() => false);
+    const hasNumeric = await page
+      .locator("text=12345")
+      .isVisible()
+      .catch(() => false);
     // App should not crash regardless
-    await expect(page.locator('body')).toBeVisible();
+    await expect(page.locator("body")).toBeVisible();
   });
 });
 
@@ -139,7 +164,10 @@ test.describe("Edge Cases - Authentication", () => {
 
     // Should either refresh token or redirect to login
     const isOnAuth = page.url().includes("Auth");
-    const isStillWorking = await page.locator('button:has-text("Goals")').isVisible().catch(() => false);
+    const isStillWorking = await page
+      .locator('button:has-text("Goals")')
+      .isVisible()
+      .catch(() => false);
 
     // One of these should be true
     expect(isOnAuth || isStillWorking).toBe(true);
@@ -167,19 +195,16 @@ test.describe("Edge Cases - Authentication", () => {
     const page2 = await context.newPage();
 
     // Login on both pages simultaneously
-    await Promise.all([
-      page.goto("/Auth"),
-      page2.goto("/Auth"),
-    ]);
+    await Promise.all([page.goto("/Auth"), page2.goto("/Auth")]);
 
     // Fill and submit on both
     await Promise.all([
-      page.fill('input[type="email"]', TEST_USER.email).then(() =>
-        page.fill('input[type="password"]', TEST_USER.password)
-      ),
-      page2.fill('input[type="email"]', TEST_USER.email).then(() =>
-        page2.fill('input[type="password"]', TEST_USER.password)
-      ),
+      page
+        .fill('input[type="email"]', TEST_USER.email)
+        .then(() => page.fill('input[type="password"]', TEST_USER.password)),
+      page2
+        .fill('input[type="email"]', TEST_USER.email)
+        .then(() => page2.fill('input[type="password"]', TEST_USER.password)),
     ]);
 
     await Promise.all([
@@ -203,7 +228,7 @@ test.describe("Edge Cases - Authentication", () => {
     await login(page);
 
     // Mock slow API response
-    await page.route("**/api/tasks", async (route) => {
+    await page.route("**/tasks", async (route) => {
       await new Promise((resolve) => setTimeout(resolve, 5000));
       route.continue();
     });
@@ -212,12 +237,15 @@ test.describe("Edge Cases - Authentication", () => {
     await page.click('button:has-text("Tasks")');
 
     // Logout while request is pending
-    const profileSection = page.locator('button').filter({ has: page.locator('[class*="rounded-full"]') }).last();
+    const profileSection = page
+      .locator("button")
+      .filter({ has: page.locator('[class*="rounded-full"]') })
+      .last();
     await profileSection.click();
     await page.click('button:has-text("Logout")');
 
     // Should handle gracefully
-    await expect(page.locator('body')).toBeVisible();
+    await expect(page.locator("body")).toBeVisible();
   });
 });
 
@@ -233,7 +261,7 @@ test.describe("Edge Cases - Network", () => {
     await page.waitForTimeout(2000);
 
     // Should show error or offline indicator
-    await expect(page.locator('body')).toBeVisible();
+    await expect(page.locator("body")).toBeVisible();
 
     // Go back online
     await page.context().setOffline(false);
@@ -250,14 +278,14 @@ test.describe("Edge Cases - Network", () => {
     await page.click('button:has-text("Analytics")');
 
     // Should show loading state
-    await expect(page.locator('body')).toBeVisible();
+    await expect(page.locator("body")).toBeVisible();
   });
 
   test("should handle 404 responses", async ({ page }) => {
     await login(page);
 
     // Mock 404 response
-    await page.route("**/api/tasks/*", (route) => {
+    await page.route("**/tasks/*", (route) => {
       route.fulfill({
         status: 404,
         contentType: "application/json",
@@ -268,14 +296,14 @@ test.describe("Edge Cases - Network", () => {
     await page.click('button:has-text("Tasks")');
 
     // Should not crash
-    await expect(page.locator('body')).toBeVisible();
+    await expect(page.locator("body")).toBeVisible();
   });
 
   test("should handle 500 server errors", async ({ page }) => {
     await login(page);
 
     // Mock 500 response
-    await page.route("**/api/**", (route) => {
+    await page.route("**/**", (route) => {
       route.fulfill({
         status: 500,
         contentType: "application/json",
@@ -287,14 +315,14 @@ test.describe("Edge Cases - Network", () => {
     await page.waitForTimeout(1000);
 
     // App should handle gracefully
-    await expect(page.locator('body')).toBeVisible();
+    await expect(page.locator("body")).toBeVisible();
   });
 
   test("should handle malformed JSON response", async ({ page }) => {
     await login(page);
 
     // Mock malformed response
-    await page.route("**/api/tasks", (route) => {
+    await page.route("**/tasks", (route) => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -306,7 +334,7 @@ test.describe("Edge Cases - Network", () => {
     await page.waitForTimeout(1000);
 
     // Should handle JSON parse error
-    await expect(page.locator('body')).toBeVisible();
+    await expect(page.locator("body")).toBeVisible();
   });
 });
 
@@ -320,7 +348,7 @@ test.describe("Edge Cases - Date Handling", () => {
     await page.click('button:has-text("New Task")');
     await page.waitForTimeout(500);
 
-    await page.locator('input').first().fill("Past Due Task");
+    await page.locator("input").first().fill("Past Due Task");
 
     const dateInput = page.locator('input[type="date"]');
     if (await dateInput.isVisible().catch(() => false)) {
@@ -330,7 +358,9 @@ test.describe("Edge Cases - Date Handling", () => {
       await dateInput.fill(yesterday.toISOString().split("T")[0]);
     }
 
-    await page.click('button:has-text("Save")').catch(() => page.click('button:has-text("Create")'));
+    await page
+      .click('button:has-text("Save")')
+      .catch(() => page.click('button:has-text("Create")'));
 
     // Should allow or warn about past date
     await page.waitForTimeout(1000);
@@ -340,7 +370,7 @@ test.describe("Edge Cases - Date Handling", () => {
     await page.click('button:has-text("New Task")');
     await page.waitForTimeout(500);
 
-    await page.locator('input').first().fill("Far Future Task");
+    await page.locator("input").first().fill("Far Future Task");
 
     const dateInput = page.locator('input[type="date"]');
     if (await dateInput.isVisible().catch(() => false)) {
@@ -350,21 +380,26 @@ test.describe("Edge Cases - Date Handling", () => {
       await dateInput.fill(farFuture.toISOString().split("T")[0]);
     }
 
-    await page.click('button:has-text("Save")').catch(() => page.click('button:has-text("Create")'));
+    await page
+      .click('button:has-text("Save")')
+      .catch(() => page.click('button:has-text("Create")'));
 
     await page.waitForTimeout(2000);
 
     // Should accept far future dates or handle gracefully
-    const hasTask = await page.locator('text=Far Future Task').isVisible().catch(() => false);
+    const hasTask = await page
+      .locator("text=Far Future Task")
+      .isVisible()
+      .catch(() => false);
     // App should not crash regardless
-    await expect(page.locator('body')).toBeVisible();
+    await expect(page.locator("body")).toBeVisible();
   });
 
   test("should handle invalid date format", async ({ page }) => {
     await page.click('button:has-text("New Task")');
     await page.waitForTimeout(500);
 
-    await page.locator('input').first().fill("Invalid Date Task");
+    await page.locator("input").first().fill("Invalid Date Task");
 
     // Try to input invalid date via JavaScript
     const dateInput = page.locator('input[type="date"]');
@@ -374,10 +409,12 @@ test.describe("Edge Cases - Date Handling", () => {
       });
     }
 
-    await page.click('button:has-text("Save")').catch(() => page.click('button:has-text("Create")'));
+    await page
+      .click('button:has-text("Save")')
+      .catch(() => page.click('button:has-text("Create")'));
 
     // Should handle gracefully
-    await expect(page.locator('body')).toBeVisible();
+    await expect(page.locator("body")).toBeVisible();
   });
 });
 
@@ -409,16 +446,18 @@ test.describe("Edge Cases - Concurrent Operations", () => {
     await page.click('button:has-text("New Task")');
     await page.waitForTimeout(500);
 
-    await page.locator('input').first().fill("Double Submit Task");
+    await page.locator("input").first().fill("Double Submit Task");
 
     // Double click submit
-    const submitButton = page.locator('button:has-text("Save")').or(page.locator('button:has-text("Create")'));
+    const submitButton = page
+      .locator('button:has-text("Save")')
+      .or(page.locator('button:has-text("Create")'));
     await submitButton.dblclick().catch(() => submitButton.click());
 
     await page.waitForTimeout(2000);
 
     // Should only create one task
-    const tasks = page.locator('text=Double Submit Task');
+    const tasks = page.locator("text=Double Submit Task");
     const count = await tasks.count();
 
     // Should be 0, 1, or handled gracefully
@@ -431,8 +470,10 @@ test.describe("Edge Cases - Concurrent Operations", () => {
     // Create a task first
     await page.click('button:has-text("New Task")');
     await page.waitForTimeout(500);
-    await page.locator('input').first().fill("Edit Delete Test");
-    await page.click('button:has-text("Save")').catch(() => page.click('button:has-text("Create")'));
+    await page.locator("input").first().fill("Edit Delete Test");
+    await page
+      .click('button:has-text("Save")')
+      .catch(() => page.click('button:has-text("Create")'));
     await page.waitForTimeout(2000);
 
     // Try to interact with any existing task card
@@ -442,7 +483,7 @@ test.describe("Edge Cases - Concurrent Operations", () => {
     }
 
     // App should handle concurrent operations gracefully
-    await expect(page.locator('body')).toBeVisible();
+    await expect(page.locator("body")).toBeVisible();
   });
 });
 
@@ -459,7 +500,9 @@ test.describe("Edge Cases - Session Management", () => {
 
     // App should still work when refocused
     await page.click('button:has-text("Goals")');
-    await expect(page.locator('button:has-text("Add Goal")')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('button:has-text("Add Goal")')).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test("should handle browser back button", async ({ page }) => {
@@ -476,7 +519,7 @@ test.describe("Edge Cases - Session Management", () => {
     await page.waitForTimeout(500);
 
     // Should handle navigation gracefully
-    await expect(page.locator('body')).toBeVisible();
+    await expect(page.locator("body")).toBeVisible();
   });
 
   test("should handle page refresh during operation", async ({ page }) => {
@@ -485,13 +528,13 @@ test.describe("Edge Cases - Session Management", () => {
     await page.click('button:has-text("New Task")');
 
     // Fill form
-    await page.locator('input').first().fill("Refresh Test");
+    await page.locator("input").first().fill("Refresh Test");
 
     // Refresh during operation
     await page.reload();
 
     // Should handle gracefully
-    await expect(page.locator('body')).toBeVisible();
+    await expect(page.locator("body")).toBeVisible();
   });
 });
 
@@ -505,7 +548,7 @@ test.describe("Edge Cases - Large Data Sets", () => {
       priority: ["high", "medium", "low"][i % 3],
     }));
 
-    await page.route("**/api/tasks", (route) => {
+    await page.route("**/tasks", (route) => {
       if (route.request().method() === "GET") {
         route.fulfill({
           status: 200,
@@ -522,7 +565,7 @@ test.describe("Edge Cases - Large Data Sets", () => {
     await page.waitForTimeout(2000);
 
     // Page should render without crashing
-    await expect(page.locator('text=Task 0')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator("text=Task 0")).toBeVisible({ timeout: 15000 });
   });
 
   test("should handle many goals without crashing", async ({ page }) => {
@@ -534,7 +577,7 @@ test.describe("Edge Cases - Large Data Sets", () => {
       progress: i * 2,
     }));
 
-    await page.route("**/api/goals", (route) => {
+    await page.route("**/goals", (route) => {
       if (route.request().method() === "GET") {
         route.fulfill({
           status: 200,
@@ -551,12 +594,14 @@ test.describe("Edge Cases - Large Data Sets", () => {
     await page.waitForTimeout(2000);
 
     // Page should render
-    await expect(page.locator('text=Goal 0')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator("text=Goal 0")).toBeVisible({ timeout: 15000 });
   });
 });
 
 test.describe("Edge Cases - Memory and Performance", () => {
-  test("should handle repeated navigation without memory leak", async ({ page }) => {
+  test("should handle repeated navigation without memory leak", async ({
+    page,
+  }) => {
     await login(page);
 
     // Navigate between views many times
@@ -595,7 +640,9 @@ test.describe("Edge Cases - Memory and Performance", () => {
     }
 
     // App should still work
-    await expect(page.locator('button:has-text("New Task")')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('button:has-text("New Task")')).toBeVisible({
+      timeout: 5000,
+    });
   });
 });
 
@@ -614,12 +661,14 @@ test.describe("Edge Cases - Accessibility", () => {
     await page.keyboard.press("Enter");
 
     // App should respond to keyboard
-    await expect(page.locator('body')).toBeVisible();
+    await expect(page.locator("body")).toBeVisible();
   });
 
   test("should handle screen reader content", async ({ page }) => {
     // Check for accessible elements
-    const accessibleElements = page.locator('button, h1, h2, h3, nav, main, [aria-label], [role]');
+    const accessibleElements = page.locator(
+      "button, h1, h2, h3, nav, main, [aria-label], [role]",
+    );
     const count = await accessibleElements.count();
 
     // Should have some accessible elements

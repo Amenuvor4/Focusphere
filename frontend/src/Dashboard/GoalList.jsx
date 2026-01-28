@@ -5,7 +5,7 @@ import GoalCard from "./GoalCard";
 import GoalDetails from "./GoalDetails";
 import GoalModal from "../componets/GoalModal.jsx";
 import ConfirmModal from "../componets/ConfirmModal.jsx";
-import { ENDPOINTS } from "../config/api.js";
+import { ENDPOINTS } from "../config.js";
 import { GoalsListSkeleton } from "../componets/GoalsListSkeletion.jsx";
 
 const GoalList = () => {
@@ -16,7 +16,11 @@ const GoalList = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState(null);
   const [viewingGoal, setViewingGoal] = useState(null);
-  const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, goalId: null, taskCount: 0 });
+  const [deleteConfirm, setDeleteConfirm] = useState({
+    isOpen: false,
+    goalId: null,
+    taskCount: 0,
+  });
   // FETCH DATA AT CONCURRENTLY
   useEffect(() => {
     fetchData();
@@ -192,7 +196,9 @@ const GoalList = () => {
       {/* Delete Confirmation Modal */}
       <ConfirmModal
         isOpen={deleteConfirm.isOpen}
-        onClose={() => setDeleteConfirm({ isOpen: false, goalId: null, taskCount: 0 })}
+        onClose={() =>
+          setDeleteConfirm({ isOpen: false, goalId: null, taskCount: 0 })
+        }
         onConfirm={confirmDelete}
         title="Delete Goal"
         message={

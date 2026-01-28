@@ -1,6 +1,12 @@
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
 import { jwtDecode } from "jwt-decode";
-import { ENDPOINTS } from "../config/api";
+import { ENDPOINTS } from "../config";
 
 const AuthContext = createContext(null);
 
@@ -112,54 +118,57 @@ export function AuthProvider({ children }) {
   }, []);
 
   // Check authentication status on mount
-  const checkAuth = useCallback(async (forceCheck = false) => {
-    // Skip if already authenticated and not forcing (prevents delay on navigation)
-    if (isAuthenticated && user && !forceCheck) {
-      setIsLoading(false);
-      return true;
-    }
-
-    // Skip if marked to skip (just logged in)
-    if (skipNextAuthCheck) {
-      setSkipNextAuthCheck(false);
-      setIsLoading(false);
-      return isAuthenticated;
-    }
-
-    setIsLoading(true);
-    setAuthError(null);
-
-    try {
-      const token = await getValidToken();
-
-      if (!token) {
-        setIsAuthenticated(false);
-        setUser(null);
-        return false;
-      }
-
-      const userData = await fetchUserProfile(token);
-
-      if (userData) {
-        setUser(userData);
-        setIsAuthenticated(true);
+  const checkAuth = useCallback(
+    async (forceCheck = false) => {
+      // Skip if already authenticated and not forcing (prevents delay on navigation)
+      if (isAuthenticated && user && !forceCheck) {
+        setIsLoading(false);
         return true;
-      } else {
-        removeStoredTokens();
+      }
+
+      // Skip if marked to skip (just logged in)
+      if (skipNextAuthCheck) {
+        setSkipNextAuthCheck(false);
+        setIsLoading(false);
+        return isAuthenticated;
+      }
+
+      setIsLoading(true);
+      setAuthError(null);
+
+      try {
+        const token = await getValidToken();
+
+        if (!token) {
+          setIsAuthenticated(false);
+          setUser(null);
+          return false;
+        }
+
+        const userData = await fetchUserProfile(token);
+
+        if (userData) {
+          setUser(userData);
+          setIsAuthenticated(true);
+          return true;
+        } else {
+          removeStoredTokens();
+          setIsAuthenticated(false);
+          setUser(null);
+          return false;
+        }
+      } catch (error) {
+        console.error("Auth check failed:", error);
+        setAuthError("Authentication check failed");
         setIsAuthenticated(false);
         setUser(null);
         return false;
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error("Auth check failed:", error);
-      setAuthError("Authentication check failed");
-      setIsAuthenticated(false);
-      setUser(null);
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [getValidToken, fetchUserProfile, isAuthenticated, user, skipNextAuthCheck]);
+    },
+    [getValidToken, fetchUserProfile, isAuthenticated, user, skipNextAuthCheck],
+  );
 
   // Login with email/password
   const login = useCallback(async (email, password) => {
@@ -240,7 +249,7 @@ export function AuthProvider({ children }) {
       removeStoredTokens();
       return false;
     },
-    [fetchUserProfile]
+    [fetchUserProfile],
   );
 
   // Logout
@@ -285,7 +294,7 @@ export function AuthProvider({ children }) {
 
     initAuth();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); 
+  }, []);
 
   const value = {
     user,

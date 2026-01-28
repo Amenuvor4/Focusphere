@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Loader2, User, Palette, Bell, Check, AlertCircle } from "lucide-react";
 import getValidToken from "../config/tokenUtils";
-import { ENDPOINTS } from "../config/api";
+import { ENDPOINTS } from "../config";
 import { useTheme } from "../context/ThemeContext";
 import { SettingsSkeleton } from "../componets/SettingsSkeleton";
 
@@ -229,7 +229,9 @@ export function Settings() {
                     <div className="h-2 w-full bg-gray-100 rounded"></div>
                     <div className="h-2 w-3/4 bg-gray-100 rounded"></div>
                   </div>
-                  <p className="text-xs text-gray-600 mt-2 font-medium">Light</p>
+                  <p className="text-xs text-gray-600 mt-2 font-medium">
+                    Light
+                  </p>
                 </div>
                 <div
                   className={`p-3 rounded-lg border-2 transition-colors cursor-pointer ${
@@ -249,7 +251,9 @@ export function Settings() {
                     <div className="h-2 w-full bg-slate-700 rounded"></div>
                     <div className="h-2 w-3/4 bg-slate-700 rounded"></div>
                   </div>
-                  <p className="text-xs text-slate-400 mt-2 font-medium">Dark</p>
+                  <p className="text-xs text-slate-400 mt-2 font-medium">
+                    Dark
+                  </p>
                 </div>
               </div>
             </div>

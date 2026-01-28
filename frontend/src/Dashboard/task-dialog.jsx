@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { format } from "date-fns";
-import { ENDPOINTS } from "../config/api.js";
+import { ENDPOINTS } from "../config.js";
 
 export function TaskDialog({ isOpen, onClose, task }) {
   const [title, setTitle] = useState("");
@@ -85,11 +85,11 @@ export function TaskDialog({ isOpen, onClose, task }) {
       console.log("Token:", localStorage.getItem("token"));
 
       if (isEditing) {
-        await axios.put(`/api/tasks/${task._id}`, taskData, {
+        await axios.put(`/tasks/${task._id}`, taskData, {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
       } else {
-        await axios.post("/api/tasks", taskData, {
+        await axios.post("/tasks", taskData, {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
       }

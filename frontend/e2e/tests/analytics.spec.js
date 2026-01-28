@@ -150,9 +150,9 @@ test.describe("Analytics - Charts", () => {
   });
 
   test("should display Tasks by Priority chart", async ({ page }) => {
-    await expect(
-      page.locator("text=Tasks by Priority").first(),
-    ).toBeVisible({ timeout: 10000 });
+    await expect(page.locator("text=Tasks by Priority").first()).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test("should render chart canvases", async ({ page }) => {
@@ -172,7 +172,7 @@ test.describe("Analytics - Charts", () => {
 
   test("should show empty state when no data", async ({ page }) => {
     // Mock empty data
-    await page.route("**/api/tasks", (route) => {
+    await page.route("**/tasks", (route) => {
       if (route.request().method() === "GET") {
         route.fulfill({
           status: 200,
@@ -252,7 +252,9 @@ test.describe("Analytics - All Activity Modal", () => {
   test("should open modal on View All click", async ({ page }) => {
     await page.click('button:has-text("View All")');
 
-    await expect(page.locator("text=All Activity")).toBeVisible({ timeout: 5000 });
+    await expect(page.locator("text=All Activity")).toBeVisible({
+      timeout: 5000,
+    });
   });
 
   test("should display activity filter controls", async ({ page }) => {
@@ -425,7 +427,7 @@ test.describe("Analytics - Activity Types", () => {
 test.describe("Analytics - Loading States", () => {
   test("should show loading skeleton while fetching data", async ({ page }) => {
     // Mock slow API
-    await page.route("**/api/tasks/analytics", async (route) => {
+    await page.route("**/tasks/analytics", async (route) => {
       await new Promise((resolve) => setTimeout(resolve, 2000));
       route.fulfill({
         status: 200,
@@ -501,7 +503,7 @@ test.describe("Analytics - Dark Mode", () => {
 
 test.describe("Analytics - Error Handling", () => {
   test("should handle API error gracefully", async ({ page }) => {
-    await page.route("**/api/tasks/analytics", (route) => {
+    await page.route("**/tasks/analytics", (route) => {
       route.fulfill({
         status: 500,
         contentType: "application/json",
@@ -516,7 +518,7 @@ test.describe("Analytics - Error Handling", () => {
   });
 
   test("should handle empty analytics data", async ({ page }) => {
-    await page.route("**/api/tasks", (route) => {
+    await page.route("**/tasks", (route) => {
       route.fulfill({
         status: 200,
         contentType: "application/json",

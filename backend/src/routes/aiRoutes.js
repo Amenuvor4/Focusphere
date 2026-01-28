@@ -1,14 +1,14 @@
-const express = require('express');
-const aiController = require('../controllers/aiController');
-const protect = require('../middleware/authMiddleware');
+const express = require("express");
+const aiController = require("../controllers/aiController");
+const protect = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
 // ===================================
 // TEST ENDPOINT - PUBLIC (NO AUTH)
 // ===================================
-router.get('/test', (req, res) => {
-  res.json({ message: 'AI API is working' });
+router.get("/test", (req, res) => {
+  res.json({ message: "AI API is working" });
 });
 
 // ===================================
@@ -17,62 +17,62 @@ router.get('/test', (req, res) => {
 router.use(protect);
 
 /**
- * @route   GET /api/ai/analyze
+ * @route   GET /ai/analyze
  * @desc    Get AI analysis of user's productivity data
  * @access  Private
  */
-router.get('/analyze', aiController.analyzeData);
+router.get("/analyze", aiController.analyzeData);
 
 /**
- * @route   GET /api/ai/prioritize
+ * @route   GET /ai/prioritize
  * @desc    Get AI-prioritized task list
  * @access  Private
  */
-router.get('/prioritize', aiController.prioritizeTasks);
+router.get("/prioritize", aiController.prioritizeTasks);
 
 /**
- * @route   POST /api/ai/chat
+ * @route   POST /ai/chat
  * @desc    Chat with AI assistant
  * @access  Private
  * @body    { message: string, conversationHistory?: array }
  */
-router.post('/chat', aiController.chat);
+router.post("/chat", aiController.chat);
 
 /**
- * @route   POST /api/ai/breakdown
+ * @route   POST /ai/breakdown
  * @desc    Get task breakdown suggestions
  * @access  Private
  * @body    { title: string, description?: string }
  */
-router.post('/breakdown', aiController.breakdownTask);
+router.post("/breakdown", aiController.breakdownTask);
 
 /**
- * @route   GET /api/ai/insights
+ * @route   GET /ai/insights
  * @desc    Get AI insights for analytics page
  * @access  Private
  * @query   ?timeRange=Week|Month|Quarter|Year
  */
-router.get('/insights', aiController.getAnalyticsInsights);
+router.get("/insights", aiController.getAnalyticsInsights);
 
 /**
- * @route   GET /api/ai/schedule
+ * @route   GET /ai/schedule
  * @desc    Get AI task schedule suggestions
  * @access  Private
  */
-router.get('/schedule', aiController.suggestSchedule);
+router.get("/schedule", aiController.suggestSchedule);
 
 /**
- * @route   GET /api/ai/suggest-goals
+ * @route   GET /ai/suggest-goals
  * @desc    Get AI goal suggestions
  * @access  Private
  */
-router.get('/suggest-goals', aiController.suggestGoals);
+router.get("/suggest-goals", aiController.suggestGoals);
 
 /**
- * @route   GET /api/ai/smart-suggestions
+ * @route   GET /ai/smart-suggestions
  * @desc    Get 4 smart AI prompt suggestions based on user data
  * @access  Private
  */
-router.get('/smart-suggestions', aiController.getSmartSuggestions);
+router.get("/smart-suggestions", aiController.getSmartSuggestions);
 
 module.exports = router;

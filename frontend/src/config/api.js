@@ -1,4 +1,4 @@
-const BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api";
+const BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
 
 export const ENDPOINTS = {
   AUTH: {
@@ -22,5 +22,5 @@ export const ENDPOINTS = {
     CHAT: `${BASE_URL}/ai/chat`,
     ANALYZE: `${BASE_URL}/ai/analyze`,
     SMART_SUGGESTIONS: `${BASE_URL}/ai/smart-suggestions`,
-  }
+  },
 };

@@ -107,7 +107,7 @@ export function TaskDetail({ isOpen, onClose, task, onEdit, onDelete }) {
               </h3>
               <div className="flex items-center gap-2">
                 <img
-                  src={task.assignee.avatar || "/api/placeholder/32/32"}
+                  src={task.assignee.avatar || "/placeholder/32/32"}
                   alt={task.assignee.name}
                   className="h-8 w-8 rounded-full"
                 />

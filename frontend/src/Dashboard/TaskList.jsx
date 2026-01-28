@@ -6,7 +6,7 @@ import { TaskEditDialog } from "./TaskEditDialog";
 import { WelcomeBanner } from "./welcome-banner";
 import getValidToken from "../config/tokenUtils.js";
 import axios from "axios";
-import { ENDPOINTS } from "../config/api.js";
+import { ENDPOINTS } from "../config.js";
 import { TaskListSkeleton } from "../componets/TaskListSkeleton.jsx";
 
 export function TaskList({
@@ -245,7 +245,7 @@ export function TaskList({
         return;
       }
 
-      //API CALL TO DELETE TASK
+      / CALL TO DELETE TASK
       await axios.delete(ENDPOINTS.TASKS.BY_ID(taskId), {
         headers: { Authorization: `Bearer ${token}` },
       });

@@ -62,7 +62,7 @@ test.describe("Goals - List Display", () => {
 
   test("should show empty state when no goals", async ({ page }) => {
     // Mock empty goals
-    await page.route("**/api/goals", (route) => {
+    await page.route("**/goals", (route) => {
       if (route.request().method() === "GET") {
         route.fulfill({
           status: 200,
@@ -318,7 +318,9 @@ test.describe("Goals - Edit Goal", () => {
     expect(titleValue).toBe(newTitle);
 
     // Verify Update Goal button is visible
-    await expect(dialog.locator('button:has-text("Update Goal")')).toBeVisible();
+    await expect(
+      dialog.locator('button:has-text("Update Goal")'),
+    ).toBeVisible();
   });
 });
 
@@ -383,7 +385,9 @@ test.describe("Goals - Delete Goal", () => {
 
     // ConfirmModal uses "Delete" as the confirm button text
     const confirmButton = page
-      .locator('.fixed.inset-0').last().locator('button:has-text("Delete")')
+      .locator(".fixed.inset-0")
+      .last()
+      .locator('button:has-text("Delete")')
       .or(page.locator('button:has-text("Confirm")'))
       .or(page.locator('button:has-text("Yes")'));
     if (await confirmButton.isVisible({ timeout: 2000 }).catch(() => false)) {
@@ -667,7 +671,7 @@ test.describe("Goals - Priority Colors", () => {
 test.describe("Goals - Loading States", () => {
   test("should show loading skeleton", async ({ page }) => {
     // Mock slow API
-    await page.route("**/api/goals", async (route) => {
+    await page.route("**/goals", async (route) => {
       await new Promise((resolve) => setTimeout(resolve, 2000));
       route.fulfill({
         status: 200,
@@ -696,7 +700,7 @@ test.describe("Goals - Error Handling", () => {
     await loginAndGoToGoals(page);
 
     // Mock API error
-    await page.route("**/api/goals", (route) => {
+    await page.route("**/goals", (route) => {
       if (route.request().method() === "POST") {
         route.fulfill({
           status: 500,

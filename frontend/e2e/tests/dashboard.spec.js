@@ -366,7 +366,7 @@ test.describe("Dashboard - Theme Support", () => {
 test.describe("Dashboard - Error Handling", () => {
   test("should handle API errors gracefully", async ({ page }) => {
     // Mock API to return error
-    await page.route("**/api/tasks", (route) => {
+    await page.route("**/tasks", (route) => {
       route.fulfill({
         status: 500,
         contentType: "application/json",
@@ -382,7 +382,7 @@ test.describe("Dashboard - Error Handling", () => {
 
   test("should handle network timeout", async ({ page }) => {
     // Mock slow API response
-    await page.route("**/api/tasks", async (route) => {
+    await page.route("**/tasks", async (route) => {
       await new Promise((resolve) => setTimeout(resolve, 30000));
       route.continue();
     });

@@ -1,7 +1,6 @@
 import axios from "axios";
 
-const BASE_URL =
-  process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api";
+const BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
 
 // Create axios instance with default config
 const axiosInstance = axios.create({
@@ -37,7 +36,7 @@ axiosInstance.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // Response interceptor - Handle 401 errors and token refresh
@@ -109,7 +108,7 @@ axiosInstance.interceptors.response.use(
     } finally {
       isRefreshing = false;
     }
-  }
+  },
 );
 
 export default axiosInstance;

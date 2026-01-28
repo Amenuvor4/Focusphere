@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import getValidToken from "../config/tokenUtils";
-import { ENDPOINTS } from "../config/api.js";
+import { ENDPOINTS } from "../config.js";
 import GoalModal from "../componets/GoalModal.jsx";
 
 export function TaskEditDialog({ isOpen, onClose, task, onSave }) {
@@ -80,11 +80,15 @@ export function TaskEditDialog({ isOpen, onClose, task, onSave }) {
     if (value === "__create_new_goal__") {
       // Validate that important task fields are filled
       if (!title.trim()) {
-        setValidationError("Please fill in the task title before creating a new goal.");
+        setValidationError(
+          "Please fill in the task title before creating a new goal.",
+        );
         return;
       }
       if (!description.trim()) {
-        setValidationError("Please fill in the task description before creating a new goal.");
+        setValidationError(
+          "Please fill in the task description before creating a new goal.",
+        );
         return;
       }
       setValidationError(null);
@@ -239,7 +243,10 @@ export function TaskEditDialog({ isOpen, onClose, task, onSave }) {
                         {goal.title}
                       </option>
                     ))}
-                    <option value="__create_new_goal__" className="font-medium text-blue-600">
+                    <option
+                      value="__create_new_goal__"
+                      className="font-medium text-blue-600"
+                    >
                       + Create New Goal
                     </option>
                   </>
@@ -254,7 +261,11 @@ export function TaskEditDialog({ isOpen, onClose, task, onSave }) {
             </div>
           )}
 
-          {error && <div className="text-sm text-red-500 dark:text-red-400">{error}</div>}
+          {error && (
+            <div className="text-sm text-red-500 dark:text-red-400">
+              {error}
+            </div>
+          )}
 
           <div className="flex justify-end gap-2 pt-4">
             <button

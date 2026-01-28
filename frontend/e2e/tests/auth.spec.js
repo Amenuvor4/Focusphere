@@ -456,7 +456,7 @@ test.describe("Authentication - OAuth (Google)", () => {
     const mockRefreshToken = "mock-refresh-token";
 
     // Mock the profile endpoint
-    await page.route("**/api/auth/profile", (route) => {
+    await page.route("**/auth/profile", (route) => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
