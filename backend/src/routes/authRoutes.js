@@ -159,7 +159,7 @@ router.get('/google', passport.authenticate('google', { scope: ['profile', 'emai
 
 // Google Callback
 router.get(
-  '/callback/google',
+  '/google/callback',
   passport.authenticate('google', { session: false, failureRedirect: '/auth?error=google_failed' }),
   handleOAuthCallback
 );
@@ -169,7 +169,7 @@ router.get('/github', passport.authenticate('github', { scope: ['user:email'] })
 
 // GitHub Callback
 router.get(
-  '/callback/github',
+  '/github/callback',
   passport.authenticate('github', { session: false, failureRedirect: '/auth?error=github_failed' }),
   handleOAuthCallback
 );
