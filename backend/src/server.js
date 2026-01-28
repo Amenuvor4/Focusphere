@@ -34,10 +34,10 @@ const taskRoutes = require('./routes/taskRoutes');
 const goalRoutes = require('./routes/goalRoutes');
 const aiRoutes = require('./routes/aiRoutes'); 
 
-app.use('/api/ai', aiRoutes);
-app.use('/api/auth', authRoutes); 
-app.use('/api/tasks', taskRoutes); 
-app.use('/api/goals', goalRoutes);
+app.use('/ai', aiRoutes);
+app.use('/auth', authRoutes);
+app.use('/tasks', taskRoutes);
+app.use('/goals', goalRoutes);
 
 
 
