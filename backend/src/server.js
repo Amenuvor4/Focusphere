@@ -20,7 +20,7 @@ app.use(express.json());
 
 
 app.use(cors({
-  origin: ["http://localhost:3000"," https://focusphere-indol.vercel.app/" ],
+  origin: ["http://localhost:3000", "https://focusphere-indol.vercel.app"],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   credentials: true, 
 }));
