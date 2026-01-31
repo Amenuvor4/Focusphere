@@ -97,4 +97,18 @@ router.get("/pending-actions", aiController.getPendingActions);
  */
 router.delete("/pending-actions", aiController.clearPendingActions);
 
+/**
+ * @route   GET /ai/models
+ * @desc    Get available AI models info and current status
+ * @access  Private
+ */
+router.get("/models", aiController.getModelsInfo);
+
+/**
+ * @route   GET /ai/rate-limit-status
+ * @desc    Get current rate limit status and token usage
+ * @access  Private
+ */
+router.get("/rate-limit-status", aiController.getRateLimitStatus);
+
 module.exports = router;

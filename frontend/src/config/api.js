@@ -24,5 +24,7 @@ export const ENDPOINTS = {
     SMART_SUGGESTIONS: `${BASE_URL}/ai/smart-suggestions`,
     EXECUTE_ACTIONS: `${BASE_URL}/ai/execute-actions`,
     PENDING_ACTIONS: `${BASE_URL}/ai/pending-actions`,
+    MODELS: `${BASE_URL}/ai/models`,
+    RATE_LIMIT_STATUS: `${BASE_URL}/ai/rate-limit-status`,
   },
 };

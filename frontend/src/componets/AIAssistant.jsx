@@ -16,7 +16,6 @@ import {
   Plus,
   X,
   RotateCcw,
-  Check,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { ENDPOINTS } from "../config/api.js";
@@ -26,6 +25,8 @@ import {
   DestructiveConfirmCard,
   ActionCard,
   MultiActionCard,
+  ModelSelector,
+  RateLimitCountdown,
 } from "./AIAssistant/index.js";
 
 const AIAssistant = ({
@@ -49,6 +50,9 @@ const AIAssistant = ({
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
   const [typingMessageId, setTypingMessageId] = useState(null);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
+  const [selectedModel, setSelectedModel] = useState("gemini-1.5-flash");
+  const [rateLimitInfo, setRateLimitInfo] = useState(null);
+  const [tokenUsage, setTokenUsage] = useState(null);
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -300,12 +304,51 @@ const AIAssistant = ({
             .slice(-10)
             .map((m) => ({ role: m.role, content: m.content })),
           isNewChat: isFirstMessage,
+          preferredModel: selectedModel,
         }),
       });
+
+      // Handle rate limit error specifically
+      if (response.status === 429) {
+        const errorData = await response.json();
+        if (errorData.rateLimitInfo) {
+          setRateLimitInfo({
+            isLimited: true,
+            retryAfterSeconds: errorData.rateLimitInfo.retryAfterSeconds,
+            failedModel: errorData.rateLimitInfo.failedModel,
+          });
+          updateConversation({
+            messages: [
+              ...newMessages,
+              {
+                role: "assistant",
+                content: errorData.rateLimitInfo.message || "AI is taking a short break. Please try again in a moment.",
+                isError: true,
+                isRateLimit: true,
+              },
+            ],
+          });
+          return;
+        }
+      }
 
       if (!response.ok) throw new Error("Failed to get AI response");
 
       const data = await response.json();
+
+      // Update token usage from response metadata
+      if (data._meta?.tokenUsage) {
+        setTokenUsage(data._meta.tokenUsage);
+      }
+
+      // Update selected model if it changed (due to failover)
+      if (data._meta?.model && data._meta.model !== selectedModel) {
+        setSelectedModel(data._meta.model);
+      }
+
+      // Clear rate limit info on success
+      setRateLimitInfo(null);
+
       const messageId = Date.now();
       const aiMessage = {
         id: messageId,
@@ -313,7 +356,6 @@ const AIAssistant = ({
         content: data.response.message,
         suggestedActions: data.response.suggestedActions || [],
         isNew: true,
-        // Handle auto-executed actions from confirmation flow
         wasConfirmation: data.wasConfirmation || false,
         wasDecline: data.wasDecline || false,
         executedActions: data.response.executedActions || null,
@@ -691,7 +733,17 @@ const AIAssistant = ({
           )}
         </div>
 
-        <div className="border-t border-gray-200 dark:border-slate-700 p-4 bg-gray-50 dark:bg-slate-900/50">
+        <div className="border-t border-gray-200/50 dark:border-slate-700/50 p-4 bg-gradient-to-t from-gray-100/90 to-gray-50/70 dark:from-slate-900/90 dark:to-slate-800/70 backdrop-blur-sm">
+          {/* Rate limit countdown */}
+          {rateLimitInfo?.isLimited && (
+            <div className="mb-3">
+              <RateLimitCountdown
+                retryAfterSeconds={rateLimitInfo.retryAfterSeconds}
+                onComplete={() => setRateLimitInfo(null)}
+              />
+            </div>
+          )}
+
           {selectedImage && (
             <div className="mb-3 flex items-center gap-2 p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
               <img
@@ -710,7 +762,16 @@ const AIAssistant = ({
               </button>
             </div>
           )}
-          <div className="flex gap-2 items-center">
+
+          {/* Main input bar with pill shape and glassmorphism */}
+          <div
+            className={`flex gap-2 items-center rounded-full px-3 py-1.5 transition-all duration-500
+              bg-white/80 dark:bg-slate-800/80 backdrop-blur-md
+              border-2 ${isLoading
+                ? 'border-blue-400 dark:border-blue-400 shadow-[0_0_25px_rgba(59,130,246,0.4)] scale-[1.01]'
+                : 'border-gray-200/60 dark:border-slate-600/60 hover:border-gray-300 dark:hover:border-slate-500'}
+              focus-within:ring-2 focus-within:ring-blue-500/40 focus-within:border-blue-400`}
+          >
             <input
               ref={fileInputRef}
               type="file"
@@ -720,24 +781,35 @@ const AIAssistant = ({
             />
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="p-2.5 hover:bg-gray-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
+              className="p-2 hover:bg-gray-100 dark:hover:bg-slate-600 rounded-full transition-colors"
               title="Upload image"
             >
-              <Image className="h-5 w-5 text-gray-600 dark:text-slate-400" />
+              <Image className="h-5 w-5 text-gray-500 dark:text-slate-400" />
             </button>
+
             <input
               type="text"
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Ask Focusphere AI..."
-              disabled={isLoading}
-              className="flex-1 rounded-full border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 dark:disabled:bg-slate-800"
+              disabled={isLoading || rateLimitInfo?.isLimited}
+              className="flex-1 bg-transparent text-gray-900 dark:text-white py-2 text-sm focus:outline-none disabled:opacity-50 placeholder-gray-400 dark:placeholder-slate-500"
             />
+
+            {/* Model selector */}
+            <ModelSelector
+              currentModel={selectedModel}
+              onModelChange={setSelectedModel}
+              rateLimitInfo={rateLimitInfo}
+              tokenUsage={tokenUsage}
+              disabled={isLoading}
+            />
+
             <button
               onClick={handleSendMessage}
-              disabled={(!inputMessage.trim() && !selectedImage) || isLoading}
-              className="p-3 bg-blue-600 dark:bg-blue-500 text-white rounded-full hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 transition-colors"
+              disabled={(!inputMessage.trim() && !selectedImage) || isLoading || rateLimitInfo?.isLimited}
+              className="p-2.5 bg-blue-600 dark:bg-blue-500 text-white rounded-full hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 transition-colors"
             >
               {isLoading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />

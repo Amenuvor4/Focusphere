@@ -294,9 +294,24 @@ exports.chat = async (req, res) => {
         suggestedActions: response.suggestedActions,
       },
       suggestedTitle,
+      // Include AI metadata for frontend
+      _meta: response._meta || null,
     });
   } catch (error) {
     console.error("AI chat error:", error);
+
+    // Check if it's a rate limit error with details
+    if (error.rateLimitInfo || error.retryAfter) {
+      return res.status(429).json({
+        error: "AI service rate limited",
+        rateLimitInfo: {
+          retryAfterSeconds: error.retryAfter || 60,
+          failedModel: error.failedModel,
+          message: `AI is taking a short break. Please try again in ${error.retryAfter || 60} seconds.`
+        }
+      });
+    }
+
     res.status(500).json({ error: "Failed to process message" });
   }
 };
@@ -737,5 +752,43 @@ exports.clearPendingActions = async (req, res) => {
   } catch (error) {
     console.error("Clear pending actions error:", error);
     res.status(500).json({ error: "Failed to clear pending actions" });
+  }
+};
+
+/**
+ * Get AI models info and rate limit status
+ * GET /ai/models
+ */
+exports.getModelsInfo = async (req, res) => {
+  try {
+    const modelsInfo = aiService.getModelsInfo();
+    const tokenUsage = aiService.getTokenUsageInfo();
+
+    res.json({
+      ...modelsInfo,
+      tokenUsage,
+    });
+  } catch (error) {
+    console.error("Get models info error:", error);
+    res.status(500).json({ error: "Failed to get models info" });
+  }
+};
+
+/**
+ * Get rate limit status
+ * GET /ai/rate-limit-status
+ */
+exports.getRateLimitStatus = async (req, res) => {
+  try {
+    const rateLimitStatus = aiService.getRateLimitStatus();
+    const tokenUsage = aiService.getTokenUsageInfo();
+
+    res.json({
+      ...rateLimitStatus,
+      tokenUsage,
+    });
+  } catch (error) {
+    console.error("Get rate limit status error:", error);
+    res.status(500).json({ error: "Failed to get rate limit status" });
   }
 };

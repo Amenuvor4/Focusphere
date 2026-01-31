@@ -1,15 +1,65 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-class AIService {
-  constructor() {
-    this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    // Use gemini-2.5-flash-lite for better cost/performance ratio
-    // Can be overridden via GEMINI_MODEL env var
-    const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
-    console.log(`[AIService] Using model: ${modelName}`);
-    this.model = this.genAI.getGenerativeModel({
-      model: modelName,
-      systemInstruction: `You are Focusphere AI, a high-intelligence productivity strategist.
+// Mock responses for development/testing without API calls
+const MOCK_RESPONSES = {
+  default: {
+    message: "I'm running in mock mode. This is a simulated response for testing the UI without using API quota.",
+    suggestedActions: []
+  },
+  createTask: {
+    message: "I'll create that task for you.",
+    suggestedActions: [{
+      type: "create_task",
+      data: {
+        title: "Mock Task",
+        category: "Work",
+        priority: "medium",
+        due_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      }
+    }]
+  }
+};
+
+// Model configurations with quotas and capabilities
+const MODEL_CONFIG = {
+  'gemini-1.5-flash': {
+    name: 'gemini-1.5-flash',
+    displayName: 'Gemini 1.5 Flash',
+    tier: 'fast',
+    rpmLimit: 15,
+    tpmLimit: 1000000,
+    dailyLimit: 1500,
+  },
+  'gemini-2.0-flash': {
+    name: 'gemini-2.0-flash',
+    displayName: 'Gemini 2.0 Flash',
+    tier: 'smart',
+    rpmLimit: 10,
+    tpmLimit: 4000000,
+    dailyLimit: 1000,
+  },
+  'gemini-1.5-pro': {
+    name: 'gemini-1.5-pro',
+    displayName: 'Gemini 1.5 Pro',
+    tier: 'pro',
+    rpmLimit: 2,
+    tpmLimit: 32000,
+    dailyLimit: 50,
+  }
+};
+
+// Map user-facing model names to actual API model names
+const MODEL_NAME_MAP = {
+  'gemini-1.5-flash': 'gemini-1.5-flash',
+  'gemini-2.0-flash': 'gemini-2.0-flash',
+  'gemini-1.5-pro': 'gemini-1.5-pro'
+};
+
+// Failover order: try user's choice, then cycle through alternatives
+const FAILOVER_ORDER = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+
+// System instruction for the AI
+const SYSTEM_INSTRUCTION = `You are Focusphere AI, a high-intelligence productivity strategist.
 
 ## PERSPECTIVE: The Virtual COO
 You don't just manage tasks; you manage success. Your goal is to identify patterns in [HISTORY], [STATS], and [CATEGORY_TRENDS] to proactively suggest improvements. You act as a coach who understands the user's workload, energy levels, and long-term ambitions.
@@ -275,143 +325,154 @@ When user sets ambitious goals ("run a marathon", "learn web development", "laun
 4. Create a structured action plan with the goal + related tasks
 5. Always show action cards for user approval before creating anything
 
-## EXAMPLES
+Remember: Be strategic, proactive, and human. Analyze patterns before acting. Protect the user's bandwidth. NEVER hallucinate IDs - only use exact IDs from context.`;
 
-### Informational Queries (NO actions)
+class AIService {
+  constructor() {
+    this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    this.isMockMode = process.env.MOCK_AI === 'true';
+    this.models = {};
+    this.currentModelName = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
 
-User: "How many tasks do I have?"
-Response: "You have 4 tasks total: 2 high priority, 1 medium, and 1 low."
-(NO <ACTIONS> tag - this is just information)
+    // Rate limit tracking
+    this.rateLimitState = {
+      retryAfter: null,
+      retryAfterTimestamp: null,
+      failedModel: null,
+      lastError: null
+    };
 
-User: "What are my goals?"
-Response: "You have 3 goals:
-1. Learn Python (45% complete)
-2. Fitness Challenge (20% complete)
-3. Read 12 Books (75% complete)"
-(NO <ACTIONS> tag - this is just information)
+    // Token usage tracking (per session, resets on server restart)
+    this.tokenUsage = {
+      totalInputTokens: 0,
+      totalOutputTokens: 0,
+      requestCount: 0,
+      lastReset: new Date(),
+      estimatedRemaining: 1500 // Rough estimate based on free tier
+    };
 
-User: "What's overdue?"
-Response: "You have 2 overdue tasks: 'Submit Report' (due Jan 25) and 'Call Client' (due Jan 27)."
-(NO <ACTIONS> tag - this is just information)
+    if (this.isMockMode) {
+      console.log(`[AIService] 🧪 MOCK MODE ENABLED - No API calls will be made`);
+      return;
+    }
 
-### Action Queries (WITH actions)
-
-User: "I'm overwhelmed"
-Response: "Let me help. You have 3 overdue high-priority tasks. I recommend:
-1. Focus on 'Client Report' (due yesterday)
-2. Complete 'Budget Review' today
-3. Defer the 5 low-priority items to next week
-
-Want me to reschedule those lower-priority tasks?"
-
-User: "Clear my Friday"
-Response: "You have 4 tasks on Friday. I'll move them to Monday:
-- Team Standup → Monday 9 AM
-- Code Review → Monday 2 PM
-- Documentation → Monday 4 PM
-- Planning → Monday 5 PM
-<ACTIONS>[bulk update actions here]</ACTIONS>"
-
-User: "Add buy milk"
-Response: "You already have 'Buy Milk' scheduled for tomorrow. Should I move it to today instead, or add a reminder?"
-
-User: "Delete all my tasks"
-Response: "This will permanently delete ALL your tasks. This cannot be undone. Are you sure?"
-<ACTIONS>[{"type":"delete_all_tasks","data":{}}]</ACTIONS>
-
-User: "Delete everything"
-Response: "This will permanently delete ALL your tasks and goals. This cannot be undone. Say 'yes' to confirm."
-<ACTIONS>[{"type":"delete_all_tasks","data":{}},{"type":"delete_all_goals","data":{}}]</ACTIONS>
-
-User: "Tell me a joke"
-Response: "Why do programmers prefer dark mode? Because light attracts bugs! Speaking of bugs in your schedule - you have 2 overdue tasks. Want to knock those out?"
-
-### Detail Gathering Examples (IMPORTANT - follow this pattern)
-
-User: "Help me create a goal"
-Response: "I'd love to help! What would you like to work towards, and when do you want to achieve it by?"
-(NO <ACTIONS> - wait for details)
-
-User: "Create a task for my project"
-Response: "Sure! What's the task, and when does it need to be done?"
-(NO <ACTIONS> - wait for details)
-
-User: "I need to set up a goal for fitness"
-Response: "Great choice! What specific fitness goal do you have in mind? And what's your target date to achieve it?"
-(NO <ACTIONS> - wait for details)
-
-User: "Add a task called Review Budget"
-Response: "Got it - 'Review Budget'. When do you need this done, and is it high, medium, or low priority?"
-(NO <ACTIONS> - wait for due date and priority)
-
-User: "Create a high priority task to submit report by Friday"
-Response: "I'll create 'Submit Report' as high priority, due this Friday."
-<ACTIONS>[{"type":"create_task","data":{"title":"Submit Report","category":"Work","priority":"high","due_date":"2026-02-06"}}]</ACTIONS>
-(Has all details - show action card for confirmation)
-
-User: "Just create something for learning Python, you decide the details"
-Response: "I'll set up a learning goal for you with a reasonable timeline."
-<ACTIONS>[{"type":"create_goal","data":{"title":"Learn Python Fundamentals","priority":"medium","deadline":"2026-03-15"}}]</ACTIONS>
-(User delegated - use sensible defaults, show action card)
-
-### Strategic AI Examples (USE THESE PATTERNS)
-
-User: "Add 3 more tasks for my project" (when WORKLOAD_LEVEL is HEAVY)
-Response: "I notice you already have 12 pending tasks with 4 overdue. Before adding more, should we tackle 'Client Report' and 'Budget Review' first? Once those are cleared, I'll help you add the new project tasks."
-(Prioritize clearing backlog when workload is heavy)
-
-User: "Create a goal to launch my startup" (ambitious goal)
-Response: "Great ambition! To set you up for success, I'll break this into 3 phases:
-1. **Research & Setup** - Market research, business plan, legal setup
-2. **Execution** - MVP development, initial users, feedback loop
-3. **Optimization** - Scaling, marketing, iteration
-
-What's your target launch date, and which phase should we start with?"
-(Strategic decomposition before creating actions)
-
-User: "Help me be more productive" (when CATEGORY_TRENDS shows Work:8pending/2done)
-Response: "Looking at your patterns, I see your Work tasks are piling up (8 pending). This often happens when tasks feel too big. Would you like me to break your top 3 Work tasks into smaller, 15-minute subtasks? That tends to get momentum going."
-(Pattern recognition from category trends)
-
-User: "I'm stressed" (when WORKLOAD_LEVEL is CRITICAL)
-Response: "I hear you. You have 6 high-priority items due in the next 48 hours - that's a lot. Let me suggest Strategic Deferral:
-1. Keep: 'Client Presentation' (tomorrow) and 'Budget Submit' (urgent)
-2. Defer to next week: 'Team Training', 'Documentation Update', 'Process Review'
-
-This protects your bandwidth for what truly matters. Want me to reschedule those 3 items?"
-(Burn-out detection and scope cutting)
-
-User: "Create a task for deep coding work" (when TIME_OF_DAY is MORNING)
-Response: "Perfect timing - mornings are ideal for deep focus work. What's the coding task, and when do you need it done?"
-(Time-of-day cognitive awareness)
-
-User: "Create a task for deep coding work" (when TIME_OF_DAY is EVENING)
-Response: "Evening's usually better for lighter tasks. Would you prefer to schedule this coding work for tomorrow morning when focus is sharper? What's the task and deadline?"
-(Suggest optimal timing based on cognitive science)
-
-### ID and Context Examples (CRITICAL - avoid placeholder errors)
-
-User: "Mark 'Define website purpose' as done" (when task exists in [TASKS] with ID 679e1a2b3c4d5e6f7a8b9c0d)
-Response: "Done! I'll mark 'Define website purpose' as completed."
-<ACTIONS>[{"type":"update_task","data":{"taskId":"679e1a2b3c4d5e6f7a8b9c0d","updates":{"status":"completed"}}}]</ACTIONS>
-(Extract EXACT 24-char ID from [TASKS] context)
-
-User: "Mark that first task I just created as done" (when tasks were just proposed but NOT yet approved)
-Response: "Those tasks haven't been created yet - they're still pending your approval. Once you approve them, I'll be able to update their status. Would you like to approve the pending actions first?"
-(NO <ACTIONS> - tasks don't exist in database yet, no IDs available)
-
-User: "Update the Budget Review task" (when task is NOT in [TASKS] context)
-Response: "I don't see 'Budget Review' in your current task list. It may have been completed, deleted, or perhaps it hasn't been created yet. Would you like me to create it?"
-(NO <ACTIONS> - cannot update what doesn't exist in context)
-
-Remember: Be strategic, proactive, and human. Analyze patterns before acting. Protect the user's bandwidth. NEVER hallucinate IDs - only use exact IDs from context.`,
-    });
+    // Initialize primary model
+    this.initializeModel(this.currentModelName);
+    console.log(`[AIService] Initialized with primary model: ${this.currentModelName}`);
   }
 
   /**
-   * Main chat method with conversation history
+   * Initialize a model with the system instruction
    */
-  async chat(message, context) {
+  initializeModel(modelName) {
+    if (!this.models[modelName]) {
+      // Map user-facing name to actual API model name
+      const apiModelName = MODEL_NAME_MAP[modelName] || modelName;
+      this.models[modelName] = this.genAI.getGenerativeModel({
+        model: apiModelName,
+        systemInstruction: SYSTEM_INSTRUCTION,
+      });
+      console.log(`[AIService] Model ${modelName} (API: ${apiModelName}) initialized`);
+    }
+    return this.models[modelName];
+  }
+
+  /**
+   * Get the current active model (or initialize it)
+   */
+  getModel(modelName = null) {
+    const name = modelName || this.currentModelName;
+    if (!this.models[name]) {
+      this.initializeModel(name);
+    }
+    return this.models[name];
+  }
+
+  /**
+   * Check if error should trigger failover to next model
+   */
+  isFailoverError(error) {
+    const message = error?.message || '';
+    const status = error?.status;
+
+    // 429 = Rate limit, 404 = Model not found, 503 = Service unavailable
+    if (status === 429 || status === 404 || status === 503) return true;
+    if (message.includes('429') || message.includes('Resource has been exhausted')) return true;
+    if (message.includes('404') || message.includes('not found')) return true;
+    if (message.includes('503') || message.includes('unavailable')) return true;
+
+    return false;
+  }
+
+  /**
+   * Extract rate limit info from Google API error
+   */
+  extractRateLimitInfo(error) {
+    const info = {
+      isRateLimit: false,
+      isModelNotFound: false,
+      retryAfterSeconds: null,
+      quotaMetric: null,
+      model: null
+    };
+
+    const message = error?.message || '';
+    const status = error?.status;
+
+    // Check for 404 model not found
+    if (status === 404 || message.includes('404') || message.includes('not found')) {
+      info.isModelNotFound = true;
+      return info;
+    }
+
+    if (message.includes('429') || status === 429) {
+      info.isRateLimit = true;
+
+      // Try to extract retry delay from error details
+      if (error.errorDetails) {
+        for (const detail of error.errorDetails) {
+          if (detail['@type']?.includes('RetryInfo')) {
+            const retryDelay = detail.retryDelay;
+            if (retryDelay) {
+              // Parse "42s" or "42.5s" format
+              const seconds = parseFloat(retryDelay.replace('s', ''));
+              info.retryAfterSeconds = Math.ceil(seconds);
+            }
+          }
+          if (detail['@type']?.includes('QuotaFailure')) {
+            const violation = detail.violations?.[0];
+            if (violation) {
+              info.quotaMetric = violation.quotaMetric;
+              info.model = violation.quotaDimensions?.model;
+            }
+          }
+        }
+      }
+
+      // Fallback: try to parse from error message
+      if (!info.retryAfterSeconds) {
+        const retryMatch = message.match(/retry in (\d+(?:\.\d+)?)/i);
+        if (retryMatch) {
+          info.retryAfterSeconds = Math.ceil(parseFloat(retryMatch[1]));
+        }
+      }
+    }
+
+    return info;
+  }
+
+  /**
+   * Main chat method with failover support
+   */
+  async chat(message, context, options = {}) {
+    const { preferredModel } = options;
+
+    // Handle mock mode
+    if (this.isMockMode) {
+      console.log('[AIService] Mock mode - returning simulated response');
+      return this.getMockResponse(message);
+    }
+
     const {
       tasks,
       goals,
@@ -420,111 +481,207 @@ Remember: Be strategic, proactive, and human. Analyze patterns before acting. Pr
       imageData,
     } = context;
 
-    try {
-      const now = new Date();
-      const systemTime = now.toISOString();
-      const today = systemTime.split("T")[0];
+    // Build the context string
+    const userContext = this.buildContext(message, tasks, goals, conversationHistory, analytics);
 
-      
-      const taskContext =
-        tasks
-          ?.slice(0, 15)
-          .map((t) => {
-            const dueDate = t.due_date
-              ? new Date(t.due_date).toISOString().split("T")[0]
-              : null;
-            const isOverdue =
-              dueDate && dueDate < today && t.status !== "completed";
-            return `ID:${t._id}|T:${t.title}|S:${t.status}|P:${t.priority}|C:${t.category || "None"}|D:${dueDate || "None"}${isOverdue ? "|OVERDUE" : ""}`;
-          })
-          .join("\n") || "None";
+    // Determine which model to try first
+    const modelToTry = preferredModel || this.currentModelName;
+    const modelsToAttempt = [modelToTry, ...FAILOVER_ORDER.filter(m => m !== modelToTry)];
 
+    let lastError = null;
+    let rateLimitInfo = null;
 
-      const goalContext =
-        goals
-          ?.slice(0, 8)
-          .map((g) => {
-            const deadline = g.deadline
-              ? new Date(g.deadline).toISOString().split("T")[0]
-              : null;
-            return `ID:${g._id}|T:${g.title}|P:${g.progress}%|Pri:${g.priority || "medium"}|DL:${deadline || "None"}`;
-          })
-          .join("\n") || "None";
+    // Try each model in order until one succeeds
+    for (const modelName of modelsToAttempt) {
+      try {
+        console.log(`[AIService] Attempting request with model: ${modelName}`);
+        const model = this.getModel(modelName);
 
+        let result;
+        if (imageData) {
+          const imagePart = {
+            inlineData: {
+              data: imageData.split(",")[1],
+              mimeType: imageData.match(/data:([^;]+);/)[1],
+            },
+          };
+          result = await model.generateContent([userContext, imagePart]);
+        } else {
+          result = await model.generateContent(userContext);
+        }
 
-      const overdueCount =
-        tasks?.filter((t) => {
-          const dueDate = t.due_date
-            ? new Date(t.due_date).toISOString().split("T")[0]
-            : null;
-          return dueDate && dueDate < today && t.status !== "completed";
-        }).length || 0;
+        const responseText = result.response.text();
 
-      const highPriorityPending =
-        tasks?.filter((t) => t.priority === "high" && t.status !== "completed")
-          .length || 0;
+        // Update token usage tracking (estimate)
+        this.updateTokenUsage(userContext, responseText);
 
-      // Calculate category trends (tasks per category with completion status)
-      const categoryTrends = tasks?.reduce((acc, t) => {
-        const cat = t.category || "Uncategorized";
-        if (!acc[cat]) acc[cat] = { total: 0, completed: 0, pending: 0 };
-        acc[cat].total++;
-        if (t.status === "completed") acc[cat].completed++;
-        else acc[cat].pending++;
-        return acc;
-      }, {}) || {};
+        // Update current model on success
+        if (modelName !== this.currentModelName) {
+          console.log(`[AIService] Switched to model: ${modelName}`);
+          this.currentModelName = modelName;
+        }
 
-      // Calculate tasks due in next 48 hours
-      const next48Hours = new Date(now.getTime() + 48 * 60 * 60 * 1000);
-      const urgentCount = tasks?.filter((t) => {
-        if (t.status === "completed") return false;
-        const dueDate = t.due_date ? new Date(t.due_date) : null;
-        return dueDate && dueDate <= next48Hours;
-      }).length || 0;
+        // Clear rate limit state on success
+        this.rateLimitState = {
+          retryAfter: null,
+          retryAfterTimestamp: null,
+          failedModel: null,
+          lastError: null
+        };
 
-      // Determine workload level for burn-out detection
-      const pendingCount = tasks?.filter((t) => t.status !== "completed").length || 0;
-      let workloadLevel = "LIGHT";
-      if (pendingCount > 15 || (highPriorityPending > 5 && overdueCount > 3)) {
-        workloadLevel = "CRITICAL";
-      } else if (pendingCount > 10 || highPriorityPending > 3 || overdueCount > 2) {
-        workloadLevel = "HEAVY";
-      } else if (pendingCount > 5) {
-        workloadLevel = "MODERATE";
+        const parsed = this.parseResponse(responseText);
+        return {
+          ...parsed,
+          _meta: {
+            model: modelName,
+            tokenUsage: this.getTokenUsageInfo()
+          }
+        };
+      } catch (error) {
+        console.error(`[AIService] Error with model ${modelName}:`, error.message);
+        lastError = error;
+
+        // Check error type for failover decision
+        rateLimitInfo = this.extractRateLimitInfo(error);
+
+        if (rateLimitInfo.isModelNotFound) {
+          console.log(`[AIService] Model ${modelName} not found (404), trying next model...`);
+          continue; // Silent failover to next model
+        }
+
+        if (rateLimitInfo.isRateLimit) {
+          console.log(`[AIService] Rate limit hit on ${modelName}, switching to backup model...`);
+
+          // Store rate limit state
+          this.rateLimitState = {
+            retryAfter: rateLimitInfo.retryAfterSeconds,
+            retryAfterTimestamp: Date.now() + (rateLimitInfo.retryAfterSeconds * 1000),
+            failedModel: modelName,
+            lastError: error.message
+          };
+
+          // Continue to try next model (silent failover)
+          continue;
+        }
+
+        // Check if it's any other failover-worthy error
+        if (this.isFailoverError(error)) {
+          console.log(`[AIService] Failover error on ${modelName}, trying next model...`);
+          continue;
+        }
+
+        // For non-failover errors, don't try next model
+        break;
       }
+    }
 
-      // Determine time of day for cognitive load suggestions
-      const hour = now.getHours();
-      let timeOfDay = "MORNING"; // Best for deep work
-      if (hour >= 12 && hour < 17) timeOfDay = "AFTERNOON"; // Good for meetings, admin
-      else if (hour >= 17) timeOfDay = "EVENING"; // Light tasks, planning
+    // All models failed
+    console.error('[AIService] All models exhausted');
 
-      // Calculate completion rate
-      const completionRate = analytics?.completionRate ||
-        (tasks?.length > 0 ? Math.round((tasks.filter(t => t.status === "completed").length / tasks.length) * 100) : 0);
+    // Create a detailed error with rate limit info
+    const error = new Error('AI service unavailable');
+    error.rateLimitInfo = rateLimitInfo;
+    error.retryAfter = this.rateLimitState.retryAfter;
+    error.failedModel = this.rateLimitState.failedModel;
+    throw error;
+  }
 
-      const analyticsContext = analytics
-        ? `Done:${analytics.tasksCompleted}|Total:${analytics.tasksCreated}|Rate:${completionRate}%|Overdue:${overdueCount}|HighPri:${highPriorityPending}|Urgent48h:${urgentCount}`
-        : `Overdue:${overdueCount}|HighPri:${highPriorityPending}|Pending:${pendingCount}|Rate:${completionRate}%|Urgent48h:${urgentCount}`;
+  /**
+   * Build the context string for the AI
+   */
+  buildContext(message, tasks, goals, conversationHistory, analytics) {
+    const now = new Date();
+    const systemTime = now.toISOString();
+    const today = systemTime.split("T")[0];
 
-      // Format category trends for AI consumption
-      const categoryTrendsStr = Object.entries(categoryTrends)
-        .map(([cat, data]) => `${cat}:${data.pending}pending/${data.completed}done`)
-        .join(", ") || "None";
+    // Limit task context to reduce token usage (5 most relevant tasks)
+    const taskContext = tasks
+      ?.slice(0, 10)
+      .map((t) => {
+        const dueDate = t.due_date
+          ? new Date(t.due_date).toISOString().split("T")[0]
+          : null;
+        const isOverdue =
+          dueDate && dueDate < today && t.status !== "completed";
+        return `ID:${t._id}|T:${t.title}|S:${t.status}|P:${t.priority}|C:${t.category || "None"}|D:${dueDate || "None"}${isOverdue ? "|OVERDUE" : ""}`;
+      })
+      .join("\n") || "None";
 
-      // Increased history window from 6 to 12 for better context retention
-      const history = conversationHistory
-        .slice(-12)
-        .map((msg) => `${msg.role === "user" ? "U" : "A"}: ${msg.content}`)
-        .join("\n");
+    const goalContext = goals
+      ?.slice(0, 5)
+      .map((g) => {
+        const deadline = g.deadline
+          ? new Date(g.deadline).toISOString().split("T")[0]
+          : null;
+        return `ID:${g._id}|T:${g.title}|P:${g.progress}%|Pri:${g.priority || "medium"}|DL:${deadline || "None"}`;
+      })
+      .join("\n") || "None";
 
-      const userContext = `
+    const overdueCount = tasks?.filter((t) => {
+      const dueDate = t.due_date ? new Date(t.due_date).toISOString().split("T")[0] : null;
+      return dueDate && dueDate < today && t.status !== "completed";
+    }).length || 0;
+
+    const highPriorityPending = tasks?.filter(
+      (t) => t.priority === "high" && t.status !== "completed"
+    ).length || 0;
+
+    const pendingCount = tasks?.filter((t) => t.status !== "completed").length || 0;
+
+    let workloadLevel = "LIGHT";
+    if (pendingCount > 15 || (highPriorityPending > 5 && overdueCount > 3)) {
+      workloadLevel = "CRITICAL";
+    } else if (pendingCount > 10 || highPriorityPending > 3 || overdueCount > 2) {
+      workloadLevel = "HEAVY";
+    } else if (pendingCount > 5) {
+      workloadLevel = "MODERATE";
+    }
+
+    const hour = now.getHours();
+    let timeOfDay = "MORNING";
+    if (hour >= 12 && hour < 17) timeOfDay = "AFTERNOON";
+    else if (hour >= 17) timeOfDay = "EVENING";
+
+    const completionRate = analytics?.completionRate ||
+      (tasks?.length > 0 ? Math.round((tasks.filter(t => t.status === "completed").length / tasks.length) * 100) : 0);
+
+    // Calculate Completion Confidence score (0-100)
+    // Factors: completion rate, overdue ratio, workload level
+    let completionConfidence = completionRate;
+    if (pendingCount > 0) {
+      const overdueRatio = overdueCount / pendingCount;
+      completionConfidence = Math.max(0, Math.round(completionRate - (overdueRatio * 30)));
+    }
+    if (workloadLevel === "CRITICAL") completionConfidence = Math.max(0, completionConfidence - 20);
+    else if (workloadLevel === "HEAVY") completionConfidence = Math.max(0, completionConfidence - 10);
+
+    // Calculate Category Affinity (which categories user focuses on)
+    const categoryStats = {};
+    tasks?.forEach(t => {
+      const cat = t.category || "Uncategorized";
+      categoryStats[cat] = (categoryStats[cat] || 0) + 1;
+    });
+    const topCategories = Object.entries(categoryStats)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([cat, count]) => `${cat}:${count}`)
+      .join(",") || "None";
+
+    const analyticsContext = `Overdue:${overdueCount}|HighPri:${highPriorityPending}|Pending:${pendingCount}|Rate:${completionRate}%|Confidence:${completionConfidence}%`;
+
+    // Reduce history to last 5 messages to save tokens
+    const history = conversationHistory
+      .slice(-5)
+      .map((msg) => `${msg.role === "user" ? "U" : "A"}: ${msg.content}`)
+      .join("\n");
+
+    return `
 [SYSTEM_TIME]: ${systemTime}
 [TODAY]: ${today}
 [TIME_OF_DAY]: ${timeOfDay}
 [WORKLOAD_LEVEL]: ${workloadLevel}
 [STATS]: ${analyticsContext}
-[CATEGORY_TRENDS]: ${categoryTrendsStr}
+[CATEGORY_TRENDS]: ${topCategories}
 [TASKS]:
 ${taskContext}
 [GOALS]:
@@ -533,32 +690,105 @@ ${goalContext}
 ${history}
 
 User Message: ${message}`;
+  }
 
-      let result;
-      // Handle image if provided
-      if (imageData) {
-        const imagePart = {
-          inlineData: {
-            data: imageData.split(",")[1],
-            mimeType: imageData.match(/data:([^;]+);/)[1],
-          },
-        };
-        result = await this.model.generateContent([userContext, imagePart]);
-      } else {
-        result = await this.model.generateContent(userContext);
-      }
+  /**
+   * Get mock response for testing
+   */
+  getMockResponse(message) {
+    const lowerMessage = message.toLowerCase();
 
-      const responseText = result.response.text();
-      return this.parseResponse(responseText);
-    } catch (error) {
-      console.error("Gemini API error:", error);
-      throw new Error("AI service unavailable");
+    if (lowerMessage.includes('create') && lowerMessage.includes('task')) {
+      return { ...MOCK_RESPONSES.createTask, _meta: { model: 'mock', isMock: true } };
     }
+
+    return { ...MOCK_RESPONSES.default, _meta: { model: 'mock', isMock: true } };
+  }
+
+  /**
+   * Update token usage estimates
+   */
+  updateTokenUsage(input, output) {
+    // Rough estimate: ~4 chars per token
+    const inputTokens = Math.ceil(input.length / 4);
+    const outputTokens = Math.ceil(output.length / 4);
+
+    this.tokenUsage.totalInputTokens += inputTokens;
+    this.tokenUsage.totalOutputTokens += outputTokens;
+    this.tokenUsage.requestCount++;
+
+    // Estimate remaining requests (very rough)
+    // Free tier is about 15 RPM, 1500 RPD
+    this.tokenUsage.estimatedRemaining = Math.max(0, 1500 - this.tokenUsage.requestCount);
+  }
+
+  /**
+   * Get token usage info for frontend
+   */
+  getTokenUsageInfo() {
+    const remaining = this.tokenUsage.estimatedRemaining;
+    let warningLevel = 'normal';
+
+    if (remaining <= 5) {
+      warningLevel = 'critical';
+    } else if (remaining <= 20) {
+      warningLevel = 'warning';
+    }
+
+    return {
+      requestCount: this.tokenUsage.requestCount,
+      estimatedRemaining: remaining,
+      warningLevel,
+      lastReset: this.tokenUsage.lastReset
+    };
+  }
+
+  /**
+   * Get current rate limit status
+   */
+  getRateLimitStatus() {
+    if (!this.rateLimitState.retryAfterTimestamp) {
+      return { isLimited: false };
+    }
+
+    const now = Date.now();
+    const remaining = Math.max(0, Math.ceil((this.rateLimitState.retryAfterTimestamp - now) / 1000));
+
+    if (remaining <= 0) {
+      // Rate limit has expired
+      this.rateLimitState = {
+        retryAfter: null,
+        retryAfterTimestamp: null,
+        failedModel: null,
+        lastError: null
+      };
+      return { isLimited: false };
+    }
+
+    return {
+      isLimited: true,
+      retryAfterSeconds: remaining,
+      failedModel: this.rateLimitState.failedModel,
+      availableModels: FAILOVER_ORDER.filter(m => m !== this.rateLimitState.failedModel)
+    };
+  }
+
+  /**
+   * Get available models info
+   */
+  getModelsInfo() {
+    return {
+      current: this.currentModelName,
+      available: Object.keys(MODEL_CONFIG).map(key => ({
+        name: key,
+        ...MODEL_CONFIG[key]
+      })),
+      rateLimitStatus: this.getRateLimitStatus()
+    };
   }
 
   /**
    * Parse AI response to extract actions
-   * Enhanced with debug logging and JSON recovery
    */
   parseResponse(text) {
     try {
@@ -568,11 +798,9 @@ User Message: ${message}`;
       const actionsMatch = text.match(/<ACTIONS>([\s\S]*?)<\/ACTIONS>/);
 
       if (!actionsMatch) {
-        // Check if the response mentions actions but has no tags
         const actionKeywords = /\b(creat|delet|updat|add|remov)\w*/i;
         if (actionKeywords.test(text)) {
           console.log('[AIService] WARNING: Response mentions actions but no <ACTIONS> tags found');
-          console.log('[AIService] Response preview:', text.substring(0, 200));
         }
         return { message: text.trim(), suggestedActions: [] };
       }
@@ -584,25 +812,16 @@ User Message: ${message}`;
       console.log('[AIService] Found ACTIONS tag, JSON content:', actionsJson.substring(0, 500));
 
       try {
-        // Attempt to fix common JSON issues before parsing
         actionsJson = this.fixCommonJsonIssues(actionsJson);
         actions = JSON.parse(actionsJson);
 
-        // Ensure actions is an array
         if (!Array.isArray(actions)) {
           actions = [actions];
         }
 
-        // Validate and filter actions
         const validTypes = [
-          "create_task",
-          "update_task",
-          "delete_task",
-          "delete_all_tasks",
-          "create_goal",
-          "update_goal",
-          "delete_goal",
-          "delete_all_goals",
+          "create_task", "update_task", "delete_task", "delete_all_tasks",
+          "create_goal", "update_goal", "delete_goal", "delete_all_goals",
         ];
 
         const originalCount = actions.length;
@@ -629,7 +848,6 @@ User Message: ${message}`;
         console.log(`[AIService] Successfully parsed ${actions.length} valid actions`);
       } catch (parseError) {
         console.error("[AIService] Failed to parse actions JSON:", parseError.message);
-        console.error("[AIService] Problematic JSON:", actionsJson);
         return { message: text.trim(), suggestedActions: [] };
       }
 
@@ -641,39 +859,30 @@ User Message: ${message}`;
   }
 
   /**
-   * Attempt to fix common JSON formatting issues from AI responses
+   * Fix common JSON formatting issues
    */
   fixCommonJsonIssues(json) {
     let fixed = json;
-
-    // Remove trailing commas before ] or }
     fixed = fixed.replace(/,(\s*[}\]])/g, '$1');
-
-    // Fix unquoted property names (simple cases)
     fixed = fixed.replace(/([{,]\s*)(\w+)(\s*:)/g, '$1"$2"$3');
-
-    // Remove any leading/trailing whitespace
     fixed = fixed.trim();
-
-    // Ensure it starts with [ for array
     if (!fixed.startsWith('[') && fixed.startsWith('{')) {
       fixed = '[' + fixed + ']';
     }
-
     return fixed;
   }
 
   /**
-   * Generate chat title from conversation context (user message + AI response)
-   * Uses the first user message and AI response to generate a contextual title
+   * Generate chat title
    */
   async generateChatTitle(userMessage, aiResponse = null) {
-    // Build context for title generation
+    if (this.isMockMode) {
+      return "Mock Conversation";
+    }
+
     let context = `User: "${userMessage}"`;
     if (aiResponse) {
-      // Truncate AI response to first 100 chars for context
-      const truncatedResponse = aiResponse.slice(0, 100);
-      context += `\nAI Response: "${truncatedResponse}..."`;
+      context += `\nAI Response: "${aiResponse.slice(0, 100)}..."`;
     }
 
     const prompt = `Generate a concise, descriptive title (3-5 words) for this conversation:
@@ -685,35 +894,26 @@ Rules:
 - Be specific about the topic
 - No quotes in output
 - Title case
-- Focus on what the user wants to accomplish
-
-Examples:
-User: "Create 5 tasks for my project" → "Project Task Creation"
-User: "Show my overdue tasks" → "Overdue Task Review"
-User: "Help me set a fitness goal" → "Fitness Goal Setup"
-User: "Delete all completed tasks" → "Completed Tasks Cleanup"
 
 Title:`;
 
     try {
-      const result = await this.model.generateContent(prompt);
+      const model = this.getModel();
+      const result = await model.generateContent(prompt);
       const title = result.response.text().trim();
-      // Clean up the title
       const cleanTitle = title
-        .replace(/^["']|["']$/g, "") // Remove quotes
-        .replace(/^\*+|\*+$/g, "") // Remove markdown asterisks
-        .replace(/^#+\s*/, "") // Remove markdown headers
+        .replace(/^["']|["']$/g, "")
+        .replace(/^\*+|\*+$/g, "")
+        .replace(/^#+\s*/, "")
         .trim();
       return cleanTitle.slice(0, 50);
     } catch (error) {
       console.error("Title generation error:", error);
-      // Fallback: extract key words from user message
       const words = userMessage.split(" ").filter((w) => w.length > 2);
       return words.slice(0, 4).join(" ");
     }
   }
 
-  // Keep your other helper methods below...
   getDefaultDueDate() {
     const date = new Date();
     date.setDate(date.getDate() + 2);
