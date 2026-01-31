@@ -1,10 +1,18 @@
 const dotenv = require('dotenv');
+const path = require('path');
+const fs = require('fs');
+
 dotenv.config();
+
+// Override with .env.local if it exists 
+const envLocalPath = path.resolve(__dirname, '../.env.local');
+if (fs.existsSync(envLocalPath)) {
+  dotenv.config({ path: envLocalPath, override: true });
+}
 
 const express = require('express');
 const cors = require('cors');
 const passport = require('passport');
-const path = require('path');
 const connectDB = require('./config/db');
 require('./config/passportConfig');
 

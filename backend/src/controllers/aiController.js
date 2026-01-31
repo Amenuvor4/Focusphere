@@ -1,6 +1,9 @@
 const aiService = require("../services/aiService");
 const Task = require("../models/Task");
 const Goal = require("../models/Goal");
+const actionExecutor = require("../services/actionExecutor");
+const pendingActionsManager = require("../services/pendingActionsManager");
+const { detectConfirmation, isLikelyNewRequest, describePendingActions } = require("../utils/confirmationDetector");
 
 /**
  * Get AI analysis of user's productivity data
@@ -53,6 +56,7 @@ exports.prioritizeTasks = async (req, res) => {
 
 /**
  * Chat with AI (with analytics and image support)
+ * Now includes confirmation detection for pending actions
  */
 exports.chat = async (req, res) => {
   try {
@@ -63,6 +67,55 @@ exports.chat = async (req, res) => {
       return res.status(400).json({ error: "Message is required" });
     }
 
+    // === CONFIRMATION DETECTION ===
+    // Check if user has pending actions and if this message is a confirmation
+    const hasPendingActions = pendingActionsManager.hasPending(userId);
+    const confirmation = detectConfirmation(message, hasPendingActions);
+
+    console.log(`[AIController] Confirmation check: hasPending=${hasPendingActions}, type=${confirmation.type}, confidence=${confirmation.confidence}`);
+
+    // Handle confirmation of pending actions
+    if (confirmation.type === 'confirm' && confirmation.confidence >= 0.8) {
+      const pending = pendingActionsManager.get(userId);
+      console.log(`[AIController] Executing ${pending.actions.length} confirmed actions`);
+
+      const executionResult = await actionExecutor.executeBulk(pending.actions, userId);
+      pendingActionsManager.clear(userId);
+
+      const resultMessage = actionExecutor.formatResults(executionResult);
+
+      return res.json({
+        response: {
+          message: resultMessage,
+          suggestedActions: [],
+          executedActions: executionResult.results,
+        },
+        wasConfirmation: true,
+      });
+    }
+
+    // Handle decline of pending actions
+    if (confirmation.type === 'decline' && confirmation.confidence >= 0.8) {
+      const pending = pendingActionsManager.get(userId);
+      const actionCount = pending?.actions?.length || 0;
+      pendingActionsManager.clear(userId);
+
+      return res.json({
+        response: {
+          message: `Cancelled ${actionCount} pending action${actionCount !== 1 ? 's' : ''}. What else can I help with?`,
+          suggestedActions: [],
+        },
+        wasDecline: true,
+      });
+    }
+
+    // If user sends a new request while having pending actions, clear them
+    if (hasPendingActions && isLikelyNewRequest(message)) {
+      console.log(`[AIController] New request detected, clearing pending actions`);
+      pendingActionsManager.clear(userId);
+    }
+
+    // === NORMAL AI PROCESSING ===
     // Fetch user's tasks and goals for context
     const tasks = await Task.find({ user_id: userId });
     const goals = await Goal.find({ userId });
@@ -199,9 +252,18 @@ exports.chat = async (req, res) => {
         })
       );
 
-      console.log('ENRICHMENT COMPLETE')
-    } else{
-      console.log("NO SUGGESTED ACTIONS FOUND IN RESPONSE")
+      console.log('ENRICHMENT COMPLETE');
+
+      // Store pending actions for confirmation flow
+      pendingActionsManager.set(userId, response.suggestedActions);
+      console.log(`[AIController] Stored ${response.suggestedActions.length} pending actions for user ${userId}`);
+    } else {
+      console.log("NO SUGGESTED ACTIONS FOUND IN RESPONSE");
+      // Clear any existing pending actions since no new ones were suggested
+      // Only clear if this isn't a follow-up question
+      if (!message.toLowerCase().includes('?')) {
+        pendingActionsManager.clear(userId);
+      }
     }
 
     let suggestedTitle = null;
@@ -573,5 +635,91 @@ exports.getSmartSuggestions = async (req, res) => {
   } catch (error) {
     console.error("Smart suggestions error:", error);
     res.status(500).json({ error: "Failed to generate suggestions" });
+  }
+};
+
+/**
+ * Execute actions directly (for Accept button flow)
+ * POST /ai/execute-actions
+ */
+exports.executeActions = async (req, res) => {
+  try {
+    const { actions } = req.body;
+    const userId = req.user.id;
+
+    if (!actions || !Array.isArray(actions) || actions.length === 0) {
+      return res.status(400).json({ error: "Actions array is required" });
+    }
+
+    console.log(`[AIController] Direct execution of ${actions.length} actions for user ${userId}`);
+
+    const executionResult = await actionExecutor.executeBulk(actions, userId);
+
+    // Clear any pending actions since we're executing directly
+    pendingActionsManager.clear(userId);
+
+    res.json({
+      success: executionResult.summary.failed === 0,
+      results: executionResult.results,
+      summary: executionResult.summary,
+      message: actionExecutor.formatResults(executionResult),
+    });
+  } catch (error) {
+    console.error("Execute actions error:", error);
+    res.status(500).json({ error: "Failed to execute actions" });
+  }
+};
+
+/**
+ * Get pending actions status
+ * GET /ai/pending-actions
+ */
+exports.getPendingActions = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const metadata = pendingActionsManager.getMetadata(userId);
+
+    if (!metadata) {
+      return res.json({
+        hasPending: false,
+        actions: [],
+        count: 0,
+      });
+    }
+
+    const pending = pendingActionsManager.get(userId);
+
+    res.json({
+      hasPending: true,
+      actions: pending.actions,
+      count: metadata.count,
+      actionTypes: metadata.actionTypes,
+      expiresAt: metadata.expiresAt,
+      timeRemaining: metadata.timeRemaining,
+      description: describePendingActions(pending.actions),
+    });
+  } catch (error) {
+    console.error("Get pending actions error:", error);
+    res.status(500).json({ error: "Failed to get pending actions" });
+  }
+};
+
+/**
+ * Clear pending actions
+ * DELETE /ai/pending-actions
+ */
+exports.clearPendingActions = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const had = pendingActionsManager.clear(userId);
+
+    res.json({
+      success: true,
+      hadPending: had,
+      message: had ? "Pending actions cleared" : "No pending actions to clear",
+    });
+  } catch (error) {
+    console.error("Clear pending actions error:", error);
+    res.status(500).json({ error: "Failed to clear pending actions" });
   }
 };

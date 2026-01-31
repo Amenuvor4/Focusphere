@@ -22,5 +22,7 @@ export const ENDPOINTS = {
     CHAT: `${BASE_URL}/ai/chat`,
     ANALYZE: `${BASE_URL}/ai/analyze`,
     SMART_SUGGESTIONS: `${BASE_URL}/ai/smart-suggestions`,
+    EXECUTE_ACTIONS: `${BASE_URL}/ai/execute-actions`,
+    PENDING_ACTIONS: `${BASE_URL}/ai/pending-actions`,
   },
 };

@@ -105,69 +105,20 @@ const AIChatWidget = ({
     }
   };
 
-  // Execute approved action
+  // Execute approved action using the new backend endpoint
   const executeAction = async (action) => {
     try {
       const token = await getValidToken();
       if (!token) throw new Error("Not authenticated");
 
-      let response;
-      let endpoint;
-      let method;
-      let body;
-
-      switch (action.type) {
-        case "create_task":
-          endpoint = ENDPOINTS.TASKS.BASE;
-          method = "POST";
-          body = JSON.stringify(action.data);
-          break;
-
-        case "update_task":
-          endpoint = ENDPOINTS.TASKS.BY_ID(action.data.taskId);
-          method = "PUT";
-          body = JSON.stringify(action.data.updates);
-          break;
-
-        case "delete_task":
-          endpoint = ENDPOINTS.TASKS.BY_ID(action.data.taskId);
-          method = "DELETE";
-          break;
-
-        case "create_goal":
-          endpoint = ENDPOINTS.GOALS.BASE;
-          method = "POST";
-          body = JSON.stringify({
-            ...action.data,
-            description:
-              action.data.description || `Goal: ${action.data.title}`,
-            progress: 0,
-            tasks: [],
-          });
-          break;
-
-        case "update_goal":
-          endpoint = ENDPOINTS.GOALS.BY_ID(action.data.goalId);
-          method = "PUT";
-          body = JSON.stringify(action.data.updates);
-          break;
-
-        case "delete_goal":
-          endpoint = ENDPOINTS.GOALS.BY_ID(action.data.goalId);
-          method = "DELETE";
-          break;
-
-        default:
-          throw new Error("Unknown action type");
-      }
-
-      response = await fetch(endpoint, {
-        method: method,
+      // Use the new execute-actions endpoint for single action
+      const response = await fetch(ENDPOINTS.AI.EXECUTE_ACTIONS, {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: body,
+        body: JSON.stringify({ actions: [action] }),
       });
 
       if (!response.ok) {
@@ -175,10 +126,42 @@ const AIChatWidget = ({
         throw new Error(error.error || "Action failed");
       }
 
-      return { success: true };
+      const result = await response.json();
+      // Check if the single action succeeded
+      if (result.results && result.results[0]) {
+        return result.results[0];
+      }
+      return { success: result.success };
     } catch (error) {
       console.error("Action execution error:", error);
       return { success: false, error: error.message };
+    }
+  };
+
+  // Execute multiple actions using the new backend endpoint
+  const executeActions = async (actions) => {
+    try {
+      const token = await getValidToken();
+      if (!token) throw new Error("Not authenticated");
+
+      const response = await fetch(ENDPOINTS.AI.EXECUTE_ACTIONS, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ actions }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Actions failed");
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Actions execution error:", error);
+      return { success: false, error: error.message, results: [] };
     }
   };
 
@@ -253,40 +236,36 @@ const AIChatWidget = ({
     updateConversation({ messages: updatedMessages });
 
     if (approved) {
-      // Execute all actions
-      const results = await Promise.all(
-        message.suggestedActions.map((action) => executeAction(action)),
-      );
+      // Execute all actions using the new bulk endpoint
+      const executionResult = await executeActions(message.suggestedActions);
+      const results = executionResult.results || [];
 
       // Update statuses
       updatedMessages[messageIndex].suggestedActions =
         message.suggestedActions.map((action, idx) => ({
           ...action,
-          status: results[idx].success ? "approved" : "failed",
-          error: results[idx].error,
+          status: results[idx]?.success ? "approved" : "failed",
+          error: results[idx]?.error,
         }));
       updateConversation({ messages: updatedMessages });
 
-      // Add confirmation
-      const successCount = results.filter((r) => r.success).length;
-      const failedCount = results.length - successCount;
-
+      // Add confirmation using the backend's formatted message
       const confirmMessage = {
         role: "assistant",
-        content:
-          failedCount === 0
-            ? `✅ Awesome! All ${successCount} actions completed successfully!`
-            : `⚠️ Completed ${successCount} of ${results.length} actions. ${failedCount} failed - check details above.`,
+        content: executionResult.message ||
+          (executionResult.summary?.failed === 0
+            ? `✅ All ${executionResult.summary?.succeeded || results.length} actions completed successfully!`
+            : `⚠️ Completed ${executionResult.summary?.succeeded || 0} of ${executionResult.summary?.total || results.length} actions.`),
       };
-      updateConversation({ messages: [...messages, confirmMessage] });
+      updateConversation({ messages: [...updatedMessages, confirmMessage] });
     } else {
       updateConversation({ messages: updatedMessages });
       const declineMessage = {
         role: "assistant",
         content:
-          "No problem! All actions cancelled. I'm here if you need anything else! 😊",
+          "No problem! All actions cancelled. I'm here if you need anything else!",
       };
-      updateConversation([...messages, declineMessage]);
+      updateConversation({ messages: [...updatedMessages, declineMessage] });
     }
   };
 
@@ -328,10 +307,15 @@ const AIChatWidget = ({
 
       const data = await response.json();
 
+      // Handle auto-executed actions (from confirmation flow)
       const aiMessage = {
         role: "assistant",
         content: data.response.message,
         suggestedActions: data.response.suggestedActions || [],
+        // Mark if this was from a confirmation
+        wasConfirmation: data.wasConfirmation || false,
+        wasDecline: data.wasDecline || false,
+        executedActions: data.response.executedActions || null,
       };
 
       // Update conversation with messages and title if it's a new chat
@@ -403,6 +387,9 @@ const AIChatWidget = ({
         role: "assistant",
         content: data.response.message,
         suggestedActions: data.response.suggestedActions || [],
+        wasConfirmation: data.wasConfirmation || false,
+        wasDecline: data.wasDecline || false,
+        executedActions: data.response.executedActions || null,
       };
 
       const updates = { messages: [...newMessages, aiMessage] };
@@ -581,6 +568,25 @@ const AIChatWidget = ({
                         </p>
                       </div>
                     </div>
+
+                    {/* Executed Actions Indicator (from confirmation flow) */}
+                    {message.executedActions && message.executedActions.length > 0 && (
+                      <div className="ml-10">
+                        <div className="border-2 border-green-500 dark:border-green-700 bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
+                          <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
+                            <Check className="h-5 w-5" />
+                            <span className="font-medium">
+                              {message.executedActions.filter(a => a.success).length} action{message.executedActions.filter(a => a.success).length !== 1 ? 's' : ''} executed successfully!
+                            </span>
+                          </div>
+                          {message.executedActions.some(a => !a.success) && (
+                            <div className="mt-2 text-red-600 dark:text-red-400 text-sm">
+                              {message.executedActions.filter(a => !a.success).length} action{message.executedActions.filter(a => !a.success).length !== 1 ? 's' : ''} failed
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Action Container - Single or Multiple */}
                     {message.suggestedActions &&
@@ -797,7 +803,9 @@ const MultiActionCard = ({
                 {action.type.includes("create") && "🆕"}
                 {action.type.includes("update") && "✏️"}
                 {action.type.includes("delete") && "🗑️"}{" "}
-                {action.data.title || action.data.updates?.title || "Task"}
+                {action.type === "delete_all_tasks" ? "Delete all tasks" :
+                 action.type === "delete_all_goals" ? "Delete all goals" :
+                 action.data.title || action.data.updates?.title || "Task"}
               </span>
             </div>
           ))}
@@ -899,9 +907,11 @@ const ActionCard = ({ action, onApprove, onDecline }) => {
       create_task: "🆕 Create Task",
       update_task: "✏️ Update Task",
       delete_task: "🗑️ Delete Task",
+      delete_all_tasks: "🗑️ Delete All Tasks",
       create_goal: "🎯 Create Goal",
       update_goal: "✏️ Update Goal",
       delete_goal: "❌ Delete Goal",
+      delete_all_goals: "🗑️ Delete All Goals",
     };
     return typeMap[action.type] || "Action";
   };
@@ -994,6 +1004,25 @@ const ActionCard = ({ action, onApprove, onDecline }) => {
 const ActionPreview = ({ action }) => {
   return (
     <div className="space-y-1.5 text-sm">
+      {/* Bulk delete actions */}
+      {action.type === "delete_all_tasks" && (
+        <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
+          <AlertCircle className="h-4 w-4" />
+          <span className="font-medium">Permanent Deletion</span>
+        </div>
+      )}
+      {action.type === "delete_all_goals" && (
+        <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
+          <AlertCircle className="h-4 w-4" />
+          <span className="font-medium">Permanent Deletion</span>
+        </div>
+      )}
+      {(action.type === "delete_all_tasks" || action.type === "delete_all_goals") && (
+        <div className="text-gray-600 dark:text-slate-400 text-xs">
+          This action cannot be undone
+        </div>
+      )}
+
       {(action.type === "create_task" || action.type === "update_task") && (
         <>
           {action.data.title && (

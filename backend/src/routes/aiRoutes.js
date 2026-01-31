@@ -75,4 +75,26 @@ router.get("/suggest-goals", aiController.suggestGoals);
  */
 router.get("/smart-suggestions", aiController.getSmartSuggestions);
 
+/**
+ * @route   POST /ai/execute-actions
+ * @desc    Execute AI-suggested actions directly (for Accept button)
+ * @access  Private
+ * @body    { actions: array }
+ */
+router.post("/execute-actions", aiController.executeActions);
+
+/**
+ * @route   GET /ai/pending-actions
+ * @desc    Get pending actions status for current user
+ * @access  Private
+ */
+router.get("/pending-actions", aiController.getPendingActions);
+
+/**
+ * @route   DELETE /ai/pending-actions
+ * @desc    Clear pending actions for current user
+ * @access  Private
+ */
+router.delete("/pending-actions", aiController.clearPendingActions);
+
 module.exports = router;

@@ -16,6 +16,7 @@ import {
   Plus,
   X,
   RotateCcw,
+  Check,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { ENDPOINTS } from "../config/api.js";
@@ -108,59 +109,19 @@ const AIAssistant = ({
     }
   }, [isInitializing, messages.length, fetchSmartSuggestions]);
 
+  // Execute approved action using the new backend endpoint
   const executeAction = async (action) => {
     try {
       const token = await getValidToken();
       if (!token) throw new Error("Not authenticated");
 
-      let endpoint, method, body;
-
-      switch (action.type) {
-        case "create_task":
-          endpoint = ENDPOINTS.TASKS.BASE;
-          method = "POST";
-          body = JSON.stringify(action.data);
-          break;
-        case "update_task":
-          endpoint = ENDPOINTS.TASKS.BY_ID(action.data.taskId);
-          method = "PUT";
-          body = JSON.stringify(action.data.updates);
-          break;
-        case "delete_task":
-          endpoint = ENDPOINTS.TASKS.BY_ID(action.data.taskId);
-          method = "DELETE";
-          break;
-        case "create_goal":
-          endpoint = ENDPOINTS.GOALS.BASE;
-          method = "POST";
-          body = JSON.stringify({
-            ...action.data,
-            description:
-              action.data.description || `Goal: ${action.data.title}`,
-            progress: 0,
-            tasks: [],
-          });
-          break;
-        case "update_goal":
-          endpoint = ENDPOINTS.GOALS.BY_ID(action.data.goalId);
-          method = "PUT";
-          body = JSON.stringify(action.data.updates);
-          break;
-        case "delete_goal":
-          endpoint = ENDPOINTS.GOALS.BY_ID(action.data.goalId);
-          method = "DELETE";
-          break;
-        default:
-          throw new Error("Unknown action type");
-      }
-
-      const response = await fetch(endpoint, {
-        method,
+      const response = await fetch(ENDPOINTS.AI.EXECUTE_ACTIONS, {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body,
+        body: JSON.stringify({ actions: [action] }),
       });
 
       if (!response.ok) {
@@ -168,9 +129,39 @@ const AIAssistant = ({
         throw new Error(error.error || "Action failed");
       }
 
-      return { success: true };
+      const result = await response.json();
+      if (result.results && result.results[0]) {
+        return result.results[0];
+      }
+      return { success: result.success };
     } catch (error) {
       return { success: false, error: error.message };
+    }
+  };
+
+  // Execute multiple actions using the new backend endpoint
+  const executeActions = async (actions) => {
+    try {
+      const token = await getValidToken();
+      if (!token) throw new Error("Not authenticated");
+
+      const response = await fetch(ENDPOINTS.AI.EXECUTE_ACTIONS, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ actions }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Actions failed");
+      }
+
+      return await response.json();
+    } catch (error) {
+      return { success: false, error: error.message, results: [] };
     }
   };
 
@@ -229,21 +220,22 @@ const AIAssistant = ({
     updateConversation({ messages: updatedMessages });
 
     if (approved) {
-      const results = await Promise.all(
-        message.suggestedActions.map(executeAction),
-      );
+      // Use the new bulk execute endpoint
+      const executionResult = await executeActions(message.suggestedActions);
+      const results = executionResult.results || [];
+
       updatedMessages[messageIndex].suggestedActions =
         message.suggestedActions.map((a, idx) => ({
           ...a,
-          status: results[idx].success ? "approved" : "failed",
-          error: results[idx].error,
+          status: results[idx]?.success ? "approved" : "failed",
+          error: results[idx]?.error,
         }));
       updateConversation({ messages: updatedMessages });
 
-      const successCount = results.filter((r) => r.success).length;
       const confirmMessage = {
         role: "assistant",
-        content: `Completed ${successCount}/${results.length} actions.`,
+        content: executionResult.message ||
+          `Completed ${executionResult.summary?.succeeded || 0}/${executionResult.summary?.total || results.length} actions.`,
       };
       updateConversation({ messages: [...updatedMessages, confirmMessage] });
     }
@@ -293,6 +285,10 @@ const AIAssistant = ({
         content: data.response.message,
         suggestedActions: data.response.suggestedActions || [],
         isNew: true,
+        // Handle auto-executed actions from confirmation flow
+        wasConfirmation: data.wasConfirmation || false,
+        wasDecline: data.wasDecline || false,
+        executedActions: data.response.executedActions || null,
       };
 
       setTypingMessageId(messageId);
@@ -591,6 +587,24 @@ const AIAssistant = ({
                           >
                             <RotateCcw className="h-3.5 w-3.5" /> Retry
                           </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {/* Executed Actions Indicator (from confirmation flow) */}
+                  {message.executedActions && message.executedActions.length > 0 && (
+                    <div className="ml-12">
+                      <div className="border-2 border-green-500 dark:border-green-700 bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
+                        <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
+                          <Check className="h-5 w-5" />
+                          <span className="font-medium">
+                            {message.executedActions.filter(a => a.success).length} action{message.executedActions.filter(a => a.success).length !== 1 ? 's' : ''} executed successfully!
+                          </span>
+                        </div>
+                        {message.executedActions.some(a => !a.success) && (
+                          <div className="mt-2 text-red-600 dark:text-red-400 text-sm">
+                            {message.executedActions.filter(a => !a.success).length} action{message.executedActions.filter(a => !a.success).length !== 1 ? 's' : ''} failed
+                          </div>
                         )}
                       </div>
                     </div>
