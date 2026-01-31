@@ -194,6 +194,14 @@ exports.chat = async (req, res) => {
             const task = tasks.find((t) => t._id.toString() === taskId);
             console.log('Found task:', task ? task.title : 'NOT FOUND');
             if (task) {
+              // Store original values for diff view in frontend
+              action.data._original = {
+                title: task.title,
+                category: task.category,
+                priority: task.priority,
+                status: task.status,
+                due_date: task.due_date,
+              };
               // Keep the current values if not being updated
               action.data.title = action.data.updates?.title || task.title;
               action.data.category = action.data.updates?.category || task.category;
@@ -238,6 +246,14 @@ exports.chat = async (req, res) => {
             const goal = goals.find((g) => g._id.toString() === goalId);
             console.log('Found goal:', goal ? goal.title : 'NOT FOUND');
             if (goal) {
+              // Store original values for diff view in frontend
+              action.data._original = {
+                title: goal.title,
+                description: goal.description,
+                priority: goal.priority,
+                progress: goal.progress,
+                deadline: goal.deadline,
+              };
               // Keep the current values if not being updated
               action.data.title = action.data.updates?.title || goal.title;
               action.data.description = action.data.updates?.description || goal.description;

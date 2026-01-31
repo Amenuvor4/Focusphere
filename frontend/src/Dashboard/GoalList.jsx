@@ -7,6 +7,7 @@ import GoalModal from "../componets/GoalModal.jsx";
 import ConfirmModal from "../componets/ConfirmModal.jsx";
 import { ENDPOINTS } from "../config/api.js";
 import { GoalsListSkeleton } from "../componets/GoalsListSkeletion.jsx";
+import { REFRESH_GOALS_EVENT } from "../utils/refreshEvents.js";
 
 const GoalList = () => {
   const [goals, setGoals] = useState([]);
@@ -24,6 +25,15 @@ const GoalList = () => {
   // FETCH DATA AT CONCURRENTLY
   useEffect(() => {
     fetchData();
+  }, []);
+
+  // Listen for refresh events from AI actions
+  useEffect(() => {
+    const handleRefresh = () => {
+      fetchData();
+    };
+    window.addEventListener(REFRESH_GOALS_EVENT, handleRefresh);
+    return () => window.removeEventListener(REFRESH_GOALS_EVENT, handleRefresh);
   }, []);
 
   const fetchData = async () => {

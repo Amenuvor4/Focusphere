@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Plus, Search } from "lucide-react";
 import { TaskCard } from "./TaskCard";
 import { TaskDetail } from "./TaskDetail";
@@ -8,6 +8,7 @@ import getValidToken from "../config/tokenUtils.js";
 import axios from "axios";
 import { ENDPOINTS } from "../config/api.js";
 import { TaskListSkeleton } from "../componets/TaskListSkeleton.jsx";
+import { REFRESH_TASKS_EVENT } from "../utils/refreshEvents.js";
 
 export function TaskList({
   tasks: initialTasks = [],
@@ -32,6 +33,16 @@ export function TaskList({
     completedToday: 0,
     upcomingDeadlines: 0,
   });
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Listen for refresh events from AI actions
+  useEffect(() => {
+    const handleRefresh = () => {
+      setRefreshTrigger((prev) => prev + 1);
+    };
+    window.addEventListener(REFRESH_TASKS_EVENT, handleRefresh);
+    return () => window.removeEventListener(REFRESH_TASKS_EVENT, handleRefresh);
+  }, []);
 
   //FETCH DATA CONCURRENTLY
   useEffect(() => {
@@ -77,7 +88,7 @@ export function TaskList({
     };
 
     fetchData();
-  }, []);
+  }, [refreshTrigger]);
 
   // Apply filters and search
   useEffect(() => {

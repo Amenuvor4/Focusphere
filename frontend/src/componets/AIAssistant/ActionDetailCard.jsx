@@ -10,6 +10,26 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 
+// Diff view component for showing before/after changes
+const DiffView = ({ field, oldValue, newValue }) => {
+  if (!oldValue || oldValue === newValue) return null;
+  return (
+    <div className="flex items-start gap-2 text-xs">
+      <span className="font-medium text-gray-600 dark:text-slate-400 min-w-[70px] capitalize">
+        {field.replace('_', ' ')}:
+      </span>
+      <div className="flex flex-col gap-0.5">
+        <span className="text-red-500 dark:text-red-400 line-through">
+          {String(oldValue)}
+        </span>
+        <span className="text-green-600 dark:text-green-400">
+          {String(newValue)}
+        </span>
+      </div>
+    </div>
+  );
+};
+
 const ActionDetailCard = ({
   action,
   actionNumber,
@@ -46,13 +66,19 @@ const ActionDetailCard = ({
 
   const getActionType = () => (action.type.includes("task") ? "TASK" : "GOAL");
 
+  const getItemName = () => {
+    if (action.type === 'delete_all_tasks') return 'All Tasks';
+    if (action.type === 'delete_all_goals') return 'All Goals';
+    return action.data?.title || action.data?.updates?.title || `Item ${actionNumber}`;
+  };
+
   if (action.status === "approved") {
     return (
       <div className="bg-green-50 dark:bg-green-900/20 border-2 border-green-500 dark:border-green-700 rounded-xl p-4">
         <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
           <Check className="h-5 w-5" />
           <span className="font-semibold">
-            Action #{actionNumber}: {getActionType()}{" "}
+            {getItemName()}: {getActionType()}{" "}
             {getActionTitle().toLowerCase()}d successfully
           </span>
         </div>
@@ -66,7 +92,7 @@ const ActionDetailCard = ({
         <div className="flex items-center gap-2 text-gray-600 dark:text-slate-400">
           <XIcon className="h-5 w-5" />
           <span className="font-semibold">
-            Action #{actionNumber}: Declined
+            {getItemName()}: Declined
           </span>
         </div>
       </div>
@@ -79,7 +105,7 @@ const ActionDetailCard = ({
         <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
           <Loader2 className="h-5 w-5 animate-spin" />
           <span className="font-semibold">
-            Action #{actionNumber}: Processing...
+            {getItemName()}: Processing...
           </span>
         </div>
       </div>
@@ -92,7 +118,7 @@ const ActionDetailCard = ({
         <div className="flex items-center gap-2 text-red-700 dark:text-red-300">
           <AlertCircle className="h-5 w-5" />
           <div>
-            <p className="font-semibold">Action #{actionNumber}: Failed</p>
+            <p className="font-semibold">{getItemName()}: Failed</p>
             <p className="text-sm">{action.error}</p>
           </div>
         </div>
@@ -112,7 +138,7 @@ const ActionDetailCard = ({
               {getActionTitle()} {getActionType()}
             </h4>
             <p className="text-xs text-gray-500 dark:text-slate-400">
-              Action #{actionNumber}
+              {getItemName()}
             </p>
           </div>
         </div>
@@ -241,20 +267,30 @@ const ActionDetailCard = ({
 
         {action.type.includes("update") && action.data.updates && (
           <div className="pt-2 border-t border-gray-200 dark:border-slate-600">
-            <p className="text-xs font-semibold text-gray-600 dark:text-slate-400 mb-1">
-              Changes:
+            <p className="text-xs font-semibold text-gray-600 dark:text-slate-400 mb-2">
+              Changes Preview:
             </p>
-            <ul className="text-xs text-gray-700 dark:text-slate-300 space-y-0.5">
-              {Object.keys(action.data.updates).map((key) => (
-                <li key={key} className="flex items-center gap-1">
-                  <span className="text-blue-600 dark:text-blue-400">•</span>
-                  <span className="capitalize">{key.replace("_", " ")}</span>
-                  <span className="text-gray-500 dark:text-slate-500">
-                    updated
-                  </span>
-                </li>
+            <div className="space-y-1.5 bg-gray-50 dark:bg-slate-800 rounded p-2">
+              {Object.entries(action.data.updates).map(([key, newValue]) => (
+                action.data._original?.[key] !== undefined ? (
+                  <DiffView
+                    key={key}
+                    field={key}
+                    oldValue={action.data._original[key]}
+                    newValue={newValue}
+                  />
+                ) : (
+                  <div key={key} className="flex items-center gap-2 text-xs">
+                    <span className="font-medium text-gray-600 dark:text-slate-400 min-w-[70px] capitalize">
+                      {key.replace("_", " ")}:
+                    </span>
+                    <span className="text-green-600 dark:text-green-400">
+                      {String(newValue)}
+                    </span>
+                  </div>
+                )
               ))}
-            </ul>
+            </div>
           </div>
         )}
       </div>

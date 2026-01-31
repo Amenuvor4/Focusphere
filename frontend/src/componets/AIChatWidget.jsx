@@ -424,6 +424,7 @@ const AIChatWidget = ({
 
     updatedMessages[messageIndex].suggestedActions[actionIndex].data =
       updateData;
+    updateConversation({ messages: updatedMessages });
     setIsEditModalOpen(false);
   };
 

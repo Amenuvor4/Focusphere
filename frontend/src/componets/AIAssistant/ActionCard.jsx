@@ -2,13 +2,17 @@ import React, { useState } from "react";
 import { TaskEditDialog } from "../../Dashboard/TaskEditDialog.jsx";
 import ActionDetailCard from "./ActionDetailCard.jsx";
 
-const ActionCard = ({ action, onApprove, onDecline }) => {
+const ActionCard = ({ action, onApprove, onDecline, onEdit }) => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [localActionData, setLocalActionData] = useState(action.data);
+  const [hasBeenEdited, setHasBeenEdited] = useState(false);
 
   const handleEditSave = (updateFields) => {
     setLocalActionData(updateFields);
+    setHasBeenEdited(true);
     setIsEditDialogOpen(false);
+    // Notify parent of edit so it persists in conversation
+    onEdit?.({ ...action, data: updateFields });
   };
 
   return (

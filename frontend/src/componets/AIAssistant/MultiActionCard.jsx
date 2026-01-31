@@ -8,6 +8,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 import ActionDetailCard from "./ActionDetailCard.jsx";
+import { TaskEditDialog } from "../../Dashboard/TaskEditDialog.jsx";
 
 const MultiActionCard = ({
   actions,
@@ -18,6 +19,15 @@ const MultiActionCard = ({
   onIndividualEdit,
 }) => {
   const [showAll, setShowAll] = useState(false);
+  const [editingIndex, setEditingIndex] = useState(null);
+
+  const handleEditSave = (updateFields) => {
+    if (editingIndex !== null) {
+      const editedAction = { ...actions[editingIndex], data: updateFields };
+      onIndividualEdit?.(editingIndex, editedAction);
+      setEditingIndex(null);
+    }
+  };
 
   const allProcessing = actions.every((a) => a.status === "processing");
   const allApproved = actions.every((a) => a.status === "approved");
@@ -102,7 +112,7 @@ const MultiActionCard = ({
             actionNumber={idx + 1}
             onApprove={() => onIndividualApprove(idx)}
             onDecline={() => onIndividualDecline(idx)}
-            onEdit={() => onIndividualEdit?.(idx)}
+            onEdit={() => setEditingIndex(idx)}
           />
         ))}
       </div>
@@ -145,6 +155,14 @@ const MultiActionCard = ({
           </button>
         </div>
       )}
+
+      {/* Edit Dialog for individual actions */}
+      <TaskEditDialog
+        isOpen={editingIndex !== null}
+        onClose={() => setEditingIndex(null)}
+        task={editingIndex !== null ? actions[editingIndex]?.data : null}
+        onSave={handleEditSave}
+      />
     </div>
   );
 };

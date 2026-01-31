@@ -48,9 +48,15 @@ const AIAssistant = ({
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
   const [typingMessageId, setTypingMessageId] = useState(null);
+  const [isUserScrolling, setIsUserScrolling] = useState(false);
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const fileInputRef = useRef(null);
+
+  // Memoized callback to prevent TypeWriter restarts
+  const handleTypingComplete = useCallback(() => {
+    setTypingMessageId(null);
+  }, []);
 
   const getValidToken = async () => {
     try {
@@ -85,14 +91,28 @@ const AIAssistant = ({
     const container = messagesContainerRef.current;
     if (!container) return;
     const { scrollTop, scrollHeight, clientHeight } = container;
-    setShouldAutoScroll(scrollHeight - scrollTop - clientHeight < 100);
-  }, []);
+    const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+
+    // If user scrolls away from bottom during typing, mark as user scrolling
+    if (!isNearBottom && typingMessageId) {
+      setIsUserScrolling(true);
+    }
+
+    setShouldAutoScroll(isNearBottom);
+  }, [typingMessageId]);
+
+  // Reset user scrolling flag when typing completes
+  useEffect(() => {
+    if (!typingMessageId) {
+      setIsUserScrolling(false);
+    }
+  }, [typingMessageId]);
 
   useEffect(() => {
-    if (shouldAutoScroll) {
+    if (shouldAutoScroll && !isUserScrolling) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages, shouldAutoScroll]);
+  }, [messages, shouldAutoScroll, isUserScrolling]);
 
   useEffect(() => {
     setShouldAutoScroll(true);
@@ -239,6 +259,14 @@ const AIAssistant = ({
       };
       updateConversation({ messages: [...updatedMessages, confirmMessage] });
     }
+  };
+
+  // Handle editing an action before approval
+  const handleActionEdit = (messageIndex, actionIndex, editedAction) => {
+    const conv = getCurrentConversation();
+    const updatedMessages = [...conv.messages];
+    updatedMessages[messageIndex].suggestedActions[actionIndex] = editedAction;
+    updateConversation({ messages: updatedMessages });
   };
 
   const handleImageSelect = (e) => {
@@ -570,7 +598,7 @@ const AIAssistant = ({
                           <TypeWriter
                             content={message.content}
                             speed={12}
-                            onComplete={() => setTypingMessageId(null)}
+                            onComplete={handleTypingComplete}
                           />
                         ) : (
                           <div
@@ -591,21 +619,16 @@ const AIAssistant = ({
                       </div>
                     </div>
                   )}
-                  {/* Executed Actions Indicator (from confirmation flow) */}
-                  {message.executedActions && message.executedActions.length > 0 && (
+                  {/* Show failure indicator only if some actions failed (success info is in message content) */}
+                  {message.executedActions && message.executedActions.some(a => !a.success) && (
                     <div className="ml-12">
-                      <div className="border-2 border-green-500 dark:border-green-700 bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
-                        <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
-                          <Check className="h-5 w-5" />
+                      <div className="border-2 border-red-500 dark:border-red-700 bg-red-50 dark:bg-red-900/20 rounded-lg p-3">
+                        <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
+                          <AlertCircle className="h-5 w-5" />
                           <span className="font-medium">
-                            {message.executedActions.filter(a => a.success).length} action{message.executedActions.filter(a => a.success).length !== 1 ? 's' : ''} executed successfully!
+                            {message.executedActions.filter(a => !a.success).length} action{message.executedActions.filter(a => !a.success).length !== 1 ? 's' : ''} failed
                           </span>
                         </div>
-                        {message.executedActions.some(a => !a.success) && (
-                          <div className="mt-2 text-red-600 dark:text-red-400 text-sm">
-                            {message.executedActions.filter(a => !a.success).length} action{message.executedActions.filter(a => !a.success).length !== 1 ? 's' : ''} failed
-                          </div>
-                        )}
                       </div>
                     </div>
                   )}
@@ -628,6 +651,7 @@ const AIAssistant = ({
                           action={message.suggestedActions[0]}
                           onApprove={() => handleActionApproval(idx, 0, true)}
                           onDecline={() => handleActionApproval(idx, 0, false)}
+                          onEdit={(editedAction) => handleActionEdit(idx, 0, editedAction)}
                         />
                       ) : (
                         <MultiActionCard
@@ -639,6 +663,9 @@ const AIAssistant = ({
                           }
                           onIndividualDecline={(i) =>
                             handleActionApproval(idx, i, false)
+                          }
+                          onIndividualEdit={(i, editedAction) =>
+                            handleActionEdit(idx, i, editedAction)
                           }
                         />
                       )}
