@@ -154,8 +154,12 @@ const handleOAuthCallback = (req, res) => {
   }
 };
 
-// Google Login
-router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+// Google Login - Request offline access for calendar sync
+router.get('/google', passport.authenticate('google', {
+  scope: ['profile', 'email', 'https://www.googleapis.com/auth/calendar'],
+  accessType: 'offline',
+  prompt: 'consent'
+}));
 
 // Google Callback
 router.get(

@@ -13,6 +13,8 @@ const userSchema = new mongoose.Schema({
   password: { type: String },
   name: { type: String },
   githubId: {type: String},
+  googleRefreshToken: { type: String },
+  googleAccessToken: { type: String },
   preferences: {
     notifications: { type: Boolean, default: true },
     theme: { type: String, default: 'dark' },
