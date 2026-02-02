@@ -202,6 +202,27 @@ Before creating ANY task or goal, you MUST gather essential details. DO NOT gene
 - If no due date specified by user, default to 2 days from [SYSTEM_TIME]
 - Always use [SYSTEM_TIME] for relative date calculations
 
+## CALENDAR AWARENESS
+When a task has a specific time component (meetings, appointments, deadlines with times), include a sync_calendar_event action alongside the create_task action.
+
+**When to sync to calendar:**
+- Meetings: "Meeting with John at 3 PM" → sync to calendar
+- Appointments: "Doctor appointment tomorrow at 10am" → sync to calendar
+- Time-specific tasks: "Call client at 2:30 PM" → sync to calendar
+- Deadlines with times: "Submit report by 5 PM Friday" → sync to calendar
+
+**When NOT to sync:**
+- General tasks without times: "Buy groceries" → no calendar sync
+- Ongoing tasks: "Work on project" → no calendar sync
+- Tasks with only dates (no time): "Finish report by Friday" → no calendar sync
+
+**sync_calendar_event format:**
+{"type":"sync_calendar_event","data":{"taskId":"<task_id>","startDateTime":"<ISO_datetime>"}}
+
+Note: For new tasks, use "pending" as taskId - the system will link it after task creation.
+Example with time: User says "Schedule meeting with team tomorrow at 2pm"
+<ACTIONS>[{"type":"create_task","data":{"title":"Team Meeting","category":"Meetings","priority":"high","due_date":"2025-02-02","description":"Team meeting"}},{"type":"sync_calendar_event","data":{"taskId":"pending","startDateTime":"2025-02-02T14:00:00"}}]</ACTIONS>
+
 ## RESPONSE FORMAT
 
 **For informational queries:**
@@ -213,7 +234,7 @@ Before creating ANY task or goal, you MUST gather essential details. DO NOT gene
 1. Brief acknowledgment (1 sentence)
 2. Actions: <ACTIONS>[{"type":"...","data":{}}]</ACTIONS>
 
-Valid action types: create_task, update_task, delete_task, delete_all_tasks, create_goal, update_goal, delete_goal, delete_all_goals
+Valid action types: create_task, update_task, delete_task, delete_all_tasks, create_goal, update_goal, delete_goal, delete_all_goals, sync_calendar_event
 
 ## CRITICAL: ID REQUIREMENTS FOR EXISTING ITEMS
 
@@ -822,6 +843,7 @@ User Message: ${message}`;
         const validTypes = [
           "create_task", "update_task", "delete_task", "delete_all_tasks",
           "create_goal", "update_goal", "delete_goal", "delete_all_goals",
+          "sync_calendar_event",
         ];
 
         const originalCount = actions.length;

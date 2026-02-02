@@ -4,6 +4,8 @@
  */
 const Task = require('../models/Task');
 const Goal = require('../models/Goal');
+const User = require('../models/User');
+const calendarService = require('./calendarService');
 
 class ActionExecutor {
   constructor() {
@@ -16,6 +18,7 @@ class ActionExecutor {
       'update_goal',
       'delete_goal',
       'delete_all_goals',
+      'sync_calendar_event',
     ];
 
     this.requiredFields = {
@@ -27,6 +30,7 @@ class ActionExecutor {
       update_goal: ['goalId'],
       delete_goal: ['goalId'],
       delete_all_goals: [],
+      sync_calendar_event: ['taskId'],
     };
   }
 
@@ -102,6 +106,9 @@ class ActionExecutor {
         case 'delete_all_goals':
           result = await this.deleteAllGoals(userId);
           break;
+        case 'sync_calendar_event':
+          result = await this.syncCalendarEvent(action.data, userId);
+          break;
         default:
           return {
             success: false,
@@ -136,9 +143,33 @@ class ActionExecutor {
     console.log(`[ActionExecutor] Executing ${actions.length} actions for user ${userId}`);
 
     const results = [];
+    let lastCreatedTaskId = null;
+
     for (const action of actions) {
+      // Handle pending taskId for calendar sync (links to just-created task)
+      if (action.type === 'sync_calendar_event' && action.data.taskId === 'pending') {
+        if (lastCreatedTaskId) {
+          action.data.taskId = lastCreatedTaskId;
+          console.log(`[ActionExecutor] Linked calendar sync to newly created task: ${lastCreatedTaskId}`);
+        } else {
+          console.log(`[ActionExecutor] Warning: sync_calendar_event has pending taskId but no task was created`);
+          results.push({
+            success: false,
+            actionType: action.type,
+            error: 'No task was created to sync to calendar',
+            timestamp: new Date(),
+          });
+          continue;
+        }
+      }
+
       const result = await this.execute(action, userId);
       results.push(result);
+
+      // Track last created task ID for calendar sync linking
+      if (action.type === 'create_task' && result.success) {
+        lastCreatedTaskId = result.data.id;
+      }
     }
 
     const successCount = results.filter(r => r.success).length;
@@ -351,6 +382,45 @@ class ActionExecutor {
   }
 
   /**
+   * Sync a task to Google Calendar
+   */
+  async syncCalendarEvent(data, userId) {
+    const taskId = data.taskId;
+
+    // Get user with Google tokens
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    if (!user.googleRefreshToken) {
+      throw new Error('Google Calendar not connected. Please reconnect with Google to enable calendar sync.');
+    }
+
+    // Get the task to sync
+    const task = await Task.findOne({ _id: taskId, user_id: userId });
+    if (!task) {
+      throw new Error('Task not found');
+    }
+
+    // Override due_date with specific startDateTime if provided
+    if (data.startDateTime) {
+      task.due_date = new Date(data.startDateTime);
+    }
+
+    // Create the calendar event
+    const calendarEvent = await calendarService.createTaskEvent(user, task);
+
+    return {
+      taskId: task._id.toString(),
+      taskTitle: task.title,
+      calendarEventId: calendarEvent.id,
+      calendarLink: calendarEvent.htmlLink,
+      synced: true,
+    };
+  }
+
+  /**
    * Format execution results for user-friendly display
    */
   formatResults(executionResult) {
@@ -369,6 +439,9 @@ class ActionExecutor {
         }
         if (result.actionType === 'delete_all_goals') {
           return `Done! Deleted all ${result.data?.deletedCount || 0} goals.`;
+        }
+        if (result.actionType === 'sync_calendar_event') {
+          return `Done! Synced "${result.data?.taskTitle || 'task'}" to your Google Calendar.`;
         }
         const action = result.actionType.replace('_', ' ');
         return `Done! Successfully ${action.replace('create', 'created').replace('update', 'updated').replace('delete', 'deleted')} "${result.data?.title || 'item'}".`;
