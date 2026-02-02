@@ -7,12 +7,15 @@ export const ENDPOINTS = {
     PROFILE: `${BASE_URL}/auth/profile`,
     GOOGLE: `${BASE_URL}/auth/google`,
     REFRESH_TOKEN: `${BASE_URL}/auth/refresh-token`,
+    SEND_VERIFICATION: `${BASE_URL}/auth/send-verification`,
+    VERIFY_EMAIL: `${BASE_URL}/auth/verify-email`,
   },
   TASKS: {
     BASE: `${BASE_URL}/tasks`,
     BY_ID: (id) => `${BASE_URL}/tasks/${id}`,
     ANALYTICS: `${BASE_URL}/tasks/analytics`,
     PRIORITIZE: `${BASE_URL}/ai/prioritize`,
+    SYNC_ALL: `${BASE_URL}/tasks/sync-all`,
   },
   GOALS: {
     BASE: `${BASE_URL}/goals`,

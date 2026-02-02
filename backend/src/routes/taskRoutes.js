@@ -1,9 +1,11 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const Task = require('../models/Task');
+const User = require('../models/User');
 const protect = require('../middleware/authMiddleware');
 const Goal = require('../models/Goal');
 const { updateGoalProgressForTask } = require('../utils/goalProgressCalculator');
+const calendarService = require('../services/calendarService');
 
 const router = express.Router();
 
@@ -356,5 +358,42 @@ function calculateAverageCompletionTime(tasks) {
   const averageDays = (averageTime / (1000 * 60 * 60 * 24)).toFixed(1);
   return `${averageDays} days`;
 }
+
+// Sync all tasks to Google Calendar
+router.post('/sync-all', async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (!user.googleRefreshToken) {
+      return res.status(400).json({
+        error: 'Google Calendar not connected. Please sign in with Google to enable calendar sync.'
+      });
+    }
+
+    // Get all tasks for this user
+    const tasks = await Task.find({ user_id: req.user.id });
+
+    if (tasks.length === 0) {
+      return res.json({
+        message: 'No tasks to sync',
+        results: { success: 0, failed: 0, skipped: 0 }
+      });
+    }
+
+    // Bulk sync to calendar
+    const results = await calendarService.syncAllTasks(user, tasks);
+
+    res.json({
+      message: `Calendar sync complete: ${results.success} synced, ${results.skipped} skipped, ${results.failed} failed`,
+      results,
+    });
+  } catch (error) {
+    console.error('Calendar sync error:', error);
+    res.status(500).json({ error: sanitizeErrorMessage(error) });
+  }
+});
 
 module.exports = router;

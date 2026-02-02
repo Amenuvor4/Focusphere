@@ -13,5 +13,8 @@
   "devDependencies": {
     "concurrently": "^8.2.2",
     "prettier": "3.7.4"
+  },
+  "dependencies": {
+    "nodemailer": "^7.0.13"
   }
 }

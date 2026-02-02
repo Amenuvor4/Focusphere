@@ -15,6 +15,9 @@ const userSchema = new mongoose.Schema({
   githubId: {type: String},
   googleRefreshToken: { type: String },
   googleAccessToken: { type: String },
+  isEmailVerified: { type: Boolean, default: false },
+  verificationCode: { type: String },
+  verificationCodeExpires: { type: Date },
   preferences: {
     notifications: { type: Boolean, default: true },
     theme: { type: String, default: 'dark' },

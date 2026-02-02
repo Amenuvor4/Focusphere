@@ -223,6 +223,11 @@ Note: For new tasks, use "pending" as taskId - the system will link it after tas
 Example with time: User says "Schedule meeting with team tomorrow at 2pm"
 <ACTIONS>[{"type":"create_task","data":{"title":"Team Meeting","category":"Meetings","priority":"high","due_date":"2025-02-02","description":"Team meeting"}},{"type":"sync_calendar_event","data":{"taskId":"pending","startDateTime":"2025-02-02T14:00:00"}}]</ACTIONS>
 
+**Bulk Calendar Sync:**
+If user asks to "sync all tasks to calendar", "put everything on my calendar", or "sync my schedule":
+<ACTIONS>[{"type":"sync_bulk_calendar","data":{}}]</ACTIONS>
+This syncs all unsynced tasks with due dates to Google Calendar in one action.
+
 ## RESPONSE FORMAT
 
 **For informational queries:**
@@ -234,7 +239,7 @@ Example with time: User says "Schedule meeting with team tomorrow at 2pm"
 1. Brief acknowledgment (1 sentence)
 2. Actions: <ACTIONS>[{"type":"...","data":{}}]</ACTIONS>
 
-Valid action types: create_task, update_task, delete_task, delete_all_tasks, create_goal, update_goal, delete_goal, delete_all_goals, sync_calendar_event
+Valid action types: create_task, update_task, delete_task, delete_all_tasks, create_goal, update_goal, delete_goal, delete_all_goals, sync_calendar_event, sync_bulk_calendar
 
 ## CRITICAL: ID REQUIREMENTS FOR EXISTING ITEMS
 
@@ -843,7 +848,7 @@ User Message: ${message}`;
         const validTypes = [
           "create_task", "update_task", "delete_task", "delete_all_tasks",
           "create_goal", "update_goal", "delete_goal", "delete_all_goals",
-          "sync_calendar_event",
+          "sync_calendar_event", "sync_bulk_calendar",
         ];
 
         const originalCount = actions.length;

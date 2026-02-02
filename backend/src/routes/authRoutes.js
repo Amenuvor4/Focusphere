@@ -4,6 +4,7 @@ const passport = require('passport');
 const protect = require('../middleware/authMiddleware');
 const User = require('../models/User');
 const dotenv = require('dotenv');
+const { generateVerificationCode, sendVerificationEmail, sendWelcomeEmail } = require('../utils/emailSender');
 require('../config/passportConfig');
 dotenv.config();
 
@@ -34,6 +35,8 @@ const formatUserResponse = (user) => {
     email: user.email,
     name: user.name,
     preferences: user.preferences,
+    isEmailVerified: user.isEmailVerified || false,
+    hasGoogleCalendar: !!user.googleRefreshToken,
   };
 };
 
@@ -167,6 +170,77 @@ router.get(
   passport.authenticate('google', { session: false, failureRedirect: '/auth?error=google_failed' }),
   handleOAuthCallback
 );
+
+// Send verification code
+router.post('/send-verification', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (user.isEmailVerified) {
+      return res.status(400).json({ message: 'Email already verified' });
+    }
+
+    // Generate and save verification code
+    const code = generateVerificationCode();
+    user.verificationCode = code;
+    user.verificationCodeExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    await user.save();
+
+    // Send email
+    await sendVerificationEmail(user.email, code);
+
+    res.json({ message: 'Verification code sent to your email' });
+  } catch (error) {
+    console.error('Send verification error:', error);
+    res.status(500).json({ message: 'Failed to send verification email', error: error.message });
+  }
+});
+
+// Verify email code
+router.post('/verify-email', protect, async (req, res) => {
+  try {
+    const { code } = req.body;
+
+    if (!code) {
+      return res.status(400).json({ message: 'Verification code is required' });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (user.isEmailVerified) {
+      return res.status(400).json({ message: 'Email already verified' });
+    }
+
+    // Check if code matches and hasn't expired
+    if (user.verificationCode !== code) {
+      return res.status(400).json({ message: 'Invalid verification code' });
+    }
+
+    if (user.verificationCodeExpires < new Date()) {
+      return res.status(400).json({ message: 'Verification code has expired' });
+    }
+
+    // Mark as verified
+    user.isEmailVerified = true;
+    user.verificationCode = undefined;
+    user.verificationCodeExpires = undefined;
+    await user.save();
+
+    // Send welcome email
+    await sendWelcomeEmail(user.email, user.name);
+
+    res.json({ message: 'Email verified successfully', isEmailVerified: true });
+  } catch (error) {
+    console.error('Verify email error:', error);
+    res.status(500).json({ message: 'Failed to verify email', error: error.message });
+  }
+});
 
 // GitHub Login
 router.get('/github', passport.authenticate('github', { scope: ['user:email'] }));

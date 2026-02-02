@@ -19,6 +19,7 @@ class ActionExecutor {
       'delete_goal',
       'delete_all_goals',
       'sync_calendar_event',
+      'sync_bulk_calendar',
     ];
 
     this.requiredFields = {
@@ -31,6 +32,7 @@ class ActionExecutor {
       delete_goal: ['goalId'],
       delete_all_goals: [],
       sync_calendar_event: ['taskId'],
+      sync_bulk_calendar: [],
     };
   }
 
@@ -108,6 +110,9 @@ class ActionExecutor {
           break;
         case 'sync_calendar_event':
           result = await this.syncCalendarEvent(action.data, userId);
+          break;
+        case 'sync_bulk_calendar':
+          result = await this.syncBulkCalendar(userId);
           break;
         default:
           return {
@@ -421,6 +426,44 @@ class ActionExecutor {
   }
 
   /**
+   * Bulk sync all tasks to Google Calendar
+   */
+  async syncBulkCalendar(userId) {
+    // Get user with Google tokens
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    if (!user.googleRefreshToken) {
+      throw new Error('Google Calendar not connected. Please reconnect with Google to enable calendar sync.');
+    }
+
+    // Get all tasks for this user
+    const tasks = await Task.find({ user_id: userId });
+
+    if (tasks.length === 0) {
+      return {
+        message: 'No tasks to sync',
+        success: 0,
+        failed: 0,
+        skipped: 0,
+      };
+    }
+
+    // Bulk sync to calendar
+    const results = await calendarService.syncAllTasks(user, tasks);
+
+    return {
+      message: `Synced ${results.success} tasks to Google Calendar`,
+      success: results.success,
+      failed: results.failed,
+      skipped: results.skipped,
+      errors: results.errors,
+    };
+  }
+
+  /**
    * Format execution results for user-friendly display
    */
   formatResults(executionResult) {
@@ -442,6 +485,9 @@ class ActionExecutor {
         }
         if (result.actionType === 'sync_calendar_event') {
           return `Done! Synced "${result.data?.taskTitle || 'task'}" to your Google Calendar.`;
+        }
+        if (result.actionType === 'sync_bulk_calendar') {
+          return `Done! ${result.data?.message || 'Calendar sync complete.'}`;
         }
         const action = result.actionType.replace('_', ' ');
         return `Done! Successfully ${action.replace('create', 'created').replace('update', 'updated').replace('delete', 'deleted')} "${result.data?.title || 'item'}".`;

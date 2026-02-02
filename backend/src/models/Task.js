@@ -27,8 +27,12 @@ const taskSchema = new mongoose.Schema({
   due_date: { 
     type: Date,
   },
-  description: { 
-    type: String 
+  description: {
+    type: String
+  },
+  googleEventId: {
+    type: String,
+    default: null
   },
 }, { timestamps: true });
 
