@@ -1,13 +1,14 @@
 import "./index.css";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 
-// Import componets
 import HomePage from "./componets/HomePage";
 import Auth from "./componets/Auth";
 import Dashboard from "./Dashboard/DashBoard";
+import Settings from "./componets/Settings";
+import EmailVerification from "./componets/EmailVerification";
 import { ThemeProvider } from "./context/ThemeContext";
 import { AuthProvider } from "./context/AuthContext";
-import { ProtectedRoute, PublicRoute } from "./componets/ProtectedRoute";
+import { ProtectedRoute, PublicRoute, VerificationRoute } from "./componets/ProtectedRoute";
 
 function App() {
   return (
@@ -27,10 +28,26 @@ function App() {
                   }
                 />
                 <Route
+                  path="/verify-email"
+                  element={
+                    <VerificationRoute>
+                      <EmailVerification />
+                    </VerificationRoute>
+                  }
+                />
+                <Route
                   path="/dashboard"
                   element={
                     <ProtectedRoute>
                       <Dashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/settings"
+                  element={
+                    <ProtectedRoute>
+                      <Settings />
                     </ProtectedRoute>
                   }
                 />

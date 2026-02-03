@@ -136,15 +136,17 @@ export default function Auth() {
   const [processingOAuth, setProcessingOAuth] = useState(false);
   const [showPasswordRules, setShowPasswordRules] = useState(false);
 
-  // Handle OAuth callback tokens
   useEffect(() => {
     if (accessToken && refreshToken && !processingOAuth) {
       setProcessingOAuth(true);
-      handleOAuthCallback(accessToken, refreshToken).then((success) => {
-        if (success) {
-          // Clean URL and redirect
+      handleOAuthCallback(accessToken, refreshToken).then((result) => {
+        if (result.success) {
           window.history.replaceState({}, document.title, "/auth");
-          navigate("/dashboard", { replace: true });
+          if (result.requiresVerification) {
+            navigate("/verify-email", { replace: true });
+          } else {
+            navigate("/dashboard", { replace: true });
+          }
         } else {
           setError("OAuth authentication failed. Please try again.");
           setProcessingOAuth(false);
@@ -159,12 +161,6 @@ export default function Auth() {
     processingOAuth,
   ]);
 
-  // Redirect if already authenticated
-  useEffect(() => {
-    if (isAuthenticated && !processingOAuth && !authLoading) {
-      navigate("/dashboard", { replace: true });
-    }
-  }, [isAuthenticated, processingOAuth, authLoading, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -201,16 +197,18 @@ export default function Auth() {
       if (isLogin) {
         const result = await login(email, password);
         if (result.success) {
-          navigate("/dashboard", { replace: true });
+          if (result.requiresVerification) {
+            navigate("/verify-email", { replace: true });
+          } else {
+            navigate("/dashboard", { replace: true });
+          }
         } else {
           setError(result.error);
         }
       } else {
         const result = await register(name.trim(), email, password);
         if (result.success) {
-          setSuccessMessage("Account created successfully! Please log in.");
-          setIsLogin(true);
-          setPassword("");
+          navigate("/verify-email", { replace: true });
         } else {
           setError(result.error);
         }

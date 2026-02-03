@@ -8,11 +8,10 @@ import { AuthSkeleton } from "./AuthSkeleton";
  * Shows a loading skeleton while checking auth status to prevent "flash" of content
  * Redirects to /auth if user is not authenticated
  */
-export function ProtectedRoute({ children }) {
-  const { isAuthenticated, isLoading } = useAuth();
+export function ProtectedRoute({ children, requireVerification = true }) {
+  const { isAuthenticated, isLoading, user } = useAuth();
   const location = useLocation();
 
-  // Show loading state while checking authentication
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-900">
@@ -29,13 +28,14 @@ export function ProtectedRoute({ children }) {
     );
   }
 
-  // Redirect to auth page if not authenticated
   if (!isAuthenticated) {
-    // Save the attempted URL for redirecting after login
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  // Render protected content
+  if (requireVerification && user && !user.isEmailVerified) {
+    return <Navigate to="/verify-email" replace />;
+  }
+
   return children;
 }
 
@@ -45,18 +45,37 @@ export function ProtectedRoute({ children }) {
  * Useful for login/register pages that shouldn't be accessible when logged in
  */
 export function PublicRoute({ children }) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const location = useLocation();
 
-  // Show loading while checking auth
   if (isLoading) {
     return <AuthSkeleton />;
   }
 
-  // Redirect to dashboard if already authenticated
   if (isAuthenticated) {
+    if (user && !user.isEmailVerified) {
+      return <Navigate to="/verify-email" replace />;
+    }
     const from = location.state?.from?.pathname || "/dashboard";
     return <Navigate to={from} replace />;
+  }
+
+  return children;
+}
+
+export function VerificationRoute({ children }) {
+  const { isAuthenticated, isLoading, user } = useAuth();
+
+  if (isLoading) {
+    return <AuthSkeleton />;
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  if (user?.isEmailVerified) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return children;

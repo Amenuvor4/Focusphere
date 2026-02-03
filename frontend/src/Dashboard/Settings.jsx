@@ -1,18 +1,37 @@
 import { useState, useEffect } from "react";
-import { Loader2, User, Palette, Bell, Check, AlertCircle } from "lucide-react";
+import {
+  Loader2,
+  User,
+  Palette,
+  Bell,
+  Check,
+  AlertCircle,
+  Shield,
+  Calendar,
+  CheckCircle,
+  XCircle,
+  RefreshCw,
+  ExternalLink,
+  Mail,
+} from "lucide-react";
+import { FaGoogle } from "react-icons/fa";
 import getValidToken from "../config/tokenUtils";
 import { ENDPOINTS } from "../config/api.js";
 import { useTheme } from "../context/ThemeContext";
+import { useAuth } from "../context/AuthContext";
 import { SettingsSkeleton } from "../componets/SettingsSkeleton";
+import OTPVerification from "../componets/OTPVerification";
 
 const TABS = [
   { id: "profile", label: "Profile", icon: User },
+  { id: "integrations", label: "Integrations", icon: Calendar },
   { id: "appearance", label: "Appearance", icon: Palette },
   { id: "notifications", label: "Notifications", icon: Bell },
 ];
 
 export function Settings() {
   const { theme, toggleTheme } = useTheme();
+  const { user, checkAuth } = useAuth();
   const [activeTab, setActiveTab] = useState("profile");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -26,6 +45,12 @@ export function Settings() {
       theme: "light",
     },
   });
+
+  // Integrations tab state
+  const [isOTPModalOpen, setIsOTPModalOpen] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState(null);
+  const [syncError, setSyncError] = useState(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -260,6 +285,143 @@ export function Settings() {
           </div>
         )}
 
+        {/* Integrations Tab */}
+        {activeTab === "integrations" && (
+          <div className="space-y-6 animate-in fade-in duration-200">
+            {/* Email Verification */}
+            <div className="p-5 bg-gray-50 dark:bg-slate-700/50 border border-gray-200 dark:border-slate-600 rounded-xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                    <Shield className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900 dark:text-white">Email Verification</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <Mail className="h-3.5 w-3.5 text-gray-400" />
+                      <span className="text-sm text-gray-500 dark:text-slate-400">{user?.email}</span>
+                      {user?.isEmailVerified ? (
+                        <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 ml-2">
+                          <CheckCircle className="h-3.5 w-3.5" /> Verified
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 ml-2">
+                          <XCircle className="h-3.5 w-3.5" /> Not verified
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                {!user?.isEmailVerified && (
+                  <button
+                    onClick={() => setIsOTPModalOpen(true)}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+                  >
+                    Verify Now
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Google Calendar */}
+            <div className="p-5 bg-gray-50 dark:bg-slate-700/50 border border-gray-200 dark:border-slate-600 rounded-xl">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                    <Calendar className="h-5 w-5 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900 dark:text-white">Google Calendar</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <FaGoogle className="h-3.5 w-3.5 text-red-500" />
+                      {user?.hasGoogleCalendar ? (
+                        <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                          <CheckCircle className="h-3.5 w-3.5" /> Connected
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-slate-400">
+                          <XCircle className="h-3.5 w-3.5" /> Not connected
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                {!user?.hasGoogleCalendar && (
+                  <button
+                    onClick={() => window.location.href = ENDPOINTS.AUTH.GOOGLE}
+                    className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-600 border border-gray-300 dark:border-slate-500 hover:bg-gray-50 dark:hover:bg-slate-500 text-gray-700 dark:text-white text-sm font-medium rounded-lg transition-colors"
+                  >
+                    <FaGoogle className="h-4 w-4 text-red-500" /> Connect
+                  </button>
+                )}
+              </div>
+
+              {user?.hasGoogleCalendar && (
+                <div className="pt-4 border-t border-gray-200 dark:border-slate-600">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <p className="text-sm font-medium text-gray-700 dark:text-slate-300">Sync All Tasks</p>
+                      <p className="text-xs text-gray-500 dark:text-slate-400">Push unsynced tasks to Google Calendar</p>
+                    </div>
+                    <button
+                      onClick={async () => {
+                        setIsSyncing(true);
+                        setSyncResult(null);
+                        setSyncError(null);
+                        try {
+                          const token = await getValidToken();
+                          const res = await fetch(ENDPOINTS.TASKS.SYNC_ALL, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                          });
+                          const data = await res.json();
+                          if (!res.ok) throw new Error(data.error || "Sync failed");
+                          setSyncResult(data);
+                        } catch (err) {
+                          setSyncError(err.message);
+                        } finally {
+                          setIsSyncing(false);
+                        }
+                      }}
+                      disabled={isSyncing}
+                      className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white text-sm font-medium rounded-lg transition-colors"
+                    >
+                      {isSyncing ? <><Loader2 className="h-4 w-4 animate-spin" /> Syncing...</> : <><RefreshCw className="h-4 w-4" /> Sync Now</>}
+                    </button>
+                  </div>
+
+                  {syncResult && (
+                    <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-sm">
+                      <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
+                        <CheckCircle className="h-4 w-4" />
+                        <span>{syncResult.message}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {syncError && (
+                    <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm">
+                      <div className="flex items-center gap-2 text-red-700 dark:text-red-300">
+                        <AlertCircle className="h-4 w-4" />
+                        <span>{syncError}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  <a
+                    href="https://calendar.google.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 hover:underline mt-3"
+                  >
+                    Open Google Calendar <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Notifications Tab */}
         {activeTab === "notifications" && (
           <div className="space-y-4 animate-in fade-in duration-200">
@@ -327,6 +489,13 @@ export function Settings() {
           </div>
         )}
       </form>
+
+      {/* OTP Verification Modal */}
+      <OTPVerification
+        isOpen={isOTPModalOpen}
+        onClose={() => setIsOTPModalOpen(false)}
+        onVerified={() => checkAuth(true)}
+      />
     </div>
   );
 }

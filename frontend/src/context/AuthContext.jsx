@@ -193,9 +193,9 @@ export function AuthProvider({ children }) {
       setUser(data.user);
       setIsAuthenticated(true);
       setIsLoading(false);
-      setSkipNextAuthCheck(true); // Prevent redundant auth check on navigation
+      setSkipNextAuthCheck(true);
 
-      return { success: true };
+      return { success: true, requiresVerification: !data.user?.isEmailVerified };
     } catch (error) {
       setAuthError(error.message);
       return { success: false, error: error.message };
@@ -219,7 +219,14 @@ export function AuthProvider({ children }) {
         throw new Error(data.message || "Registration failed");
       }
 
-      return { success: true, message: data.message };
+      setStoredToken("accessToken", data.accessToken);
+      setStoredToken("refreshToken", data.refreshToken);
+      setUser(data.user);
+      setIsAuthenticated(true);
+      setIsLoading(false);
+      setSkipNextAuthCheck(true);
+
+      return { success: true, requiresVerification: data.requiresVerification };
     } catch (error) {
       setAuthError(error.message);
       return { success: false, error: error.message };
@@ -230,7 +237,7 @@ export function AuthProvider({ children }) {
   const handleOAuthCallback = useCallback(
     async (accessToken, refreshToken) => {
       if (!accessToken || !refreshToken) {
-        return false;
+        return { success: false };
       }
 
       setStoredToken("accessToken", accessToken);
@@ -242,12 +249,12 @@ export function AuthProvider({ children }) {
         setUser(userData);
         setIsAuthenticated(true);
         setIsLoading(false);
-        setSkipNextAuthCheck(true); // Prevent redundant auth check on navigation
-        return true;
+        setSkipNextAuthCheck(true);
+        return { success: true, requiresVerification: !userData.isEmailVerified };
       }
 
       removeStoredTokens();
-      return false;
+      return { success: false };
     },
     [fetchUserProfile],
   );

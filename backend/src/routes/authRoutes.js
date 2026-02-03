@@ -50,10 +50,29 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    const user = new User({ email, password, name });
+    const user = new User({ email, password, name, isEmailVerified: false });
+
+    const code = generateVerificationCode();
+    user.verificationCode = code;
+    user.verificationCodeExpires = new Date(Date.now() + 10 * 60 * 1000);
+
     await user.save();
 
-    res.status(201).json({ message: 'User registered successfully' });
+    try {
+      await sendVerificationEmail(email, code);
+    } catch (emailError) {
+      console.error('Failed to send verification email during registration:', emailError);
+    }
+
+    const { accessToken, refreshToken } = generateTokens(user);
+
+    res.status(201).json({
+      message: 'User registered successfully. Please verify your email.',
+      accessToken,
+      refreshToken,
+      user: formatUserResponse(user),
+      requiresVerification: true
+    });
   } catch (error) {
     console.error('Registration error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -113,10 +132,7 @@ router.post('/login', async (req, res) => {
     res.status(200).json({
       accessToken,
       refreshToken,
-      user: {
-        name: user.name,
-        email: user.email,
-      },
+      user: formatUserResponse(user),
     });
   } catch (error) {
     console.error('Login error:', error);
