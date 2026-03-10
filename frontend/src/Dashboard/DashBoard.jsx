@@ -6,13 +6,16 @@ import { Analytics } from "./Analytics";
 import { Settings } from "./Settings";
 import AIChatWidget from "../componets/AIChatWidget.jsx";
 import AIAssistant from "../componets/AIAssistant.jsx";
+import { useAuth } from "../context/AuthContext";
 
 
 export function Dashboard() {
+  const { user } = useAuth();
   const [currentView, setCurrentView] = useState("tasks");
   const [conversations, setConversations] = useState([]);
   const [currentConversationId, setCurrentConversationId] = useState(null);
   const initialized = useRef(false);
+  const storageKey = user?.id ? `ai_conversations_${user.id}` : null;
 
   function createInitialConversation() {
     const newConv = {
@@ -80,10 +83,10 @@ export function Dashboard() {
   }
 
   useEffect(() => {
-    if (initialized.current) return;
+    if (initialized.current || !storageKey) return;
     initialized.current = true;
 
-    const saved = localStorage.getItem("ai_conversations");
+    const saved = localStorage.getItem(storageKey);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -98,13 +101,13 @@ export function Dashboard() {
     } else {
       createInitialConversation();
     }
-  }, []);
+  }, [storageKey]);
 
   useEffect(() => {
-    if (conversations.length > 0) {
-      localStorage.setItem("ai_conversations", JSON.stringify(conversations));
+    if (conversations.length > 0 && storageKey) {
+      localStorage.setItem(storageKey, JSON.stringify(conversations));
     }
-  }, [conversations]);
+  }, [conversations, storageKey]);
 
   return (
     <div className="flex h-screen flex-col">

@@ -58,10 +58,12 @@ router.post('/register', async (req, res) => {
 
     await user.save();
 
+    console.log(`[Email Verification] Sending code ${code} to ${email}`);
     try {
       await sendVerificationEmail(email, code);
+      console.log(`[Email Verification] Successfully sent to ${email}`);
     } catch (emailError) {
-      console.error('Failed to send verification email during registration:', emailError);
+      console.error(`[Email Verification] FAILED to send to ${email}:`, emailError.message);
     }
 
     const { accessToken, refreshToken } = generateTokens(user);
@@ -199,14 +201,14 @@ router.post('/send-verification', protect, async (req, res) => {
       return res.status(400).json({ message: 'Email already verified' });
     }
 
-    // Generate and save verification code
     const code = generateVerificationCode();
     user.verificationCode = code;
-    user.verificationCodeExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    user.verificationCodeExpires = new Date(Date.now() + 10 * 60 * 1000);
     await user.save();
 
-    // Send email
+    console.log(`[Email Verification] Resending code ${code} to ${user.email}`);
     await sendVerificationEmail(user.email, code);
+    console.log(`[Email Verification] Successfully sent to ${user.email}`);
 
     res.json({ message: 'Verification code sent to your email' });
   } catch (error) {

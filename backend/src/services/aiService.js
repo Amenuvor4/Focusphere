@@ -22,14 +22,6 @@ const MOCK_RESPONSES = {
 
 // Model configurations with quotas and capabilities
 const MODEL_CONFIG = {
-  'gemini-1.5-flash': {
-    name: 'gemini-1.5-flash',
-    displayName: 'Gemini 1.5 Flash',
-    tier: 'fast',
-    rpmLimit: 15,
-    tpmLimit: 1000000,
-    dailyLimit: 1500,
-  },
   'gemini-2.0-flash': {
     name: 'gemini-2.0-flash',
     displayName: 'Gemini 2.0 Flash',
@@ -38,25 +30,33 @@ const MODEL_CONFIG = {
     tpmLimit: 4000000,
     dailyLimit: 1000,
   },
-  'gemini-1.5-pro': {
-    name: 'gemini-1.5-pro',
-    displayName: 'Gemini 1.5 Pro',
-    tier: 'pro',
-    rpmLimit: 2,
-    tpmLimit: 32000,
-    dailyLimit: 50,
+  'gemini-2.0-flash-lite': {
+    name: 'gemini-2.0-flash-lite',
+    displayName: 'Gemini 2.0 Flash Lite',
+    tier: 'fast',
+    rpmLimit: 30,
+    tpmLimit: 1000000,
+    dailyLimit: 1500,
+  },
+  'gemini-1.5-flash': {
+    name: 'gemini-1.5-flash',
+    displayName: 'Gemini 1.5 Flash',
+    tier: 'economy',
+    rpmLimit: 15,
+    tpmLimit: 1000000,
+    dailyLimit: 1500,
   }
 };
 
 // Map user-facing model names to actual API model names
 const MODEL_NAME_MAP = {
-  'gemini-1.5-flash': 'gemini-1.5-flash',
   'gemini-2.0-flash': 'gemini-2.0-flash',
-  'gemini-1.5-pro': 'gemini-1.5-pro'
+  'gemini-2.0-flash-lite': 'gemini-2.0-flash-lite',
+  'gemini-1.5-flash': 'gemini-1.5-flash'
 };
 
 // Failover order: try user's choice, then cycle through alternatives
-const FAILOVER_ORDER = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+const FAILOVER_ORDER = ['gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash'];
 
 // System instruction for the AI
 const SYSTEM_INSTRUCTION = `You are Focusphere AI, a high-intelligence productivity strategist.
@@ -358,7 +358,7 @@ class AIService {
     this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     this.isMockMode = process.env.MOCK_AI === 'true';
     this.models = {};
-    this.currentModelName = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+    this.currentModelName = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
 
     // Rate limit tracking
     this.rateLimitState = {
