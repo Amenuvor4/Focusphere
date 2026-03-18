@@ -22,25 +22,25 @@ const MOCK_RESPONSES = {
 
 // Model configurations with quotas and capabilities
 const MODEL_CONFIG = {
-  'gemini-2.0-flash': {
-    name: 'gemini-2.0-flash',
-    displayName: 'Gemini 2.0 Flash',
+  'gemini-2.5-flash': {
+    name: 'gemini-2.5-flash',
+    displayName: 'Gemini 2.5 Flash',
     tier: 'smart',
     rpmLimit: 10,
     tpmLimit: 4000000,
     dailyLimit: 1000,
   },
-  'gemini-2.0-flash-lite': {
-    name: 'gemini-2.0-flash-lite',
-    displayName: 'Gemini 2.0 Flash Lite',
+  'gemini-2.5-flash-lite': {
+    name: 'gemini-2.5-flash-lite',
+    displayName: 'Gemini 2.5 Flash Lite',
     tier: 'fast',
     rpmLimit: 30,
     tpmLimit: 1000000,
     dailyLimit: 1500,
   },
-  'gemini-1.5-flash': {
-    name: 'gemini-1.5-flash',
-    displayName: 'Gemini 1.5 Flash',
+  'gemini-2.0-flash': {
+    name: 'gemini-2.0-flash',
+    displayName: 'Gemini 2.0 Flash',
     tier: 'economy',
     rpmLimit: 15,
     tpmLimit: 1000000,
@@ -50,13 +50,13 @@ const MODEL_CONFIG = {
 
 // Map user-facing model names to actual API model names
 const MODEL_NAME_MAP = {
-  'gemini-2.0-flash': 'gemini-2.0-flash',
-  'gemini-2.0-flash-lite': 'gemini-2.0-flash-lite',
-  'gemini-1.5-flash': 'gemini-1.5-flash'
+  'gemini-2.5-flash': 'gemini-2.5-flash',
+  'gemini-2.5-flash-lite': 'gemini-2.5-flash-lite',
+  'gemini-2.0-flash': 'gemini-2.0-flash'
 };
 
 // Failover order: try user's choice, then cycle through alternatives
-const FAILOVER_ORDER = ['gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash'];
+const FAILOVER_ORDER = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
 
 // System instruction for the AI
 const SYSTEM_INSTRUCTION = `You are Focusphere AI, a high-intelligence productivity strategist.

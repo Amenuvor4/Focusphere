@@ -1,21 +1,28 @@
 import React, { useState, useRef, useEffect } from "react";
-import { ChevronDown, Zap, Brain } from "lucide-react";
+import { ChevronDown, Zap, Brain, } from "lucide-react";
 
 const MODEL_OPTIONS = [
   {
-    id: "gemini-1.5-flash",
+    id: "gemini-2.5-flash-lite",
     name: "Fast",
     description: "Quick responses, higher quota",
     icon: Zap,
     tier: "fast",
   },
   {
-    id: "gemini-2.0-flash",
+    id: "gemini-2.5-flash",
     name: "Smart",
     description: "Better reasoning, lower quota",
     icon: Brain,
     tier: "smart",
   },
+  {
+    id: "gemini-2.0-flash",
+    name: "Economy",
+    description: "Lower quality responses, Lower quota",
+    icon: Zap,
+    tier: "economy",
+  }
 ];
 
 const ModelSelector = ({

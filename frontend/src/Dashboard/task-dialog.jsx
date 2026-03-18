@@ -48,7 +48,7 @@ export function TaskDialog({ isOpen, onClose, task }) {
       setStatus(task.status || "Incomplete");
       setPriority(task.priority || "medium");
       setDueDate(
-        task.due_date ? format(new Date(task.due_date), "yyyy-MM-dd") : "",
+        task.dueDate ? format(new Date(task.dueDate), "yyyy-MM-dd") : "",
       );
       setCategory(task.category || "");
     }

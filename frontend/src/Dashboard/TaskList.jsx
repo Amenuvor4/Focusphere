@@ -113,6 +113,7 @@ export function TaskList({
     if (filterTime !== "all") {
       const currentDate = new Date();
       let startDate;
+      let endDate;
 
       switch (filterTime) {
         case "Today":
@@ -127,20 +128,35 @@ export function TaskList({
           const dayOfWeek = currentDate.getDay();
           const diffToMonday =
             currentDate.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
-          startDate = new Date(currentDate.setDate(diffToMonday));
+          startDate = new Date(new Date(currentDate).setDate(diffToMonday));
+          endDate = new Date(new Date(startDate).setDate(startDate.getDate() + 6));
+          endDate.setHours(23, 59,59)
           result = result.filter((task) => {
             const taskDate = new Date(task.dueDate);
-            return taskDate >= startDate && taskDate <= currentDate;
+            return taskDate >= startDate && taskDate <= endDate;
           });
           break;
 
         case "Month":
-          startDate = new Date(currentDate.getFullYear(), 0, 1);
+          startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+          endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+          endDate.setHours(23, 59,59)
           result = result.filter((task) => {
             const taskDate = new Date(task.dueDate);
-            return taskDate >= startDate && taskDate <= currentDate;
+            return taskDate >= startDate && taskDate <= endDate;
           });
           break;
+
+          case "Year":
+          startDate = new Date(currentDate.getFullYear(), 0, 1);
+          endDate = new Date(currentDate.getFullYear(), 12, 0);
+          endDate.setHours(23, 59,59)
+          result = result.filter((task) => {
+            const taskDate = new Date(task.dueDate);
+            return taskDate >= startDate && taskDate <= endDate;
+          });
+          break;
+        
 
         default:
           break;
@@ -218,7 +234,9 @@ export function TaskList({
         );
 
         const updatedTask = response.data.task;
-        setTasks(tasks.map((t) => (t.id === updatedTask.id ? updatedTask : t)));
+        setTasks(tasks.map((t) => (
+          t.id === updatedTask.id ? updatedTask : t)));
+          console.log(updatedTask.dueDate);
         onTaskUpdate?.(updatedTask);
       } else {
         // Create new task

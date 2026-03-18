@@ -1,4 +1,5 @@
-import React from "react";
+import { useState } from "react";
+import { format, parseISO } from "date-fns";
 import { Calendar, MoreHorizontal } from "lucide-react";
 
 export function TaskCard({ task, onClick, onEdit, onDelete }) {
@@ -13,7 +14,7 @@ export function TaskCard({ task, onClick, onEdit, onDelete }) {
     }
   };
 
-  const [menuOpen, setMenuOpen] = React.useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   return (
     <div
       className="p-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-md shadow-sm cursor-pointer hover:shadow-md dark:hover:border-slate-600 transition-all"
@@ -71,7 +72,9 @@ export function TaskCard({ task, onClick, onEdit, onDelete }) {
       <div className="mt-2 flex items-center justify-between">
         <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-slate-400">
           <Calendar className="h-3 w-3" />
-          <span>{new Date(task.dueDate).toLocaleDateString()}</span>
+          <span>
+            {task.dueDate.indexOf('T') != -1 ? format(parseISO(task.dueDate.substring(0, task.dueDate.indexOf('T'))), "MM/dd/yyyy") : ""}
+          </span>
         </div>
         <span
           className={`text-xs px-2 py-1 rounded-full ${getPriorityColor(task.priority)}`}

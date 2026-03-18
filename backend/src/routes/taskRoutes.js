@@ -28,7 +28,7 @@ const transformTask = (task) => ({
   description: task.description,
   priority: task.priority,
   status: task.status,
-  dueDate: task.due_date,
+  dueDate: task.due_date ? task.due_date.toISOString() : null,
   category: task.category,
 });
 
@@ -177,6 +177,10 @@ router.put('/:id', async (req, res) => {
 
     // Sanitize and validate the update data
     const updateData = { ...req.body };
+
+    let date = updateData.dueDate;
+    updateData.due_date = date;
+    delete updateData.dueDate
 
     // Sanitize priority
     if (updateData.priority) {

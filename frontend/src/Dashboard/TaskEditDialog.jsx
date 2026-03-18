@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
+import { format, parseISO } from "date-fns";
 import getValidToken from "../config/tokenUtils";
 import { ENDPOINTS } from "../config/api.js";
 import GoalModal from "../componets/GoalModal.jsx";
@@ -24,7 +25,8 @@ export function TaskEditDialog({ isOpen, onClose, task, onSave }) {
       setDescription(task.description || "");
       setStatus(task.status || "todo");
       setPriority(task.priority || "medium");
-      setDueDate(task.dueDate || "");
+      console.log(task.dueDate)
+      setDueDate(task.dueDate ? task.dueDate.indexOf('T') != -1 ? format(parseISO(task.dueDate.substring(0, task.dueDate.indexOf('T'))), "MM/dd/yyyy") : "" : "");
       setCategory(task.category || "");
     } else {
       // Reset form for new task
@@ -144,7 +146,7 @@ export function TaskEditDialog({ isOpen, onClose, task, onSave }) {
           </h2>
           <button
             className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-slate-700"
-            onClick={onClose}
+            onClick={() => { console.log(task.dueDate); onClose(); }}
           >
             <X className="h-5 w-5 text-gray-600 dark:text-slate-400" />
           </button>
