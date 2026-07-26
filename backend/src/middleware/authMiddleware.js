@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const rateLimiter = require('express-rate-limit');
 
 const protect = (req, res, next) => {
   try {
@@ -33,7 +34,7 @@ const protect = (req, res, next) => {
     //console.log('Current time:', now, 'Token expires:', decoded.exp, 'Difference:', decoded.exp - now);
 
     // Attach user ID as a string to the request for further use
-    req.user = { id: decoded.userId.toString() };
+    req.user = { id: decoded.userId.toString(), role: decoded.role || 'user' }; // Assuming you might want to check for admin role later
 
     next(); // Move to the next middleware or route handler
   } catch (error) {
@@ -45,5 +46,31 @@ const protect = (req, res, next) => {
   }
 };
 
-module.exports = protect;
+
+const loginLimiter = rateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: {message: 'Too many attempts, please try again later'},
+});
+
+const registerLimiter = rateLimiter({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  message: {message: 'Too many attempts, please try again later'},
+
+});
+
+const refreshLimiter = rateLimiter({
+  max: 10,
+  message: {message: 'Too many attempts, please try again later'},
+});
+
+const sendVerificationLimiter = rateLimiter({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  message: {message: 'Too many attempts, please try again later'},
+})
+
+
+module.exports = {protect, loginLimiter, registerLimiter, refreshLimiter, sendVerificationLimiter};
 

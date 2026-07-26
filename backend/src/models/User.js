@@ -22,6 +22,7 @@ const userSchema = new mongoose.Schema({
     notifications: { type: Boolean, default: true },
     theme: { type: String, default: 'dark' },
   },
+  role: { type: String, enum: ['user', 'admin'], default: 'user' },
 }, { timestamps: true });
 
 
@@ -35,7 +36,6 @@ userSchema.pre('save', async function (next) {
 
   // Method to compare hashed passwords
 userSchema.methods.comparePassword = async function (password) {
-    console.log("User password in DB:", this.password); 
     return bcrypt.compare(password, this.password);
 };
 

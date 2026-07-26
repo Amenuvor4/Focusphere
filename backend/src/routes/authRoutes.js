@@ -1,7 +1,7 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const passport = require('passport');
-const protect = require('../middleware/authMiddleware');
+const {protect, loginLimiter, registerLimiter, refreshLimiter, sendVerificationLimiter} = require('../middleware/authMiddleware');
 const User = require('../models/User');
 const dotenv = require('dotenv');
 const { generateVerificationCode, sendVerificationEmail, sendWelcomeEmail } = require('../utils/emailSender');
@@ -20,7 +20,8 @@ const generateTokens = (userData) => {
   const payload = {
     userId: user._id.toString(), 
     email: user.email,
-    name: user.name
+    name: user.name,
+    role: user.role,
   };
 
   const accessToken = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '24h' });
@@ -41,7 +42,7 @@ const formatUserResponse = (user) => {
 };
 
 // Register route
-router.post('/register', async (req, res) => {
+router.post('/register', registerLimiter, async (req, res) => {
   const { email, password, name } = req.body;
 
   try {
@@ -82,7 +83,7 @@ router.post('/register', async (req, res) => {
 });
 
 // Token refresh route
-router.post('/refresh-token', async (req, res) => {
+router.post('/refresh-token', refreshLimiter, async (req, res) => {
   const { refreshToken } = req.body;
 
   if (!refreshToken) {
@@ -109,7 +110,7 @@ router.post('/refresh-token', async (req, res) => {
 });
 
 // Login route
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   const { email, password } = req.body;
 
   try {
@@ -157,6 +158,21 @@ router.get('/profile', protect, async (req, res) => {
   }
 });
 
+//Get all users (Admin route)
+router.get('/users', protect, async (req, res) => {
+  try{
+    if(req.user.role !== 'admin'){
+      return res.status(403).json({message: 'Access denied. Admins only.'});
+    }
+    const users = await User.find({}).select('-password -verificationCode -verificationCodeExpires -googleAccessToken -googleRefreshToken').sort({createdAt: -1});
+
+    res.status(200).json(users)
+  } catch (error){
+    console.error('Failed to fetch user:', error)
+    res.status(500).json({message: 'Unable to fetch users from db', error: error.message});
+  }
+})
+
 // OAuth Callback Handler - IMPROVED with environment variable
 const handleOAuthCallback = (req, res) => {
   try {
@@ -190,7 +206,7 @@ router.get(
 );
 
 // Send verification code
-router.post('/send-verification', protect, async (req, res) => {
+router.post('/send-verification', protect, sendVerificationLimiter, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
     if (!user) {

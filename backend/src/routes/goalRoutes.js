@@ -1,7 +1,7 @@
 const express = require('express');
 const Goal = require('../models/Goal.js');
 const Task = require('../models/Task.js');
-const protect = require('../middleware/authMiddleware.js');
+const {protect} = require('../middleware/authMiddleware.js');
 const { default: mongoose } = require('mongoose');
 const { parseDateString } = require('../utils/Datehelper');
 
@@ -29,7 +29,7 @@ const validateObjectId = (req, res, next) => {
 
 // Helper function to sanitize error messages
 const sanitizeErrorMessage = (error) => {
-  let errorMessage = sanitizeErrorMessage(error) || 'An error occurred';
+  let errorMessage = error.message || 'An error occurred';
 
   // Remove MongoDB ObjectIDs from error messages (format: 24 hex characters)
   errorMessage = errorMessage.replace(/\b[0-9a-f]{24}\b/gi, '[goal]');
@@ -161,7 +161,7 @@ router.put('/:id', validateObjectId, async (req, res) => {
       updateData.priority = priority;
     }
     if (deadline !==undefined){
-      updateDate.deadline = deadline ? parseDateString(deadline) : null;
+      updateData.deadline = deadline ? parseDateString(deadline) : null;
     }
 
     const updatedGoal = await Goal.findOneAndUpdate(

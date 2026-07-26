@@ -59,6 +59,8 @@ if (require('fs').existsSync(clientBuildPath)) {
   console.warn("client/build folder not found. Skipping static file serving.");
 }
 
+app.set('trust proxy', 1);
+
 // Start the server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(` Server running on port ${PORT}`));
