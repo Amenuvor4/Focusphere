@@ -1,16 +1,15 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs')
+const validator = require('validator')
 
 const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true,
     validate: {
-      validator: function (v) {
-        return /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(v);
-      },
+      validator: validator.isEmail,
       message: props => `${props.value} is not a valid email address!`,
     },
    },
-  password: { type: String },
+  password: { type: String, minlength: 8,  },
   name: { type: String },
   githubId: {type: String},
   googleRefreshToken: { type: String },
@@ -53,6 +52,3 @@ userSchema.index({ githubId: 1 });
 
 const User = mongoose.model('User', userSchema);
 module.exports = User;
-
-
-// This is the very end of the code

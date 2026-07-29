@@ -21,28 +21,22 @@ const MOCK_RESPONSES = {
 };
 
 // Model configurations with quotas and capabilities
+// NOTE: gemini-2.0-flash and gemini-2.5-flash/-lite are no longer available
+// to new API keys/projects as of mid-2026; migrated to their GA replacements.
 const MODEL_CONFIG = {
-  'gemini-2.5-flash': {
-    name: 'gemini-2.5-flash',
-    displayName: 'Gemini 2.5 Flash',
+  'gemini-3.5-flash': {
+    name: 'gemini-3.5-flash',
+    displayName: 'Gemini 3.5 Flash',
     tier: 'smart',
-    rpmLimit: 10,
+    rpmLimit: 15,
     tpmLimit: 4000000,
-    dailyLimit: 1000,
-  },
-  'gemini-2.5-flash-lite': {
-    name: 'gemini-2.5-flash-lite',
-    displayName: 'Gemini 2.5 Flash Lite',
-    tier: 'fast',
-    rpmLimit: 30,
-    tpmLimit: 1000000,
     dailyLimit: 1500,
   },
-  'gemini-2.0-flash': {
-    name: 'gemini-2.0-flash',
-    displayName: 'Gemini 2.0 Flash',
-    tier: 'economy',
-    rpmLimit: 15,
+  'gemini-3.1-flash-lite': {
+    name: 'gemini-3.1-flash-lite',
+    displayName: 'Gemini 3.1 Flash Lite',
+    tier: 'fast',
+    rpmLimit: 30,
     tpmLimit: 1000000,
     dailyLimit: 1500,
   }
@@ -50,13 +44,12 @@ const MODEL_CONFIG = {
 
 // Map user-facing model names to actual API model names
 const MODEL_NAME_MAP = {
-  'gemini-2.5-flash': 'gemini-2.5-flash',
-  'gemini-2.5-flash-lite': 'gemini-2.5-flash-lite',
-  'gemini-2.0-flash': 'gemini-2.0-flash'
+  'gemini-3.5-flash': 'gemini-3.5-flash',
+  'gemini-3.1-flash-lite': 'gemini-3.1-flash-lite'
 };
 
 // Failover order: try user's choice, then cycle through alternatives
-const FAILOVER_ORDER = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
+const FAILOVER_ORDER = ['gemini-3.5-flash', 'gemini-3.1-flash-lite'];
 
 // System instruction for the AI
 const SYSTEM_INSTRUCTION = `You are Focusphere AI, a high-intelligence productivity strategist.
@@ -358,7 +351,7 @@ class AIService {
     this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     this.isMockMode = process.env.MOCK_AI === 'true';
     this.models = {};
-    this.currentModelName = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+    this.currentModelName = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
 
     // Rate limit tracking
     this.rateLimitState = {
@@ -946,6 +939,173 @@ Title:`;
     date.setDate(date.getDate() + 2);
     return date.toISOString().split("T")[0];
   }
+
+
+  async _generateText(prompt) {
+    const model = this.getModel();
+    const result = await model.generateContent(prompt);
+    const text = result.response.text().trim();
+    this.updateTokenUsage(prompt, text);
+    return text;
+  }
+
+
+  async _generateJSON(prompt) {
+    const text = await this._generateText(prompt);
+    const cleaned = text.replace(/```json\s*/gi, "").replace(/```/g, "").trim();
+    return JSON.parse(this.fixCommonJsonIssues(cleaned));
+  }
+
+  async analyzeUserData({ tasks = [], goals = [], completionRate = 0 }) {
+    if (this.isMockMode) {
+      return "Mock insight: you're completing tasks at a steady pace. Focus on your high-priority items first to keep momentum.";
+    }
+
+    const avgGoalProgress = goals.length > 0
+      ? Math.round(goals.reduce((sum, g) => sum + (g.progress || 0), 0) / goals.length)
+      : 0;
+
+    const prompt = `You are a productivity analyst. Write a short (2-3 sentence) analysis of this user's productivity patterns, ending with one actionable suggestion.
+
+Tasks: ${tasks.length} total, ${tasks.filter((t) => t.status === "completed").length} completed
+Goals: ${goals.length} total, average progress ${avgGoalProgress}%
+Completion rate: ${completionRate}%
+
+Write the analysis directly, no preamble.`;
+
+    try {
+      return await this._generateText(prompt);
+    } catch (error) {
+      console.error("User data analysis error:", error.message);
+      return "Unable to generate insights right now. Please try again later.";
+    }
+  }
+
+  async prioritizeTasks(tasks) {
+    if (this.isMockMode) {
+      return tasks;
+    }
+
+    const taskList = tasks
+      .map((t) => `ID:${t._id}|T:${t.title}|P:${t.priority}|Due:${t.due_date ? new Date(t.due_date).toISOString().split("T")[0] : "None"}`)
+      .join("\n");
+
+    const prompt = `Reorder these tasks by priority (most urgent/important first), weighing priority level and due date.
+
+${taskList}
+
+Respond with ONLY a JSON array of task IDs in priority order, e.g. ["id1","id2","id3"]. No other text.`;
+
+    try {
+      const orderedIds = await this._generateJSON(prompt);
+      const sorted = orderedIds
+        .map((id) => tasks.find((t) => t._id.toString() === id))
+        .filter(Boolean);
+
+      // Include any tasks the model omitted, appended at the end
+      const seenIds = new Set(sorted.map((t) => t._id.toString()));
+      const missing = tasks.filter((t) => !seenIds.has(t._id.toString()));
+      return [...sorted, ...missing];
+    } catch (error) {
+      console.error("Task prioritization error:", error.message);
+      return tasks;
+    }
+  }
+
+  async suggestTaskBreakdown(title, description = "") {
+    if (this.isMockMode) {
+      return [`Plan ${title}`, `Start ${title}`, `Review ${title}`];
+    }
+
+    const prompt = `Break this task into 3-6 concrete, actionable subtasks.
+
+Task: ${title}
+${description ? `Description: ${description}` : ""}
+
+Respond with ONLY a JSON array of subtask title strings, e.g. ["Step one","Step two"]. No other text.`;
+
+    try {
+      const subtasks = await this._generateJSON(prompt);
+      if (!Array.isArray(subtasks)) throw new Error("Response is not an array");
+      return subtasks.filter((item) => typeof item === "string" && item.trim().length > 0);
+    } catch (error) {
+      console.error("Task breakdown error:", error.message);
+      return [];
+    }
+  }
+
+  async generateInsights({ tasksCompleted = 0, completionRate = 0, tasksByCategory = [], averageCompletionTime = "0 days" }) {
+    if (this.isMockMode) {
+      return "Mock insight: your completion rate is trending well this period. Keep prioritizing your top category.";
+    }
+
+    const topCategory = [...tasksByCategory].sort((a, b) => b.count - a.count)[0]?.name || "None";
+
+    const prompt = `Write a short (2-3 sentence) productivity insight based on this analytics data. Be encouraging but specific.
+
+Tasks completed: ${tasksCompleted}
+Completion rate: ${completionRate}%
+Average completion time: ${averageCompletionTime}
+Most active category: ${topCategory}
+
+Write the insight directly, no preamble.`;
+
+    try {
+      return await this._generateText(prompt);
+    } catch (error) {
+      console.error("Insights generation error:", error.message);
+      return "Unable to generate insights right now. Please try again later.";
+    }
+  }
+
+  async suggestSchedule(tasks) {
+    if (this.isMockMode) {
+      return "Mock schedule: tackle your high-priority tasks in the morning, then handle lighter items in the afternoon.";
+    }
+
+    const taskList = tasks
+      .map((t) => `T:${t.title}|P:${t.priority}|Due:${t.due_date ? new Date(t.due_date).toISOString().split("T")[0] : "None"}`)
+      .join("\n") || "None";
+
+    const prompt = `Suggest a time-blocked schedule for today based on these pending tasks, prioritizing high-priority and overdue items in the morning.
+
+${taskList}
+
+Write a brief, actionable schedule suggestion.`;
+
+    try {
+      return await this._generateText(prompt);
+    } catch (error) {
+      console.error("Schedule suggestion error:", error.message);
+      return "Unable to generate a schedule suggestion right now.";
+    }
+  }
+
+  async suggestGoals(tasks, goals) {
+    if (this.isMockMode) {
+      return [{ title: "Mock Goal", description: "A sample suggested goal", priority: "medium" }];
+    }
+
+    const existingGoals = goals.map((g) => g.title).join(", ") || "None";
+    const categories = [...new Set(tasks.map((t) => t.category).filter(Boolean))].join(", ") || "None";
+
+    const prompt = `Based on this user's existing goals and task categories, suggest 2-3 new goals they might want to set.
+
+Existing goals: ${existingGoals}
+Active task categories: ${categories}
+
+Respond with ONLY a JSON array of objects: [{"title":"...","description":"...","priority":"low|medium|high"}]. No other text.`;
+
+    try {
+      const suggestions = await this._generateJSON(prompt);
+      if (!Array.isArray(suggestions)) throw new Error("Response is not an array");
+      return suggestions.filter((s) => s && typeof s.title === "string");
+    } catch (error) {
+      console.error("Goal suggestion error:", error.message);
+      return [];
+    }
+  }
 }
+
 
 module.exports = new AIService();

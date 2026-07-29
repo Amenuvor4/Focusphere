@@ -301,7 +301,7 @@ exports.chat = async (req, res) => {
     console.error("AI chat error:", error);
 
     // Check if it's a rate limit error with details
-    if (error.rateLimitInfo || error.retryAfter) {
+    if (error.rateLimitInfo?.isRateLimit || error.retryAfter) {
       return res.status(429).json({
         error: "AI service rate limited",
         rateLimitInfo: {
