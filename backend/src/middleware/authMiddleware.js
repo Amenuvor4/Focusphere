@@ -71,6 +71,15 @@ const sendVerificationLimiter = rateLimiter({
   message: {message: 'Too many attempts, please try again later'},
 })
 
+// Applies to all /ai/* routes (except /test) — Gemini's free tier caps the
+// primary model at 15 requests/minute, so this stays under that ceiling per user.
+const aiLimiter = rateLimiter({
+  windowMs: 60 * 1000,
+  max: 15,
+  keyGenerator: (req) => req.user.id,
+  message: {message: 'Too many AI requests, please slow down and try again shortly'},
+});
 
-module.exports = {protect, loginLimiter, registerLimiter, refreshLimiter, sendVerificationLimiter};
+
+module.exports = {protect, loginLimiter, registerLimiter, refreshLimiter, sendVerificationLimiter, aiLimiter};
 

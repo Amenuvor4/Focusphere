@@ -1,6 +1,6 @@
 const express = require("express");
 const aiController = require("../controllers/aiController");
-const {protect} = require("../middleware/authMiddleware");
+const {protect, aiLimiter} = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
@@ -15,6 +15,7 @@ router.get("/test", (req, res) => {
 // PROTECT ALL ROUTES AFTER THIS LINE
 // ===================================
 router.use(protect);
+router.use(aiLimiter);
 
 /**
  * @route   GET /ai/analyze

@@ -59,7 +59,7 @@ passport.use(
         user.googleAccessToken = accessToken;
         await user.save();
 
-        const token = jwt.sign({ id: user._id.toString() }, process.env.JWT_SECRET, { expiresIn: '24h' });
+        const token = jwt.sign({ userId: user._id.toString() }, process.env.JWT_SECRET, { expiresIn: '24h' });
 
         done(null, { user, token });
       } catch (error) {
@@ -90,7 +90,7 @@ passport.use(
         const user = await findOrCreateUser(email, profile.displayName || profile.username, {
           githubId: profile.id,
         });
-        const token = jwt.sign({ id: user._id.toString() }, process.env.JWT_SECRET, { expiresIn: '24h' });
+        const token = jwt.sign({ userId: user._id.toString() }, process.env.JWT_SECRET, { expiresIn: '24h' });
 
         done(null, { user, token });
       } catch (error) {

@@ -10,7 +10,7 @@ class PendingActionsManager {
     this.TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
 
     // Periodic cleanup of expired entries
-    this.cleanupInterval = setInterval(() => this.cleanup(), 60 * 1000); // Every minute
+    this.cleanupInterval = setInterval(() => this.cleanup(), 60 * 1000).unref(); // Every minute
   }
 
   /**
